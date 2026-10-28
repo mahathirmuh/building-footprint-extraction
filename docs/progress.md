@@ -122,17 +122,17 @@ dan definisi kepadatan (Fase 1).
 
 ---
 
-## Fase 1 — Data (sedang berjalan: split CrowdAI final, menunggu persetujuan ambang kepadatan)
+## Fase 1 — Data (sedang berjalan: bagian CrowdAI selesai, menunggu data WHU)
 
-**Dibuat** (diuji di data sintetis; `pytest -q` → 186 tes lolos):
+**Dibuat** (diuji di data sintetis; `pytest -q` → 188 tes lolos):
 - `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
   anotasi (citra tanpa anotasi, ring tidak valid, multi-ring, piksel tumpang tindih, anotasi tertutup penuh), cek
   konvensi titik penutup dan arah putaran, cek file di anotasi vs di disk.
 - `src/densepoly/data/dedup.py` + `scripts/dedup_crowdai.py`: p-hash 6 varian (cache per 5.000 citra, bisa
   dilanjutkan bila terputus), union-find, split `train_dedup`/`val_tune`/`val_tune_sub`/`val_select`/`test`/`val_clean`,
   laporan dibanding angka referensi, mosaik QA (10 klaster terbesar + 40 acak). `--benchmark N` mengukur waktu dulu.
-- `src/densepoly/data/density.py` + `scripts/make_density.py`: strata tertil + indeks sekunder rasio bersentuhan;
-  file strata yang sudah ada tidak ditimpa tanpa `--force`.
+- `src/densepoly/data/density.py` + `scripts/make_density.py`: strata tertil + indeks sekunder tile bersentuhan vs
+  tidak; file strata yang sudah ada tidak ditimpa tanpa `--force`.
 - `src/densepoly/labels/contact.py` dibuat lebih awal dari jadwal Fase 2, karena indeks sekunder kepadatan
   memakainya.
 - `scripts/prepare_crowdai.py`: `--stats` → `splits/crowdai_stats.json`; `--cache` → peta instance uint16 dan
@@ -232,17 +232,22 @@ lintas-versi).
 `val_tune` 2.928 (24.802), `test` 2.928 (24.964), `val_clean` 212 (1.769). Ring berluas nol yang dilewati: 1.344,
 170, 181, dan 17. Tidak ada anotasi yang tertutup penuh oleh anotasi lain.
 
-**Strata kepadatan** (dihitung 28 Okt 2026; **menunggu persetujuan, belum dibekukan**):
+**Strata kepadatan CrowdAI** (dihitung, disetujui, dan dibekukan 28 Okt 2026; `splits/density_crowdai_*.json`,
+tabel di `docs/DATA.md` §4):
 - Indeks utama: tertil jumlah bangunan per tile di test = **6 dan 11**. Test: jarang 1.158 tile (3.870 bangunan),
   sedang 909 (8.219), padat 857 (12.875), kosong 4. `val_tune`: 1.191 / 873 / 864 / 0. `val_clean`: 91 / 60 / 61 / 0.
-- Indeks sekunder (rasio bersentuhan, r = 2) **degenerasi**: 95% tile test tidak punya bangunan bersentuhan, jadi
-  kedua tertilnya 0. Usulan: ganti dengan dua kelompok, "bersentuhan" (ada pasangan berjarak ≤ 2 px) vs "tidak"
-  (test 146 vs 2.778 tile; `val_tune` 127 vs 2.801; `val_clean` 10 vs 202).
+- Indeks sekunder (rasio bersentuhan, r = 2) ternyata **degenerasi**: 95% tile test tidak punya bangunan bersentuhan,
+  jadi kedua tertilnya 0. **Keputusan:** diganti menjadi dua kelompok, `bersentuhan` (minimal satu instance punya
+  piksel kontak) vs `tidak_bersentuhan`: test 146 vs 2.778 tile, `val_tune` 127 vs 2.801, `val_clean` 10 vs 202.
 - Temuan: bangunan bersentuhan sangat jarang di CrowdAI. Bangunan yang punya tetangga dalam ≤ 1, 2, 3, 5, dan 10 px
   di test: 0,30%, 1,33%, 3,08%, 8,32%, dan 34,7%. Piksel kontak (r = 2) hanya 0,01% piksel bangunan. Per strata
   (≤ 2 px / ≤ 5 px): jarang 1,0% / 4,4%, sedang 1,2% / 6,4%, padat 1,5% / 10,7%. Akibatnya kelas kontak punya
   sangat sedikit contoh, dan klaim "rumah berdempetan" hanya bisa diuji pada subset kecil. Usulan: desain tidak
   diubah sekarang; dibahas lagi di Fase 2 (fraksi kontak per dataset, radius r) dan Fase 5 (bobot kelas kontak).
 
-**Menunggu:** persetujuan ambang 6 dan 11 serta indeks sekunder "bersentuhan" (lalu file strata dibekukan); data WHU
-0,2 m di `data/whu/raw_0.2/` lalu konversi dan strata WHU.
+**Status kriteria "Selesai jika" Fase 1:** jumlah citra CrowdAI dilaporkan dan cocok dengan referensi, dan selisihnya
+(212 tile `val_clean`) dijelaskan; tes membuktikan tidak ada citra atau klaster di dua split; ambang kepadatan
+CrowdAI disetujui dan dibekukan.
+
+**Menunggu:** data WHU 0,2 m di `data/whu/raw_0.2/{train,val,test}/{image,label}/`, lalu konversi protokol A, cek
+jumlah patch, dan strata WHU (ambangnya minta persetujuan).

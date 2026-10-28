@@ -242,8 +242,9 @@ python scripts/tables.py && python scripts/figures.py
   Alasan: val yang bebas duplikat (termasuk putar/cermin) di train hanya 212 tile (`docs/DATA.md` §2.2).
 - Unduhan CrowdAI v1.0 selesai (28 Okt 2026). Unduhan WHU; ruang Google Drive: `TODO`.
 - Tier GPU Colab (T4 gratis / Pro): `TODO`. Repo GitHub privat + token di Colab Secrets: `TODO`.
-- Definisi kepadatan: default disetujui (28 Okt 2026), yaitu jumlah bangunan GT per tile dibagi tertil. Angka ambangnya
-  disetujui setelah dihitung dari data, lalu dibekukan.
+- Definisi kepadatan: default disetujui (28 Okt 2026), yaitu jumlah bangunan GT per tile dibagi tertil. Ambang CrowdAI
+  disetujui dan dibekukan 28 Okt 2026: 6 dan 11 bangunan per tile. Indeks sekunder diganti menjadi tile bersentuhan
+  vs tidak (r = 2), karena tertil rasio bersentuhan degenerasi. Ambang WHU menyusul setelah data WHU dikonversi.
 - Kriteria keputusan di `docs/EXPERIMENTS.md` §8 (termasuk ambang "mendekati SOTA" ≤ 3 AP dan aturan pemilihan FULL
   final) sudah dibekukan. Kalau mau diubah, ubah **sebelum Fase 3** dan tulis alasannya; setelah itu tidak boleh.
 - Sitasi yang perlu dicek: Dahatonde dkk. (2024) [lengkapi]; Huang & Zhang (2011) halaman/DOI; halaman Pix2Poly

@@ -199,8 +199,18 @@ terpisah di anotasi resmi, set ini bisa menjadi uji tambahan untuk pemisahan rum
   `sedang` (q33 < n ≤ q67), `padat` (n > q67), `kosong` (n = 0). Karena `n` bilangan bulat, ukuran strata bisa tidak
   persis sama; laporkan ukurannya.
 - Ambang yang sama dipakai untuk `val_tune` dan `val_clean` (definisi identik).
-- **Indeks sekunder (analisis ketahanan):** rasio bersentuhan = fraksi instance yang punya piksel kontak (§3.2
-  METHOD, r = 2). Perbandingan utama diulang dengan tertil indeks ini dan dilaporkan di lampiran.
+- **Indeks sekunder (analisis ketahanan):** tile `bersentuhan` bila minimal satu instance punya piksel kontak (§3.2
+  METHOD, r = radius kontak dataset), `tidak_bersentuhan` bila tidak ada, `kosong` bila tanpa bangunan. Perbandingan
+  utama diulang untuk kelompok `bersentuhan` dan dilaporkan di lampiran. Rencana awal (tertil rasio bersentuhan) tidak
+  dipakai karena 95% tile test CrowdAI tidak punya bangunan bersentuhan, sehingga kedua tertilnya 0 (28 Okt 2026).
+- **CrowdAI (disetujui dan dibekukan 28 Okt 2026):** `q33` = 6 dan `q67` = 11 bangunan per tile.
+
+  | Split | kosong | jarang (≤ 6) | sedang (7–11) | padat (≥ 12) | bersentuhan / tidak |
+  |---|---|---|---|---|---|
+  | `test` | 4 | 1.158 | 909 | 857 | 146 / 2.778 |
+  | `val_tune` | 0 | 1.191 | 873 | 864 | 127 / 2.801 |
+  | `val_clean` | 0 | 91 | 60 | 61 | 10 / 202 |
+
 - Strata `kosong` tidak masuk AP/PoLiS/MTA (tidak terdefinisi), tetapi masuk metrik piksel dan hitungan positif palsu.
 - File `splits/density_<dataset>_<split>.json` berisi definisi, ambang, ukuran strata, daftar `image_id` per strata, tanggal,
   dan hash git. Dibuat **sebelum** evaluasi model mana pun, lalu dibekukan. Ambang dihitung hanya dari jumlah GT,
