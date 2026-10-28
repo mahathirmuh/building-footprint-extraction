@@ -34,15 +34,15 @@ def write_stats(root: Path, out: Path) -> dict:
     return report
 
 
-def write_cache(root: Path, splits: list[str], out: Path) -> dict:
+def write_cache(splits: list[str], out: Path) -> dict:
     stats_file = out / "crowdai_raster_stats.json"
     summary = read_json(stats_file) if stats_file.exists() else {}
     cocos = {}
     for split in splits:
-        source = crowdai.source_folder(split)
-        if source not in cocos:
-            cocos[source] = crowdai.load_coco(root / source / "annotation.json")
-        coco = cocos[source]
+        annotation = paths.annotation_file("crowdai", split)
+        if annotation not in cocos:
+            cocos[annotation] = crowdai.load_coco(annotation)
+        coco = cocos[annotation]
         by_name = {img["file_name"]: img for img in coco.dataset["images"]}
         totals = {"images": 0, "instances": 0, "skipped": 0, "empty": 0, "overlap_px": 0, "hidden": 0}
         index = ["file_name,image_id,instances"]
@@ -78,7 +78,7 @@ def main(argv: list[str] | None = None) -> None:
         summary = {s: {k: v for k, v in report[s].items() if k != "categories"} for s in ("train", "val")}
         print(json.dumps(summary, indent=1))
     if args.cache:
-        print(json.dumps(write_cache(root, args.cache, out), indent=1))
+        print(json.dumps(write_cache(args.cache, out), indent=1))
 
 
 if __name__ == "__main__":

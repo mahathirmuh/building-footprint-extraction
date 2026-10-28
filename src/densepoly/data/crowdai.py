@@ -2,6 +2,7 @@
 
 Instance maps are painted by decreasing pixel area, so a small building drawn over a big one stays visible
 (docs/DATA.md §2.3); ``tests/fixtures/synthetic.py`` follows the same rule, and the tests check both against each other.
+The COCO helpers here do not depend on the dataset and are reused for the WHU protocol A ground truth.
 """
 
 from __future__ import annotations
@@ -17,11 +18,6 @@ from pycocotools import mask as mask_utils
 from pycocotools.coco import COCO
 
 IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png")
-
-
-def source_folder(split: str) -> str:
-    """Download folder holding a split's images: test and val_full come from val, the other splits from train."""
-    return "val" if split in ("test", "val_full") else "train"
 
 
 def load_coco(path: Path) -> COCO:

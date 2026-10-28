@@ -72,12 +72,3 @@ def test_annotation_stats_and_file_check(tmp_path):
     assert stats["annotations"] == len(dataset["annotations"]) and stats["multi_ring_annotations"] == 0
     files = crowdai.check_files(coco, tmp_path)
     assert files["missing_examples"] == ["b.png", "c.png"] and files["extra_examples"] == ["x.png"]
-
-
-def test_test_and_val_full_come_from_the_val_folder():
-    assert [crowdai.source_folder(s) for s in ("train_dedup", "val_tune", "test", "val_full")] == [
-        "train",
-        "train",
-        "val",
-        "val",
-    ]

@@ -21,7 +21,7 @@ from densepoly.utils.provenance import git_revision, timestamp
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--data", choices=["crowdai"], required=True)
+    parser.add_argument("--data", choices=["crowdai", "whu"], required=True)
     parser.add_argument("--split", choices=["test", "val_tune"], required=True)
     parser.add_argument("--splits-dir", type=Path, help="folder of split files (default: repo splits/)")
     parser.add_argument("--force", action="store_true", help="overwrite; only allowed before any model evaluation")
@@ -39,7 +39,7 @@ def main(argv: list[str] | None = None) -> None:
         thresholds = read_json(test_file)["thresholds"]
 
     radius = int(OmegaConf.load(paths.configs_dir() / "data" / f"{args.data}.yaml").labels.contact_radius_px)
-    coco = crowdai.load_coco(paths.dataset_dir(args.data) / crowdai.source_folder(args.split) / "annotation.json")
+    coco = crowdai.load_coco(paths.annotation_file(args.data, args.split))
     by_name = {img["file_name"]: img for img in coco.dataset["images"]}
     counts, ratios = {}, {}
     for name in read_lines(paths.split_list(args.data, args.split, out)):

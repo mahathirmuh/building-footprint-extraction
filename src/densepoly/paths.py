@@ -71,6 +71,28 @@ def dataset_dir(dataset: str) -> Path:
     return data_root() / dataset
 
 
+def source_folder(dataset: str, split: str) -> str:
+    """Folder holding a split's images: CrowdAI download train/ or val/ (test and val_full come from val);
+    WHU protocol A conversion train/, val/ (val_tune and its parts) or test/."""
+    _check(dataset, split)
+    if dataset == "crowdai":
+        return "val" if split in ("test", "val_full") else "train"
+    return {"train_dedup": "train", "test": "test"}.get(split, "val")
+
+
+def _layout_root(dataset: str) -> Path:
+    return dataset_dir("whu") / "pix2poly_224" if dataset == "whu" else dataset_dir(dataset)
+
+
+def annotation_file(dataset: str, split: str) -> Path:
+    """COCO ground truth that holds a split's images (docs/DATA.md §1)."""
+    return _layout_root(dataset) / source_folder(dataset, split) / "annotation.json"
+
+
+def image_dir(dataset: str, split: str) -> Path:
+    return _layout_root(dataset) / source_folder(dataset, split) / "images"
+
+
 def instance_dir(dataset: str, split: str) -> Path:
     """Folder of a split's cached instance maps (one uint16 PNG per image plus index.csv)."""
     _check(dataset, split)

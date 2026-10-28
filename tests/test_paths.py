@@ -49,6 +49,26 @@ def test_split_and_density_file_names_follow_docs_data_section_6(tmp_path):
     assert paths.density_file("crowdai", "test") == paths.REPO_ROOT / "splits" / "density_crowdai_test.json"
 
 
+def test_split_sources_follow_the_data_layout(monkeypatch, tmp_path):
+    monkeypatch.setenv("DENSEPOLY_DATA", str(tmp_path))
+    data = tmp_path.resolve()
+    crowdai = {
+        s: paths.source_folder("crowdai", s) for s in ("train_dedup", "val_tune", "val_select", "test", "val_full")
+    }
+    assert crowdai == {
+        "train_dedup": "train",
+        "val_tune": "train",
+        "val_select": "train",
+        "test": "val",
+        "val_full": "val",
+    }
+    whu = {s: paths.source_folder("whu", s) for s in ("train_dedup", "val_tune", "val_tune_sub", "test")}
+    assert whu == {"train_dedup": "train", "val_tune": "val", "val_tune_sub": "val", "test": "test"}
+    assert paths.annotation_file("crowdai", "test") == data / "crowdai/val/annotation.json"
+    assert paths.annotation_file("whu", "val_select") == data / "whu/pix2poly_224/val/annotation.json"
+    assert paths.image_dir("whu", "train_dedup") == data / "whu/pix2poly_224/train/images"
+
+
 def test_run_name():
     assert paths.run_name(0) == "seed0"
     assert paths.run_name(None) == "ref"
