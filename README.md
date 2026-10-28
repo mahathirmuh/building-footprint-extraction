@@ -17,6 +17,18 @@ poligon rapi per rumah (COCO JSON / GeoJSON), dilatih **tanpa anotasi poligon**.
 | `docs/progress.md` | log kerja per fase |
 | `reference/` | kode demo tahap ETS dan prototipe uji spesifikasi (referensi saja) |
 
+## Setup lokal
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate                             # Windows; Linux/macOS: source .venv/bin/activate
+pip install -e ".[dev]"                            # + ".[eval]" (Fase 3), ".[yolo]" (FULL+Y)
+nbstripout --install --attributes .gitattributes   # sekali per clone: filter git pembuang output notebook
+pytest -q                                          # CPU, tanpa internet, data sintetis
+```
+
+Data dan output dibaca dari `DENSEPOLY_DATA` dan `DENSEPOLY_OUT` (default `data/` dan `outputs/` di root repo).
+
 ## Cara memulai dengan Claude Code
 
 1. Buat repo GitHub privat `densepoly`, salin semua file paket ini ke root repo, lalu commit.

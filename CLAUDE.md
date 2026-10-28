@@ -50,7 +50,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 | smp 0.6.0 | `in_channels≠3` menyalin bobot RGB secara siklik lalu mengalikan 3/in_ch; input wajib kelipatan 32 |
 | Ultralytics 8.4.x | `yolov8n-obb.pt` tersedia; label OBB: `cls x1 y1 x2 y2 x3 y3 x4 y4` ternormalisasi |
 
-- Belum ada kode, data, atau model. Mulai dari Fase 0 di `PLAN.md`.
+- Fase 0 sudah dikerjakan (kerangka repo, config, paths, fixture sintetis; lihat `docs/progress.md`). Belum ada data
+  atau model.
 
 ## Cara bekerja di proyek ini
 
