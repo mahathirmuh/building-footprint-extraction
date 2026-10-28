@@ -122,7 +122,7 @@ dan definisi kepadatan (Fase 1).
 
 ---
 
-## Fase 1 — Data (sedang berjalan: kode siap, menunggu data)
+## Fase 1 — Data (sedang berjalan: data CrowdAI siap, menunggu persetujuan run hash penuh)
 
 **Dibuat** (diuji di data sintetis; `pytest -q` → 186 tes lolos):
 - `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
@@ -173,6 +173,31 @@ sesuai definisi `docs/METHOD.md` §3.2; celah 2 px tidak. `tests/test_contact.py
   `train_hashes.json`/`val_hashes.json` repo hanya berisi hash asli (satu per citra), jadi angka 3.949 dari
   `val_in_train_np.json` sebanding dengan `original_hash_not_in_train_originals` di `dedup_report.json` kita.
 
-**Menunggu:** data CrowdAI di `data/crowdai/`; ukur waktu hash (`--benchmark 1000`) dan persetujuan run penuh;
-perbandingan hash kita dengan `train_hashes.json` repo (100 citra); konvensi poligon GT CrowdAI; data WHU 0,2 m di
-`data/whu/raw_0.2/` lalu konversi; persetujuan angka ambang kepadatan.
+**Isi v2.0** (diperiksa 28 Okt 2026; baru JSON-nya yang diekstrak ke `data/crowdai_v2/`):
+- `CHANGELOG.md` (rilis 8 Mei 2025): kebocoran antar-split train/val/test diperbaiki; setiap citra diberi key
+  `augmentation_source_id`; ada `annotation_non_augmented.json` terpisah; GT test dirilis; skrip preprocessing dirilis.
+- Train 206.892, val 25.552, dan test 25.600 citra, masing-masing tepat 4 versi (asli + 3 augmentasi) dari 51.723,
+  6.388, dan 6.400 tile unik (total 64.511, cocok dengan halaman AIcrowd). Anotasi non-augmentasi: 408.321, 50.194,
+  dan 49.939. Kategori `100`. Nama file adalah id 64-bit.
+- `*_image_id_to_file_path_map.json` memetakan id ke tile sumber SpaceNet (nama AOI + koordinat). Untuk tile
+  non-augmentasi, tidak ada tile sumber yang muncul di dua split (0 untuk ketiga pasangan). Keempat AOI (Vegas,
+  Shanghai, Khartoum, Paris) ada di setiap split dengan proporsi mirip, jadi split tidak dipisah per wilayah.
+- Keterbatasan untuk proyek ini: prediksi HiSup dan angka paper pembanding semuanya dihitung di v1.0, jadi tidak ada
+  pembanding di v2.0. Model yang dilatih di v1.0 (termasuk HiSup) kemungkinan sudah melihat area test v2.0, karena
+  keduanya diturunkan dari citra SpaceNet yang sama (belum diverifikasi).
+- Keputusan #7 belum berubah. Pilihan v1.0 atau v2.0 menunggu diskusi.
+
+**Data CrowdAI v1.0** (diekstrak 28 Okt 2026; ukuran, SHA-256, dan statistik anotasi di `docs/DATA.md` §1 dan §2.1):
+- Jumlah citra sama dengan referensi (train 280.741, val 60.317), tidak ada file yang hilang, kategori `100`.
+- Temuan: 98,8% ring GT mengulang titik pertama di akhir, jadi output kita ikut mengulang (`docs/DATA.md` §2.3).
+  Ring berluas nol 0,64% (train) dan 0,68% (val): `area` = 0 dan tidak menutup satu piksel pun, dilewati
+  rasterisasi; untuk Fase 3, COCOeval tetap menghitungnya sebagai GT. Nama file yang sama ada di train dan val dengan
+  isi berbeda.
+- p-hash citra asli kita identik dengan file hash repo deduplikasi pada 500 citra acak train dan 500 val.
+- Waktu hash: 13,7 ms/citra di satu core, jadi 1,3 jam-inti untuk 341.058 citra (estimasi CLAUDE.md ±0,6 jam-inti).
+  Paralel 13 worker di laptop ini (Intel Core Ultra 7 165U, 14 thread, RAM 31,5 GB): 305 citra/s (±4,2× satu core),
+  jadi run penuh ±19 menit.
+
+**Menunggu:** persetujuan run hash penuh; keputusan v1.0 atau v2.0; setelah run penuh: cek hasil terhadap 114.548
+dan 3.949 (per nama, dari `val_in_train_np.json`), mosaik QA, cache instance, strata kepadatan, dan persetujuan angka
+ambangnya; data WHU 0,2 m di `data/whu/raw_0.2/` lalu konversi.

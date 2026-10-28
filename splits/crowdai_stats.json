@@ -1,0 +1,76 @@
+{
+ "created": "2026-10-28T18:41:11+08:00",
+ "git": "830494a2d114cdde7a715a524ce75702e0a25a27",
+ "train": {
+  "images": 280741,
+  "annotations": 2395553,
+  "images_without_annotations": 0,
+  "annotations_per_image": {
+   "mean": 8.532964547394217,
+   "max": 34
+  },
+  "categories": [
+   {
+    "id": 100,
+    "name": "building",
+    "supercategory": "building"
+   }
+  ],
+  "rle_annotations": 0,
+  "iscrowd_annotations": 0,
+  "annotations_without_valid_ring": 0,
+  "multi_ring_annotations": 0,
+  "polygons": {
+   "rings": 2395553,
+   "closing_vertex_repeated": 2365950,
+   "closing_vertex_not_repeated": 29603,
+   "clockwise_on_screen": 2380100,
+   "counterclockwise_on_screen": 153,
+   "zero_area": 15300,
+   "vertices_mean": 7.683023084857651,
+   "vertices_median": 6.0,
+   "vertices_max": 262
+  },
+  "files_on_disk": 280741,
+  "missing_files": 0,
+  "extra_files": 0,
+  "missing_examples": [],
+  "extra_examples": []
+ },
+ "val": {
+  "images": 60317,
+  "annotations": 515364,
+  "images_without_annotations": 0,
+  "annotations_per_image": {
+   "mean": 8.544257837757183,
+   "max": 34
+  },
+  "categories": [
+   {
+    "id": 100,
+    "name": "building",
+    "supercategory": "building"
+   }
+  ],
+  "rle_annotations": 0,
+  "iscrowd_annotations": 0,
+  "annotations_without_valid_ring": 0,
+  "multi_ring_annotations": 0,
+  "polygons": {
+   "rings": 515364,
+   "closing_vertex_repeated": 508970,
+   "closing_vertex_not_repeated": 6394,
+   "clockwise_on_screen": 511843,
+   "counterclockwise_on_screen": 33,
+   "zero_area": 3488,
+   "vertices_mean": 7.676902150712894,
+   "vertices_median": 6.0,
+   "vertices_max": 262
+  },
+  "files_on_disk": 60317,
+  "missing_files": 0,
+  "extra_files": 0,
+  "missing_examples": [],
+  "extra_examples": []
+ }
+}

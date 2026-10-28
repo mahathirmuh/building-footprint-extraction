@@ -10,6 +10,15 @@
 | Checkpoint Pix2Poly (opsional) | Google Drive / MEGA di README Pix2Poly | untuk memastikan protokol WHU |
 | SpaceNet 6 Rotterdam (opsional) | AWS Open Data (SpaceNet) | CC BY-SA 4.0 |
 
+**Arsip CrowdAI yang dipakai** (diunduh 28 Okt 2026). Browser menyimpannya sebagai `<uuid>_<nama>.tar`, padahal isinya
+gzip. Saat ekstraksi, path setiap anggota divalidasi, filter `data` tarfile dipakai, dan CRC32 gzip dicek (semua OK).
+
+| Arsip (nama di AIcrowd) | Ukuran (byte) | SHA-256 | Isi |
+|---|---|---|---|
+| `train-v1.0-DEPRECATED.tar.gz` | 4.046.033.871 | `459b2ef9c4ab0bd24a03cb6e4cb970857106df63bfd7c8356a83f818e045942c` | `train/images/` 280.741 JPG, `annotation.json`, `annotation-small.json` |
+| `val-v1.0-DEPRECATED.tar.gz` | 869.795.766 | `d88ad35ef638231977883a168bc9dadf7eb67234358b59eb83d21cd7999309e4` | `val/images/` 60.317 JPG, `annotation.json`, `annotation-small.json` |
+| `mapping-challenge-v2.0.tar.gz` | 3.404.442.444 | `cf65cb79c7caf2e79d1d7faaf954c7d1d1bfb79d3fd04fa6345b5888b21c65dc` | v2.0, lihat `docs/progress.md` Fase 1 |
+
 Struktur di `$DENSEPOLY_DATA` (default `./data`):
 
 ```
@@ -19,6 +28,7 @@ data/
 │   ├── val/images/*.jpg     val/annotation.json
 │   ├── hisup_release/*.json            # prediksi HiSup (val penuh)
 │   └── hashes/{train,val}_aug.json     # cache p-hash 6 varian (dibuat skrip)
+├── crowdai_v2/mapping-challenge-v2.0/  # v2.0; baru JSON-nya yang diekstrak, belum dipakai
 ├── whu/
 │   ├── raw_0.2/{train,val,test}/{image,label}/   # protokol A (nama folder mengikuti Pix2Poly)
 │   ├── pix2poly_224/{train,val,test}/{images/,annotation.json}
@@ -42,6 +52,29 @@ data/
 Repo menyediakan `train_hashes/train_hashes.json` (format `[{image_name, hash}]`, p-hash 64-bit dalam hex) dan
 `val_in_train_np.json` (format `[{val_image_name, val_image_hash, duplicates_in_train: [...]}]`). Pencocokan di repo
 itu adalah **kesamaan persis** string p-hash (`imagehash.phash`), bukan jarak Hamming.
+
+**Dicek dari data unduhan** (28 Okt 2026, `splits/crowdai_stats.json`):
+
+| Hal | train | val |
+|---|---|---|
+| Citra (di anotasi = di disk; tidak ada yang hilang atau lebih) | 280.741 | 60.317 |
+| Anotasi | 2.395.553 | 515.364 |
+| Anotasi per citra (rata-rata / maks); citra tanpa anotasi | 8,53 / 34; 0 | 8,54 / 34; 0 |
+| Kategori | `100` (`building`) | `100` (`building`) |
+| RLE / iscrowd / multi-ring / ring < 3 titik | 0 | 0 |
+| Ring yang titik pertamanya diulang di akhir | 98,8% (2.365.950) | 98,8% (508.970) |
+| Ring searah jarum jam di layar (y ke bawah) | 99,4% | 99,3% |
+| Ring berluas nol | 15.300 (0,64%) | 3.488 (0,68%) |
+| Verteks per ring tanpa titik penutup (median / rata-rata / maks) | 6 / 7,68 / 262 | 6 / 7,68 / 262 |
+
+- Ring berluas nol di val semuanya punya `area` = 0, hanya 1–2 titik berbeda, dan tidak menutup satu piksel pun.
+  Rasterisasi kita melewatinya (`n_empty`). COCOeval tetap menghitungnya sebagai GT (luas 0 masuk rentang `all`), jadi
+  recall maksimum semua metode turun ±0,7%. Perlakuannya diputuskan di Fase 3, sebelum evaluasi, dan sama untuk semua
+  metode.
+- Nama file hanya unik di dalam satu split: nama yang sama (misalnya `000000051689.jpg`) ada di train dan val dengan
+  isi berbeda. Kode dedup tidak pernah mencampur kedua namespace itu.
+- p-hash citra asli kita sama persis dengan `train_hashes.json` dan `val_hashes.json` repo pada 500 citra acak train
+  dan 500 citra acak val. Kedua file repo itu berisi tepat satu hash per citra untuk semua nama di disk.
 
 ### 2.2 Deduplikasi (`scripts/dedup_crowdai.py`)
 Implementasi sendiri (lebih mudah diuji), mengikuti logika repo tersebut, dengan atribusi.
@@ -70,7 +103,9 @@ fixture masuk satu klaster.
 - `pycocotools` `annToMask`; gambar urut luas menurun sehingga bangunan kecil yang tumpang tindih tidak hilang.
 - Lewati anotasi dengan `segmentation` kosong atau kurang dari 3 titik; catat jumlahnya.
 - Cek konvensi poligon GT: apakah titik pertama diulang di akhir, dan bagaimana arah putarannya. Output kita
-  mengikuti konvensi itu (memengaruhi jumlah verteks pada C-IoU dan N-ratio).
+  mengikuti konvensi itu (memengaruhi jumlah verteks pada C-IoU dan N-ratio). Hasil cek (28 Okt 2026, §2.1): 98,8%
+  ring mengulang titik pertama dan ±99,4% searah jarum jam di layar, jadi poligon output CrowdAI kita mengulang titik
+  pertama di akhir.
 - Simpan peta instance ke cache `uint16` PNG agar loader di Colab cepat.
 
 ### 2.4 Ukuran tile
