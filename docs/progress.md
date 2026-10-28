@@ -74,7 +74,7 @@ Commit pertama berisi dokumen desain apa adanya; perubahan di bawah ada di commi
 
 ---
 
-## Fase 0 — Setup repo (dikerjakan 28 Oktober 2026, menunggu persetujuan)
+## Fase 0 — Setup repo (selesai dan disetujui 28 Oktober 2026)
 
 **Dibuat:**
 - Kerangka folder sesuai `CLAUDE.md`. `pyproject.toml` berisi paket inti dan extras `[dev]`, `[eval]`, `[yolo]`;
@@ -119,3 +119,29 @@ omegaconf 2.4.0, pandas 3.1.0.
 
 **Pertanyaan terbuka:** ambang bobot kelas kontak dan pembagian val WHU (bagian klarifikasi di atas), protokol WHU,
 dan definisi kepadatan (Fase 1).
+
+---
+
+## Fase 1 — Data (sedang berjalan: kode siap, menunggu data)
+
+**Dibuat** (diuji di data sintetis; `pytest -q` → 169 tes lolos):
+- `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
+  anotasi (citra tanpa anotasi, ring tidak valid, multi-ring, piksel tumpang tindih, anotasi tertutup penuh), cek
+  konvensi titik penutup dan arah putaran, cek file di anotasi vs di disk.
+- `src/densepoly/data/dedup.py` + `scripts/dedup_crowdai.py`: p-hash 6 varian (cache per 5.000 citra, bisa
+  dilanjutkan bila terputus), union-find, split `train_dedup`/`val_tune`/`val_tune_sub`/`val_select`/test bersih,
+  laporan dibanding angka referensi, mosaik QA (10 klaster terbesar + 40 acak). `--benchmark N` mengukur waktu dulu.
+- `src/densepoly/data/density.py` + `scripts/make_density.py`: strata tertil + indeks sekunder rasio bersentuhan;
+  file strata yang sudah ada tidak ditimpa tanpa `--force`.
+- `src/densepoly/labels/contact.py` dibuat lebih awal dari jadwal Fase 2, karena indeks sekunder kepadatan
+  memakainya.
+- `scripts/prepare_crowdai.py`: `--stats` → `splits/crowdai_stats.json`; `--cache` → peta instance uint16 dan
+  `index.csv` per split.
+- Uji end-to-end pada unduhan CrowdAI palsu (duplikat hasil rotasi/flip dan citra val yang bocor dari train).
+
+**Catatan metode:** dengan r = 2, rumah yang dipisah celah 1 px tetap berlabel kontak (jarak pusat piksel 2 ≤ r),
+sesuai definisi `docs/METHOD.md` §3.2; celah 2 px tidak. `tests/test_contact.py` memastikan perilaku ini.
+
+**Menunggu:** data CrowdAI di `data/crowdai/`; ukur waktu hash (`--benchmark 1000`) dan persetujuan run penuh;
+perbandingan hash kita dengan `train_hashes.json` repo (100 citra); konvensi poligon GT CrowdAI; protokol WHU (A/B)
+dan skripnya; persetujuan definisi kepadatan beserta ambangnya.
