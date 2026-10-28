@@ -6,3 +6,7 @@
 *.tif binary
 *.pt binary
 *.npz binary
+
+*.ipynb filter=nbstripout
+*.zpln filter=nbstripout
+*.ipynb diff=ipynb
