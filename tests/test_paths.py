@@ -42,6 +42,13 @@ def test_unknown_names_are_rejected():
         paths.gt_file("crowdai", "val")
 
 
+def test_split_and_density_file_names_follow_docs_data_section_6(tmp_path):
+    assert paths.split_list("crowdai", "test").name == "crowdai_clean_test.txt"
+    assert paths.split_list("crowdai", "val_tune_sub").name == "crowdai_val_tune_sub.txt"
+    assert paths.split_list("whu", "test", root=tmp_path) == tmp_path / "whu_test.txt"
+    assert paths.density_file("crowdai", "test") == paths.REPO_ROOT / "splits" / "density_crowdai_test.json"
+
+
 def test_run_name():
     assert paths.run_name(0) == "seed0"
     assert paths.run_name(None) == "ref"

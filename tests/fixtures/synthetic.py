@@ -136,17 +136,17 @@ def make_scene(seed: int, size: int = SCENE_SIZE) -> Scene:
     return Scene(seed, image, instance_map, buildings, gap_mask, gap_pairs)
 
 
-def to_coco(scenes: Sequence[Scene], category_id: int = 100) -> dict:
+def to_coco(scenes: Sequence[Scene], category_id: int = 100, file_names: Sequence[str] | None = None) -> dict:
     """COCO ground truth for a list of scenes: image ids start at 1, one annotation per building in id order.
 
     category_id 100 follows the Pix2Poly WHU conversion (docs/DATA.md §3.2); the CrowdAI value is checked in Phase 1.
     """
+    if file_names is None:
+        file_names = [f"synthetic_{scene.seed:04d}.png" for scene in scenes]
     images, annotations = [], []
-    for image_id, scene in enumerate(scenes, start=1):
+    for image_id, (scene, file_name) in enumerate(zip(scenes, file_names, strict=True), start=1):
         height, width = scene.instance_map.shape
-        images.append(
-            {"id": image_id, "file_name": f"synthetic_{scene.seed:04d}.png", "height": height, "width": width}
-        )
+        images.append({"id": image_id, "file_name": file_name, "height": height, "width": width})
         for b in scene.buildings:
             rle = mask_utils.merge(mask_utils.frPyObjects([b.polygon.ravel().tolist()], height, width))
             (x0, y0), (x1, y1) = b.polygon.min(axis=0), b.polygon.max(axis=0)

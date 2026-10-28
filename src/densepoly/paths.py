@@ -48,6 +48,19 @@ def splits_dir() -> Path:
     return REPO_ROOT / "splits"
 
 
+def split_list(dataset: str, split: str, root: Path | None = None) -> Path:
+    """Text file with one image file name per line (docs/DATA.md §6); CrowdAI's test split is the clean test."""
+    _check(dataset, split)
+    name = "clean_test" if (dataset, split) == ("crowdai", "test") else split
+    return (root or splits_dir()) / f"{dataset}_{name}.txt"
+
+
+def density_file(dataset: str, split: str, root: Path | None = None) -> Path:
+    """Frozen density strata of a split (docs/DATA.md §4)."""
+    _check(dataset, split)
+    return (root or splits_dir()) / f"density_{dataset}_{split}.json"
+
+
 def run_name(seed: int | None) -> str:
     """Run folder name: ``seed<k>`` for trained models, ``ref`` for seedless runs (B0, oracle, HiSup release)."""
     return "ref" if seed is None else f"seed{seed}"
@@ -58,10 +71,15 @@ def dataset_dir(dataset: str) -> Path:
     return data_root() / dataset
 
 
+def instance_dir(dataset: str, split: str) -> Path:
+    """Folder of a split's cached instance maps (one uint16 PNG per image plus index.csv)."""
+    _check(dataset, split)
+    return data_root() / "instances" / dataset / split
+
+
 def instance_cache(dataset: str, split: str, image_id: int | str) -> Path:
     """uint16 PNG instance map of one image."""
-    _check(dataset, split)
-    return data_root() / "instances" / dataset / split / f"{image_id}.png"
+    return instance_dir(dataset, split) / f"{image_id}.png"
 
 
 def prior_cache(dataset: str, split: str, image_id: int | str) -> Path:
