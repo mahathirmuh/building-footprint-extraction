@@ -47,8 +47,10 @@ Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28
   sulit tidak dihukum. Selain itu `mask_gti`/`N_GT` tidak di-reset, sehingga pada citra yang punya prediksi tetapi tanpa
   anotasi GT nilainya basi (atau `UnboundLocalError` bila itu citra pertama). Fungsinya juga hanya mencetak, tidak
   me-return nilai.
-  - `CIoU_p2p` = aturan di atas dengan `mask_gti`/`N_GT` di-reset per citra. Untuk WHU protokol A tidak mengubah angka,
-    karena setiap patch punya minimal satu anotasi (patch negatif diberi anotasi kosong).
+  - `CIoU_p2p` = aturan di atas dengan `mask_gti`/`N_GT` di-reset per citra. Di WHU protokol A ada patch yang tidak
+    punya anotasi GT sama sekali (patch dengan > 5 piksel bangunan yang semua poligonnya terbuang filter,
+    `docs/DATA.md` §3.2), jadi reset bisa sedikit mengubah angka dibanding skrip asli. (Koreksi 28 Okt 2026: semula
+    ditulis bahwa setiap patch WHU punya minimal satu anotasi.)
   - `CIoU` (utama) = rumus yang sama atas **semua** citra split: tanpa prediksi dan GT tidak kosong → 0; keduanya
     kosong → 1.
 - **PoLiS (`polis.py`)**: pencocokan memakai IoU **bounding box** (bukan mask) > 0,5; tiap GT mengambil prediksi
@@ -63,7 +65,11 @@ Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28
   dihitung per poligon (hasil gabungan) dan dikumpulkan dari semua citra. Akibatnya, **dinding antar-rumah yang
   bersentuhan hilang** dari GT maupun prediksi, padahal di situlah N1 diklaim. Karena itu klaim N1 memakai `MTA_inst`.
 - **COCOeval**: `evaluate()` menjalankan `p.imgIds = list(np.unique(p.imgIds))`, sehingga duplikat `imgIds`
-  dibuang. Ini memengaruhi bootstrap (§4).
+  dibuang. Ini memengaruhi bootstrap (§4). Selain itu `evaluateImg` menyimpan id GT pasangan di `dtm`, dan
+  `accumulate` membaca `dtm` = 0 sebagai tidak ter-match. Akibatnya, deteksi yang cocok dengan GT ber-`id` 0 dihitung
+  positif palsu (dicek di `cocoeval.py` pycocotools 2.0.11). Id anotasi WHU hasil konversi Pix2Poly mulai dari 0.
+- **Anotasi negatif WHU** (`segmentation: []`): `mask.frPyObjects([], h, w)` pycocotools melempar `IndexError`
+  (dicek 28 Okt 2026). Cara skrip metrik Pix2Poly menanganinya dicek saat vendoring di Fase 3.
 
 ### 2.3 Aturan vendor
 - Salin `polis.py`, `angle_eval.py`, `cIoU.py` dari `Pix2Poly/eval/hisup_eval_utils/metrics/` (MIT) ke

@@ -228,12 +228,12 @@ python scripts/tables.py && python scripts/figures.py
 
 ## Yang perlu saya putuskan / lengkapi
 
-- **Protokol WHU** (dibahas di Fase 1): default **A** = protokol Pix2Poly 0,2 m (angka C-IoU sebanding dengan
-  slide: HiSup 79,62; Pix2Poly 81,63). Alternatif **B** = tile 0,3 m 512² seperti di slide (tidak sebanding langsung
-  dengan angka paper).
+- **Protokol WHU: A dipilih** (28 Okt 2026) = protokol Pix2Poly 0,2 m (angka C-IoU sebanding dengan slide: HiSup
+  79,62; Pix2Poly 81,63). Alternatif B (tile 0,3 m 512² seperti di slide) tidak dipakai.
 - Akun AIcrowd dan unduhan CrowdAI (`train.tar.gz`, `val.tar.gz`); unduhan WHU; ruang Google Drive: `TODO`.
 - Tier GPU Colab (T4 gratis / Pro): `TODO`. Repo GitHub privat + token di Colab Secrets: `TODO`.
-- Definisi kepadatan final (default: jumlah bangunan per tile, tertil): konfirmasi di Fase 1.
+- Definisi kepadatan: default disetujui (28 Okt 2026), yaitu jumlah bangunan GT per tile dibagi tertil. Angka ambangnya
+  disetujui setelah dihitung dari data, lalu dibekukan.
 - Kriteria keputusan di `docs/EXPERIMENTS.md` §8 (termasuk ambang "mendekati SOTA" ≤ 3 AP dan aturan pemilihan FULL
   final) sudah dibekukan. Kalau mau diubah, ubah **sebelum Fase 3** dan tulis alasannya; setelah itu tidak boleh.
 - Sitasi yang perlu dicek: Dahatonde dkk. (2024) [lengkapi]; Huang & Zhang (2011) halaman/DOI; halaman Pix2Poly

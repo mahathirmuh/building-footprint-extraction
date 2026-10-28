@@ -124,7 +124,7 @@ dan definisi kepadatan (Fase 1).
 
 ## Fase 1 — Data (sedang berjalan: kode siap, menunggu data)
 
-**Dibuat** (diuji di data sintetis; `pytest -q` → 169 tes lolos):
+**Dibuat** (diuji di data sintetis; `pytest -q` → 186 tes lolos):
 - `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
   anotasi (citra tanpa anotasi, ring tidak valid, multi-ring, piksel tumpang tindih, anotasi tertutup penuh), cek
   konvensi titik penutup dan arah putaran, cek file di anotasi vs di disk.
@@ -138,10 +138,26 @@ dan definisi kepadatan (Fase 1).
 - `scripts/prepare_crowdai.py`: `--stats` → `splits/crowdai_stats.json`; `--cache` → peta instance uint16 dan
   `index.csv` per split.
 - Uji end-to-end pada unduhan CrowdAI palsu (duplikat hasil rotasi/flip dan citra val yang bocor dari train).
+- WHU protokol A: `src/densepoly/data/whu.py` + `scripts/prepare_whu_pix2poly.py`, port
+  `data_preprocess/whu_buildings_to_coco.py` Pix2Poly (commit `4e4c003`, MIT; aslinya dari HiSup). Salinan persis ada
+  di `third_party/pix2poly/`. Tes membuktikan poligon (WKB), grid patch, dan seluruh loop patch identik dengan kode
+  asli. Ditambah `touching_pairs` untuk mengecek COCO resmi WHU (`docs/DATA.md` §3.4) dan uji end-to-end pada unduhan
+  WHU palsu. `make_density.py` kini juga menerima `--data whu`.
+
+**Keputusan (28 Okt 2026):** protokol WHU **A**; definisi kepadatan default (jumlah bangunan GT per tile, tertil),
+dengan angka ambang menunggu data. `val_tune_sub` WHU = tile utuh acak (seed 0) sampai ≥ 1.000 patch.
+
+**Temuan yang bertentangan dengan dokumen** (dari membaca kode Pix2Poly utuh; dokumen terkait sudah dikoreksi):
+- Sampel negatif WHU adalah patch dengan ≤ 5 piksel bangunan. Patch dengan > 5 piksel yang semua poligonnya terbuang
+  filter tidak punya anotasi sama sekali, jadi klaim `docs/EVALUATION.md` §2.2 bahwa setiap patch WHU punya minimal
+  satu anotasi tidak tepat. Detail lain (lubang sebagai ring tambahan, kontur lewat pusat piksel, id mulai 0, urutan
+  `os.listdir`) dicatat di `docs/DATA.md` §3.2.
+- Untuk Fase 3: `frPyObjects([])` pycocotools melempar `IndexError` pada anotasi negatif WHU, dan COCOeval menghitung
+  deteksi yang cocok dengan GT ber-id 0 sebagai positif palsu (`cocoeval.py` baris 295 dan 375).
 
 **Catatan metode:** dengan r = 2, rumah yang dipisah celah 1 px tetap berlabel kontak (jarak pusat piksel 2 ≤ r),
 sesuai definisi `docs/METHOD.md` §3.2; celah 2 px tidak. `tests/test_contact.py` memastikan perilaku ini.
 
 **Menunggu:** data CrowdAI di `data/crowdai/`; ukur waktu hash (`--benchmark 1000`) dan persetujuan run penuh;
-perbandingan hash kita dengan `train_hashes.json` repo (100 citra); konvensi poligon GT CrowdAI; protokol WHU (A/B)
-dan skripnya; persetujuan definisi kepadatan beserta ambangnya.
+perbandingan hash kita dengan `train_hashes.json` repo (100 citra); konvensi poligon GT CrowdAI; data WHU 0,2 m di
+`data/whu/raw_0.2/` lalu konversi; persetujuan angka ambang kepadatan.

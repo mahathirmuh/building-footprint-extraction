@@ -91,25 +91,36 @@ Tidak ada resize.
 Halaman resmi tidak menyebut apakah tile punya georeferensi; yang disebut hanya bahwa citra asli bisa disusun ulang
 dari urutan pemotongan.
 
-### 3.2 Protokol A (default): mengikuti Pix2Poly
+### 3.2 Protokol A (dipilih 28 Okt 2026): mengikuti Pix2Poly
 Angka WHU di slide (HiSup C-IoU 79,62; Pix2Poly 81,63; FFL 32,19 vs 54,52) diukur Pix2Poly dengan protokol ini.
 Hasil pembacaan `data_preprocess/whu_buildings_to_coco.py`:
 - Input `WHU_aerial_0.2/{split}/image` dan `label` (raster 0,2 m).
 - Dipotong menjadi patch **224 × 224 dengan overlap 34 px**.
 - GT dibuat dari mask biner: `skimage.measure.label` (CC) → `cv2.findContours` (`RETR_TREE`) → `shapely.simplify(1.8,
   preserve_topology=False)`; poligon dengan lebar atau tinggi bbox ≤ 5 px dibuang.
-- Patch tanpa bangunan tetap dimasukkan sebagai sampel negatif (anotasi dengan `segmentation` kosong);
+- Patch dengan **≤ 5 piksel bangunan** dimasukkan sebagai sampel negatif (satu anotasi dengan `segmentation` kosong);
   `category_id = 100`.
 - Angka di paper diukur di split **test**, dengan `evaluation.py` Pix2Poly (`--eval-type ciou|polis|angle|coco_iou`).
 
+Detail yang baru terlihat setelah kode dibaca utuh (commit `4e4c003`, 28 Okt 2026). Semuanya dipertahankan:
+- Patch terakhir di tiap baris dan kolom ditempel ke tepi tile (stride 190, lalu `W − 224`).
+- CC memakai konektivitas 8, jadi bangunan yang hanya bersentuhan diagonal pun menyatu. Kontur `CHAIN_APPROX_SIMPLE`
+  melewati pusat piksel tepi dan di-clip ke [0, 223], sehingga poligon ±0,5 px lebih kecil dari mask di tiap sisi.
+- Lubang > 10 px² ditulis sebagai ring tambahan di `segmentation`; pycocotools mengisinya lagi saat rasterisasi.
+- Patch dengan > 5 piksel bangunan yang semua poligonnya terbuang filter **tidak punya anotasi sama sekali**
+  (jumlahnya dicatat di `splits/whu_stats.json`).
+- Id citra dan anotasi mulai dari 0; urutan tile mengikuti `os.listdir`, jadi penomoran bisa berbeda antar-mesin.
+
 Konsekuensi untuk kita:
-1. `scripts/prepare_whu_pix2poly.py` menjalankan logika yang sama tanpa diubah (atribusi MIT).
+1. `src/densepoly/data/whu.py` dan `scripts/prepare_whu_pix2poly.py` menjalankan logika yang sama tanpa diubah
+   (atribusi MIT). Salinan persis skrip asli ada di `third_party/pix2poly/`, dan tes membuktikan hasilnya identik.
+   Bedanya hanya urutan tile yang diurutkan (sorted), supaya penomoran bisa direproduksi.
 2. Model WHU dilatih dari **raster poligon COCO hasil konversi** (bukan dari label raster asli), supaya konvensi GT
    konsisten (poligon GT dari `findContours` sedikit menyusut, dan model ikut mempelajari itu).
 3. GT WHU berasal dari CC, jadi bangunan yang bersentuhan menjadi satu instance. WHU dipakai untuk banding
    SOTA, **bukan** untuk klaim pemisahan rumah berdempetan. Klaim itu diuji di CrowdAI.
-4. `val_tune` WHU = split val Pix2Poly. Pembagiannya menjadi `val_tune_sub` dan `val_select` ditetapkan bersama
-   protokol WHU di Fase 1.
+4. `val_tune` WHU = split val Pix2Poly. `val_tune_sub` = tile utuh yang diambil acak (seed 0) sampai berisi
+   ≥ 1.000 patch, sisanya `val_select`. Pembagian dilakukan per tile karena patch satu tile saling tumpang tindih 34 px.
 
 ### 3.3 Protokol B (alternatif): tile 0,3 m seperti slide
 Instance dari CC; tidak bisa dibandingkan langsung dengan angka C-IoU di paper. Kalau dipilih, banding SOTA di WHU
