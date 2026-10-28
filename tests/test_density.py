@@ -27,11 +27,21 @@ def test_every_tile_lands_in_exactly_one_stratum():
 
 
 def test_val_tune_reuses_the_test_thresholds():
-    thresholds = {"main": [3.0, 6.0], "secondary": [0.2, 0.6]}
+    thresholds = {"main": [3.0, 6.0]}
     record = density.strata_record({1: 2, 2: 50, 3: 0}, {1: 0.0, 2: 1.0, 3: None}, thresholds)
     assert record["thresholds"] == thresholds
     assert record["main"]["strata"] == {"kosong": [3], "jarang": [1], "sedang": [], "padat": [2]}
-    assert record["secondary"]["strata"] == {"kosong": [3], "jarang": [1], "sedang": [], "padat": [2]}
+
+
+def test_secondary_index_separates_tiles_with_touching_buildings():
+    """Most CrowdAI tiles have no touching building, so tertiles of the touching ratio would both be 0; the secondary
+    index is therefore binary and needs no threshold."""
+    counts = {1: 3, 2: 5, 3: 8, 4: 4, 5: 0}
+    ratios = {1: 0.0, 2: 0.0, 3: 0.0, 4: 0.25, 5: None}
+    record = density.strata_record(counts, ratios)
+    assert record["secondary"]["strata"] == {"kosong": [5], "tidak_bersentuhan": [1, 2, 3], "bersentuhan": [4]}
+    assert record["secondary"]["sizes"] == {"kosong": 1, "tidak_bersentuhan": 3, "bersentuhan": 1}
+    assert list(record["thresholds"]) == ["main"]
 
 
 def test_touching_ratio_on_a_synthetic_scene():

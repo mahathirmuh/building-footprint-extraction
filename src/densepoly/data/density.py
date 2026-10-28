@@ -1,10 +1,11 @@
 """Density strata of a split, contribution N2 (docs/DATA.md §4).
 
 Main index: n = number of non-empty GT instances in a tile. The thresholds are the tertiles of n over the test tiles
-with n >= 1; strata are kosong (n = 0), jarang (n <= q33), sedang (q33 < n <= q67) and padat (n > q67). val_tune
-reuses the test thresholds. Secondary index (robustness, appendix): the touching ratio, i.e. the fraction of a tile's
-instances that own contact pixels (docs/METHOD.md §3.2). Both depend on GT only; the file is frozen before any model
-is evaluated.
+with n >= 1; strata are kosong (n = 0), jarang (n <= q33), sedang (q33 < n <= q67) and padat (n > q67). val_tune and
+val_clean reuse the test thresholds. Secondary index (robustness, appendix): whether the tile has touching buildings,
+i.e. at least one instance owning contact pixels (docs/METHOD.md §3.2). Tertiles of the touching ratio were planned,
+but 95% of the CrowdAI test tiles have no touching building, so both tertiles are 0 (docs/progress.md, 28 Oct 2026).
+Both indices depend on GT only; the file is frozen before any model is evaluated.
 """
 
 from __future__ import annotations
@@ -16,11 +17,12 @@ import numpy as np
 from densepoly.labels.contact import contact_mask
 
 STRATA = ("kosong", "jarang", "sedang", "padat")
+TOUCH_STRATA = ("kosong", "tidak_bersentuhan", "bersentuhan")
 DEFINITION = {
     "main": "n = number of non-empty GT instances per tile; tertiles of n over test tiles with n >= 1; "
     "kosong: n = 0, jarang: n <= q33, sedang: q33 < n <= q67, padat: n > q67",
-    "secondary": "touching ratio = fraction of a tile's instances with contact pixels (docs/METHOD.md §3.2); "
-    "tertiles over test tiles with at least one building; kosong: no building",
+    "secondary": "bersentuhan: at least one GT instance owns contact pixels, i.e. another building lies within the "
+    "contact radius (docs/METHOD.md §3.2); tidak_bersentuhan: none does; kosong: no building",
 }
 
 
@@ -50,19 +52,23 @@ def assign(values: dict[int, float | None], q33: float, q67: float) -> dict[str,
     return strata
 
 
+def assign_touching(ratios: dict[int, float | None]) -> dict[str, list[int]]:
+    """Image ids per secondary stratum: kosong (no building), tidak_bersentuhan (ratio 0) or bersentuhan (ratio > 0)."""
+    strata: dict[str, list[int]] = {name: [] for name in TOUCH_STRATA}
+    for image_id, v in sorted(ratios.items()):
+        strata["kosong" if v is None else "bersentuhan" if v > 0 else "tidak_bersentuhan"].append(image_id)
+    return strata
+
+
 def strata_record(
     counts: dict[int, int], ratios: dict[int, float | None], thresholds: dict[str, list[float]] | None = None
 ) -> dict:
-    """Strata of one split under both indices. thresholds=None derives them from these tiles (the test split);
-    otherwise the given {"main": [q33, q67], "secondary": [q33, q67]} are reused (val_tune)."""
+    """Strata of one split under both indices. thresholds=None derives the main tertiles from these tiles (the test
+    split); otherwise the given {"main": [q33, q67]} are reused (val_tune, val_clean). The secondary index has no
+    threshold."""
     main = {i: (float(n) if n > 0 else None) for i, n in counts.items()}
-    if thresholds is None:
-        thresholds = {
-            "main": list(tertiles(v for v in main.values() if v is not None)),
-            "secondary": list(tertiles(v for v in ratios.values() if v is not None)),
-        }
-    record = {"definition": DEFINITION, "thresholds": thresholds}
-    for index, values in (("main", main), ("secondary", ratios)):
-        strata = assign(values, *thresholds[index])
+    q33, q67 = tertiles(v for v in main.values() if v is not None) if thresholds is None else thresholds["main"]
+    record = {"definition": DEFINITION, "thresholds": {"main": [q33, q67]}}
+    for index, strata in (("main", assign(main, q33, q67)), ("secondary", assign_touching(ratios))):
         record[index] = {"sizes": {k: len(v) for k, v in strata.items()}, "strata": strata}
     return record
