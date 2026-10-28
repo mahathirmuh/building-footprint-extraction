@@ -1,0 +1,42 @@
+{
+ "train_dedup": {
+  "created": "2026-10-28T20:28:52+08:00",
+  "git": "a8424dce352adbbb9b3b9e3847713e9b5fb6612a",
+  "images": 23427,
+  "instances": 198284,
+  "skipped": 0,
+  "empty": 1344,
+  "overlap_px": 238902,
+  "hidden": 0
+ },
+ "val_tune": {
+  "created": "2026-10-28T20:29:32+08:00",
+  "git": "a8424dce352adbbb9b3b9e3847713e9b5fb6612a",
+  "images": 2928,
+  "instances": 24802,
+  "skipped": 0,
+  "empty": 170,
+  "overlap_px": 17793,
+  "hidden": 0
+ },
+ "test": {
+  "created": "2026-10-28T20:30:12+08:00",
+  "git": "a8424dce352adbbb9b3b9e3847713e9b5fb6612a",
+  "images": 2928,
+  "instances": 24964,
+  "skipped": 0,
+  "empty": 181,
+  "overlap_px": 30039,
+  "hidden": 0
+ },
+ "val_clean": {
+  "created": "2026-10-28T20:30:25+08:00",
+  "git": "a8424dce352adbbb9b3b9e3847713e9b5fb6612a",
+  "images": 212,
+  "instances": 1769,
+  "skipped": 0,
+  "empty": 17,
+  "overlap_px": 0,
+  "hidden": 0
+ }
+}

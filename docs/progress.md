@@ -228,5 +228,21 @@ lintas-versi).
   `val_full`), `crowdai_val_clean_clusters.json`. Dokumen yang disesuaikan: CLAUDE.md #7 dan #11, `docs/DATA.md`
   §2.2 dan §6, `docs/EXPERIMENTS.md` RQ3, §6, dan §8.5, PLAN Fase 1, 3, dan 9, serta `docs/COLAB.md` §1.
 
-**Menunggu:** keputusan desain test (A, E, atau B/C); setelah itu cache instance dan strata kepadatan (angka ambang
-minta persetujuan dulu); data WHU 0,2 m di `data/whu/raw_0.2/` lalu konversi.
+**Cache instance** (28 Okt 2026, `splits/crowdai_raster_stats.json`): `train_dedup` 23.427 citra (198.284 instance),
+`val_tune` 2.928 (24.802), `test` 2.928 (24.964), `val_clean` 212 (1.769). Ring berluas nol yang dilewati: 1.344,
+170, 181, dan 17. Tidak ada anotasi yang tertutup penuh oleh anotasi lain.
+
+**Strata kepadatan** (dihitung 28 Okt 2026; **menunggu persetujuan, belum dibekukan**):
+- Indeks utama: tertil jumlah bangunan per tile di test = **6 dan 11**. Test: jarang 1.158 tile (3.870 bangunan),
+  sedang 909 (8.219), padat 857 (12.875), kosong 4. `val_tune`: 1.191 / 873 / 864 / 0. `val_clean`: 91 / 60 / 61 / 0.
+- Indeks sekunder (rasio bersentuhan, r = 2) **degenerasi**: 95% tile test tidak punya bangunan bersentuhan, jadi
+  kedua tertilnya 0. Usulan: ganti dengan dua kelompok, "bersentuhan" (ada pasangan berjarak ≤ 2 px) vs "tidak"
+  (test 146 vs 2.778 tile; `val_tune` 127 vs 2.801; `val_clean` 10 vs 202).
+- Temuan: bangunan bersentuhan sangat jarang di CrowdAI. Bangunan yang punya tetangga dalam ≤ 1, 2, 3, 5, dan 10 px
+  di test: 0,30%, 1,33%, 3,08%, 8,32%, dan 34,7%. Piksel kontak (r = 2) hanya 0,01% piksel bangunan. Per strata
+  (≤ 2 px / ≤ 5 px): jarang 1,0% / 4,4%, sedang 1,2% / 6,4%, padat 1,5% / 10,7%. Akibatnya kelas kontak punya
+  sangat sedikit contoh, dan klaim "rumah berdempetan" hanya bisa diuji pada subset kecil. Usulan: desain tidak
+  diubah sekarang; dibahas lagi di Fase 2 (fraksi kontak per dataset, radius r) dan Fase 5 (bobot kelas kontak).
+
+**Menunggu:** persetujuan ambang 6 dan 11 serta indeks sekunder "bersentuhan" (lalu file strata dibekukan); data WHU
+0,2 m di `data/whu/raw_0.2/` lalu konversi dan strata WHU.
