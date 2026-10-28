@@ -1,0 +1,7 @@
+# FULL-P0: B4 + θ head (5 outputs, loss + λ·L_θ) + θ-guided regularization; RGB input.
+exp: full_p0
+input: {priors: []}
+model: {arch: unetplusplus, classes: 5}
+loss: {type: ce_dice_theta, edge_weight: true}
+train: {enabled: true}
+postproc: {instance: watershed, polygon: theta}

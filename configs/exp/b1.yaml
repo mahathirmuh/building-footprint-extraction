@@ -1,0 +1,7 @@
+# B1: U-Net EfficientNet-B4, RGB, binary output, BCE + Dice, connected components, raw polygons.
+exp: b1
+input: {priors: []}
+model: {arch: unet, classes: 1}
+loss: {type: bce_dice, edge_weight: false}
+train: {enabled: true}
+postproc: {instance: cc, polygon: raw}

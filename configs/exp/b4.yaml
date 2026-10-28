@@ -1,0 +1,7 @@
+# B4: B3 with 3 classes (background / building / contact), w·CE + Dice, marker watershed, raw polygons.
+exp: b4
+input: {priors: []}
+model: {arch: unetplusplus, classes: 3}
+loss: {type: ce_dice, edge_weight: true}
+train: {enabled: true}
+postproc: {instance: watershed, polygon: raw}

@@ -1,0 +1,16 @@
+# WHU aerial, protocol A by default (Pix2Poly: 0.2 m, 224 × 224 patches, docs/DATA.md §3.2); the protocol is
+# confirmed in Phase 1. Pixel parameters are the CrowdAI ones × 1.5 for lengths (odd SE lengths) and × 2.25 for
+# areas (docs/METHOD.md §10).
+data:
+  name: whu
+  tile_size: 224
+  pad_to: 224
+
+labels:
+  contact_radius_px: 3
+  theta_min_area_px: 45
+  edge_weight_sigma_px: 4.5
+
+priors:
+  mbi_scales_px: [15, 30, 45, 60, 75, 90, 105, 120]
+  gap_se_length_px: 13

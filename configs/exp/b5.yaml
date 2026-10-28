@@ -1,0 +1,7 @@
+# B5: inference only; B4 checkpoint + regularization guided by the minAreaRect θ of each instance.
+exp: b5
+input: {priors: []}
+model: {arch: unetplusplus, classes: 3, source_exp: b4}
+loss: {type: none, edge_weight: false}
+train: {enabled: false}
+postproc: {instance: watershed, polygon: mar}

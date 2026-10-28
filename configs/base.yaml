@@ -1,0 +1,67 @@
+# Schema and shared defaults of every experiment (docs/EXPERIMENTS.md §3, docs/METHOD.md §10).
+# configs/data/<dataset>.yaml and configs/exp/<exp>.yaml may only override keys defined here;
+# ??? marks values that one of those layers must provide.
+
+exp: ???                      # experiment code, equal to the exp file name (b0 ... full_y)
+seed: 0
+
+data:
+  name: ???                   # crowdai | whu, equal to the data file name
+  tile_size: ???              # native tile side (px); never resized (CLAUDE.md, decision 6)
+  pad_to: ???                 # padded side, multiple of 32: image reflect-padded, labels set to ignore_index
+  ignore_index: 255
+
+labels:                       # docs/METHOD.md §3
+  contact_radius_px: ???      # r
+  theta_min_area_px: ???      # A_θ
+  edge_weight_alpha: 5.0      # α
+  edge_weight_sigma_px: ???   # σ
+
+priors:                       # docs/METHOD.md §2; checked visually in Phase 2, then frozen
+  mbi_scales_px: ???          # s
+  gap_se_length_px: ???       # L_g
+  gap_mode: contrast          # max | contrast
+
+input:
+  priors: ???                 # [] (P0) | [mbi] (P1) | [mbi, gap] (P2); in_channels = 3 + len(priors)
+
+model:                        # docs/METHOD.md §4
+  arch: ???                   # unetplusplus | unet | classical
+  encoder: efficientnet-b4
+  encoder_weights: imagenet   # tests always use null
+  classes: ???                # output channels: 1 binary | 3 classes | 5 = 3 classes + (sin 4θ, cos 4θ)
+  source_exp: null            # inference-only configs: experiment whose checkpoint (same seed) is used
+
+loss:                         # docs/METHOD.md §5
+  type: ???                   # bce_dice | ce_dice | ce_dice_theta | none
+  edge_weight: ???            # true: w = 1 + α·exp(−d²/2σ²); false: w = 1
+  contact_class_weight: 1.0   # decided once in Phase 5 for all 3-class models
+  theta_lambda: 1.0           # λ, fixed before FULL seed 0 (PLAN.md Phase 6)
+
+train:                        # docs/EXPERIMENTS.md §3
+  enabled: ???
+  epochs: null                # E: same for all runs of a dataset, set after measuring it/s (Phase 5)
+  batch_size: 16
+  min_micro_batch: 8          # BatchNorm needs ≥ 8 samples; gradient accumulation does not help BN
+  optimizer: adamw
+  lr: 2.0e-4
+  weight_decay: 1.0e-4
+  warmup_epochs: 1
+  min_lr: 1.0e-6
+  amp: true
+  num_workers: 2
+  checkpoint_every_min: 20
+  select_split: val_select    # checkpoint selection
+  select_metric: fg_iou
+
+augment:                      # geometric: RGB + priors + instance map; photometric: RGB only
+  p_flip_h: 0.5
+  p_flip_v: 0.5
+  p_rot90: 0.5
+  p_transpose: 0.5
+  photometric_limit: 0.1      # brightness/contrast ±0.1
+  p_photometric: 0.5
+
+postproc:                     # identity only; tuned values are frozen in configs/postproc/<dataset>/<exp>.yaml
+  instance: ???               # classical | cc | watershed | watershed_yolo
+  polygon: ???                # raw | mar | theta

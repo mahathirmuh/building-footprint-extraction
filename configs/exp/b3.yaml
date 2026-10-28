@@ -1,0 +1,7 @@
+# B3: B2 with boundary-weighted BCE (w·BCE + Dice).
+exp: b3
+input: {priors: []}
+model: {arch: unetplusplus, classes: 1}
+loss: {type: bce_dice, edge_weight: true}
+train: {enabled: true}
+postproc: {instance: cc, polygon: raw}

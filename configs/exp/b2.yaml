@@ -1,0 +1,7 @@
+# B2: B1 with the U-Net++ decoder.
+exp: b2
+input: {priors: []}
+model: {arch: unetplusplus, classes: 1}
+loss: {type: bce_dice, edge_weight: false}
+train: {enabled: true}
+postproc: {instance: cc, polygon: raw}

@@ -1,0 +1,8 @@
+# FULL+Y (optional): FULL final + YOLOv8n-OBB seeds merged into the markers (docs/METHOD.md §8); inference only.
+# source_exp and input.priors are filled in once FULL final (FULL-P0 or FULL-P2) is chosen in Phase 6.
+exp: full_y
+input: {priors: null}
+model: {arch: unetplusplus, classes: 5, source_exp: null}
+loss: {type: none, edge_weight: false}
+train: {enabled: false}
+postproc: {instance: watershed_yolo, polygon: theta}

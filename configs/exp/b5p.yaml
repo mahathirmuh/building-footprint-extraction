@@ -1,0 +1,8 @@
+# B5′: inference only; FULL-P0 checkpoint, but regularized with the minAreaRect θ instead of the head θ
+# (separates the effect of training θ from the effect of guiding with θ, docs/EXPERIMENTS.md §1).
+exp: b5p
+input: {priors: []}
+model: {arch: unetplusplus, classes: 5, source_exp: full_p0}
+loss: {type: none, edge_weight: false}
+train: {enabled: false}
+postproc: {instance: watershed, polygon: mar}

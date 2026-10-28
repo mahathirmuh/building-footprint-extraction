@@ -1,0 +1,7 @@
+# FULL-P1: FULL-P0 + MBI input channel (zero-initialised first-conv weights, docs/METHOD.md §2.5).
+exp: full_p1
+input: {priors: [mbi]}
+model: {arch: unetplusplus, classes: 5}
+loss: {type: ce_dice_theta, edge_weight: true}
+train: {enabled: true}
+postproc: {instance: watershed, polygon: theta}

@@ -1,0 +1,8 @@
+# B0: classical baseline, no training: brightness -> MBI -> max(Otsu, t_min) -> morphology -> watershed
+# (docs/METHOD.md §8). MBI is computed inside B0, so there is no network input.
+exp: b0
+input: {priors: []}
+model: {arch: classical, encoder: null, encoder_weights: null, classes: null}
+loss: {type: none, edge_weight: false}
+train: {enabled: false}
+postproc: {instance: classical, polygon: mar}

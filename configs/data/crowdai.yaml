@@ -1,0 +1,15 @@
+# CrowdAI Mapping Challenge (docs/DATA.md §2): 300 × 300 tiles, GSD ≈ 0.3 m.
+# Pixel parameters from docs/METHOD.md §10.
+data:
+  name: crowdai
+  tile_size: 300
+  pad_to: 320
+
+labels:
+  contact_radius_px: 2
+  theta_min_area_px: 20
+  edge_weight_sigma_px: 3.0
+
+priors:
+  mbi_scales_px: [11, 21, 31, 41, 51, 61, 71, 81]
+  gap_se_length_px: 9
