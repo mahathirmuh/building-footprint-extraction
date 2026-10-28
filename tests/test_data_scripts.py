@@ -8,6 +8,7 @@ import pytest
 from densepoly import paths
 from densepoly.utils.io import read_json, read_lines, read_png
 from tests.fixtures.fake_crowdai import make_fake_crowdai
+from tests.fixtures.fake_whu import make_fake_whu
 
 
 def load_script(name):
@@ -58,3 +59,28 @@ def test_phase1_scripts_on_a_fake_download(tmp_path, monkeypatch):
     tune_strata = read_json(paths.density_file("crowdai", "val_tune", splits_dir))
     assert tune_strata["thresholds"] == test_strata["thresholds"]
     assert sorted(i for ids in test_strata["main"]["strata"].values() for i in ids) == [1, 2]
+
+
+def test_whu_scripts_on_a_fake_download(tmp_path, monkeypatch):
+    make_fake_whu(tmp_path / "data")
+    monkeypatch.setenv("DENSEPOLY_DATA", str(tmp_path / "data"))
+    splits_dir = tmp_path / "splits"
+    common = ["--splits-dir", str(splits_dir)]
+
+    load_script("prepare_whu_pix2poly").main(common)
+    split = {s: read_lines(paths.split_list("whu", s, splits_dir)) for s in ("train_dedup", "val_tune", "test")}
+    assert [len(split[s]) for s in ("train_dedup", "val_tune", "test")] == [18, 18, 9]  # 9 patches per 512² tile
+    assert read_lines(paths.split_list("whu", "val_tune_sub", splits_dir)) == split["val_tune"]  # fewer than 1,000
+    stats = read_json(splits_dir / "whu_stats.json")
+    assert stats["test"]["patches"] == 9 and stats["test"]["tiles"] == 1
+    test_coco = read_json(paths.annotation_file("whu", "test"))
+    assert [img["file_name"] for img in test_coco["images"]] == split["test"]
+
+    load_script("prepare_whu_pix2poly").main(["--official-coco", str(paths.annotation_file("whu", "test")), *common])
+    assert read_json(splits_dir / "whu_stats.json")["official_coco"]["touching_pairs"] == 0  # CC never touch
+
+    make_density = load_script("make_density")
+    make_density.main(["--data", "whu", "--split", "test", *common])
+    make_density.main(["--data", "whu", "--split", "val_tune", *common])
+    strata = read_json(paths.density_file("whu", "test", splits_dir))
+    assert strata["contact_radius_px"] == 3 and sum(strata["main"]["sizes"].values()) == 9
