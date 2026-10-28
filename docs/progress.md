@@ -122,7 +122,7 @@ dan definisi kepadatan (Fase 1).
 
 ---
 
-## Fase 1 — Data (sedang berjalan: data CrowdAI siap, menunggu persetujuan run hash penuh)
+## Fase 1 — Data (sedang berjalan: deduplikasi CrowdAI)
 
 **Dibuat** (diuji di data sintetis; `pytest -q` → 186 tes lolos):
 - `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
@@ -185,7 +185,10 @@ sesuai definisi `docs/METHOD.md` §3.2; celah 2 px tidak. `tests/test_contact.py
 - Keterbatasan untuk proyek ini: prediksi HiSup dan angka paper pembanding semuanya dihitung di v1.0, jadi tidak ada
   pembanding di v2.0. Model yang dilatih di v1.0 (termasuk HiSup) kemungkinan sudah melihat area test v2.0, karena
   keduanya diturunkan dari citra SpaceNet yang sama (belum diverifikasi).
-- Keputusan #7 belum berubah. Pilihan v1.0 atau v2.0 menunggu diskusi.
+- **Keputusan (28 Okt 2026): opsi A**, tetap v1.0 + deduplikasi sendiri (keputusan #7 tidak berubah). Alasannya,
+  posisi terhadap SOTA (`docs/EXPERIMENTS.md` §8) dan analisis N2 untuk HiSup hanya bisa di v1.0. Opsi B (pindah ke
+  v2.0: test 6.400 tile resmi, tetapi tanpa pembanding) tidak dipilih. v2.0 disebut di laporan sebagai perbaikan
+  resmi panitia. Opsional di akhir: satu run FULL di v2.0 bila waktu GPU tersisa.
 
 **Data CrowdAI v1.0** (diekstrak 28 Okt 2026; ukuran, SHA-256, dan statistik anotasi di `docs/DATA.md` §1 dan §2.1):
 - Jumlah citra sama dengan referensi (train 280.741, val 60.317), tidak ada file yang hilang, kategori `100`.
@@ -198,6 +201,6 @@ sesuai definisi `docs/METHOD.md` §3.2; celah 2 px tidak. `tests/test_contact.py
   Paralel 13 worker di laptop ini (Intel Core Ultra 7 165U, 14 thread, RAM 31,5 GB): 305 citra/s (±4,2× satu core),
   jadi run penuh ±19 menit.
 
-**Menunggu:** persetujuan run hash penuh; keputusan v1.0 atau v2.0; setelah run penuh: cek hasil terhadap 114.548
+**Menunggu:** run hash penuh (disetujui 28 Okt 2026, sedang berjalan); setelah itu: cek hasil terhadap 114.548
 dan 3.949 (per nama, dari `val_in_train_np.json`), mosaik QA, cache instance, strata kepadatan, dan persetujuan angka
 ambangnya; data WHU 0,2 m di `data/whu/raw_0.2/` lalu konversi.

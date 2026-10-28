@@ -4,7 +4,7 @@
 
 | Data | Sumber | Catatan |
 |---|---|---|
-| CrowdAI Mapping Challenge | https://www.aicrowd.com/challenges/mapping-challenge/dataset_files | perlu akun AIcrowd. Sejak revisi 2024 bernama `train-v1.0-DEPRECATED.tar.gz` dan `val-v1.0-DEPRECATED.tar.gz` (v1.0, versi yang dipakai paper pembanding). Ada juga `mapping-challenge-v2.0.tar.gz`, lihat `docs/progress.md` Fase 1 |
+| CrowdAI Mapping Challenge | https://www.aicrowd.com/challenges/mapping-challenge/dataset_files | perlu akun AIcrowd. Sejak revisi 2024 bernama `train-v1.0-DEPRECATED.tar.gz` dan `val-v1.0-DEPRECATED.tar.gz` (v1.0, versi yang dipakai paper pembanding). Ada juga `mapping-challenge-v2.0.tar.gz`, tidak dipakai (opsi A, 28 Okt 2026; lihat `docs/progress.md` Fase 1) |
 | Prediksi HiSup untuk val CrowdAI | Google Drive di README HiSup (bagian *Evaluation*) | file JSON format COCO |
 | WHU Building (aerial) | http://gpcv.whu.edu.cn/data/building_dataset.html | lihat §3 untuk versi yang diunduh |
 | Checkpoint Pix2Poly (opsional) | Google Drive / MEGA di README Pix2Poly | untuk memastikan protokol WHU |
@@ -28,7 +28,7 @@ data/
 │   ├── val/images/*.jpg     val/annotation.json
 │   ├── hisup_release/*.json            # prediksi HiSup (val penuh)
 │   └── hashes/{train,val}_aug.json     # cache p-hash 6 varian (dibuat skrip)
-├── crowdai_v2/mapping-challenge-v2.0/  # v2.0; baru JSON-nya yang diekstrak, belum dipakai
+├── crowdai_v2/mapping-challenge-v2.0/  # v2.0: hanya JSON yang diekstrak; tidak dipakai (opsi A)
 ├── whu/
 │   ├── raw_0.2/{train,val,test}/{image,label}/   # protokol A (nama folder mengikuti Pix2Poly)
 │   ├── pix2poly_224/{train,val,test}/{images/,annotation.json}

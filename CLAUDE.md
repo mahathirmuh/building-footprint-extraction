@@ -50,8 +50,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 | smp 0.6.0 | `in_channels≠3` menyalin bobot RGB secara siklik lalu mengalikan 3/in_ch; input wajib kelipatan 32 |
 | Ultralytics 8.4.x | `yolov8n-obb.pt` tersedia; label OBB: `cls x1 y1 x2 y2 x3 y3 x4 y4` ternormalisasi |
 
-- Fase 0 sudah dikerjakan (kerangka repo, config, paths, fixture sintetis; lihat `docs/progress.md`). Belum ada data
-  atau model.
+- Fase 0 selesai (kerangka repo, config, paths, fixture sintetis; lihat `docs/progress.md`). Fase 1 berjalan: CrowdAI
+  v1.0 sudah diunduh dan dicek (`docs/DATA.md` §1–2), WHU belum. Belum ada model.
 
 ## Cara bekerja di proyek ini
 
@@ -112,7 +112,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 
 | Dataset | Peran | Catatan |
 |---|---|---|
-| CrowdAI Mapping Challenge | train, `val_tune`, test bersih; metrik poligon; banding HiSup | unduh manual dari AIcrowd (perlu akun) |
+| CrowdAI Mapping Challenge | train, `val_tune`, test bersih; metrik poligon; banding HiSup | v1.0, unduh manual dari AIcrowd (perlu akun); v2.0 tidak dipakai (lihat "Yang perlu saya putuskan") |
 | WHU Building (aerial) | banding C-IoU dengan Pix2Poly/HiSup | default protokol Pix2Poly 0,2 m (lihat "Yang perlu saya putuskan") |
 | SpaceNet 6 Rotterdam (opsional) | gambar kualitatif, uji lintas-dataset | CC BY-SA 4.0 |
 
@@ -230,7 +230,11 @@ python scripts/tables.py && python scripts/figures.py
 
 - **Protokol WHU: A dipilih** (28 Okt 2026) = protokol Pix2Poly 0,2 m (angka C-IoU sebanding dengan slide: HiSup
   79,62; Pix2Poly 81,63). Alternatif B (tile 0,3 m 512² seperti di slide) tidak dipakai.
-- Akun AIcrowd dan unduhan CrowdAI (`train.tar.gz`, `val.tar.gz`); unduhan WHU; ruang Google Drive: `TODO`.
+- **CrowdAI: v1.0 + deduplikasi sendiri dipilih** (28 Okt 2026, opsi A; keputusan #7 tetap). v2.0 (Mei 2025,
+  kebocoran antar-split diperbaiki panitia) tidak dipakai di eksperimen inti, karena prediksi HiSup dan angka paper
+  pembanding hanya ada di v1.0. v2.0 disebut di laporan. Opsional di akhir: satu run FULL di v2.0 bila waktu GPU
+  tersisa.
+- Unduhan CrowdAI v1.0 selesai (28 Okt 2026). Unduhan WHU; ruang Google Drive: `TODO`.
 - Tier GPU Colab (T4 gratis / Pro): `TODO`. Repo GitHub privat + token di Colab Secrets: `TODO`.
 - Definisi kepadatan: default disetujui (28 Okt 2026), yaitu jumlah bangunan GT per tile dibagi tertil. Angka ambangnya
   disetujui setelah dihitung dari data, lalu dibekukan.
