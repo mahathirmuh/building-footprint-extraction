@@ -122,7 +122,7 @@ dan definisi kepadatan (Fase 1).
 
 ---
 
-## Fase 1 — Data (sedang berjalan: deduplikasi CrowdAI)
+## Fase 1 — Data (sedang berjalan: deduplikasi selesai, menunggu keputusan desain test)
 
 **Dibuat** (diuji di data sintetis; `pytest -q` → 186 tes lolos):
 - `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
@@ -201,6 +201,24 @@ sesuai definisi `docs/METHOD.md` §3.2; celah 2 px tidak. `tests/test_contact.py
   Paralel 13 worker di laptop ini (Intel Core Ultra 7 165U, 14 thread, RAM 31,5 GB): 305 citra/s (±4,2× satu core),
   jadi run penuh ±19 menit.
 
-**Menunggu:** run hash penuh (disetujui 28 Okt 2026, sedang berjalan); setelah itu: cek hasil terhadap 114.548
-dan 3.949 (per nama, dari `val_in_train_np.json`), mosaik QA, cache instance, strata kepadatan, dan persetujuan angka
-ambangnya; data WHU 0,2 m di `data/whu/raw_0.2/` lalu konversi.
+**Hasil deduplikasi** (28 Okt 2026; detail dan bukti di `docs/DATA.md` §2.2):
+- Kedua angka referensi tepat: 114.548 hash asli unik di train dan 3.949 val tanpa duplikat persis (himpunan nama
+  identik). Hash asli kita identik dengan file repo untuk semua citra.
+- 29.283 klaster train (sesuai "±30 rb" di README repo). Split: `train_dedup` 26.355, `val_tune` 2.928
+  (`val_tune_sub` 1.000, `val_select` 1.928).
+- **Test bersih hanya 212 tile** (1.769 bangunan). Dari 3.949 citra val itu, 2.438 adalah salinan rotasi/flip citra
+  train, dan 1.511 sisanya hanyalah 212 tile yang masing-masing muncul 2–15 kali. Semua pasangan dicek di tingkat
+  piksel: tidak ada yang salah buang, dan tidak ada duplikat dekat yang lolos pencocokan persis.
+- Tabrakan hash hanya terjadi di tiga klaster train terbesar (tile hitam nodata). Akibatnya ±100 tile train hilang,
+  tetapi tidak ada kebocoran.
+
+**Masalah yang perlu diputuskan:** dengan 212 tile, strata kepadatan hanya 82/69/61 tile (ambang tertil 5 dan 11
+bangunan), sehingga uji N1–N3 dan kriteria §8 (≤ 3 AP dari HiSup) lemah secara statistik. Ini menyentuh keputusan #7
+dan #8. Opsi yang diusulkan:
+- A: test tetap 212 tile (tanpa perubahan).
+- E (usulan): tetap v1.0; 10% klaster train (2.928 tile) disisihkan sebagai test utama untuk N1–N3 dan strata; 212
+  tile val bersih khusus untuk banding HiSup; `train_dedup` turun ke 23.427.
+- B/C: pindah ke v2.0 (test 6.400 tile). Banding HiSup hilang atau perlu investigasi lintas-versi.
+
+**Menunggu:** keputusan desain test (A, E, atau B/C); setelah itu cache instance dan strata kepadatan (angka ambang
+minta persetujuan dulu); data WHU 0,2 m di `data/whu/raw_0.2/` lalu konversi.

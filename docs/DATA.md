@@ -96,6 +96,28 @@ Implementasi sendiri (lebih mudah diuji), mengikuti logika repo tersebut, dengan
    tabrakan hash pada tile yang hampir seragam (misalnya tile vegetasi tanpa bangunan). Bila ditemukan, tambahkan
    verifikasi piksel (MSE citra 32 × 32 setelah diselaraskan dengan augmentasinya) dan catat keputusannya.
 
+**Hasil run penuh** (28 Okt 2026, `splits/dedup_report.json`; hash 341.058 citra ±19 menit):
+
+| Hal | Hasil kita | Referensi |
+|---|---|---|
+| p-hash asli unik di train | 114.548 | 114.548 (sama) |
+| Val tanpa duplikat persis di train | 3.949, himpunan nama identik | 3.949 (sama) |
+| Val yang tidak satu pun hash variannya ada di train | 1.511 | – |
+| Test bersih = klaster di antara 1.511 citra itu | **212 tile** (1.769 bangunan; 2–15 salinan per tile) | – |
+| Klaster train | 29.283 (25 tunggal; rata-rata 9,6 citra, maks 97) | ±30 rb |
+| `train_dedup` / `val_tune` / `val_tune_sub` / `val_select` | 26.355 / 2.928 / 1.000 / 1.928 | – |
+
+- Hash asli kita identik dengan file repo untuk **semua** 280.741 citra train dan 60.317 val, dan daftar
+  `duplicates_in_train` identik untuk semua citra val.
+- Cek piksel (MSE grayscale terkecil di antara 8 rotasi/flip; pasangan acak tak berhubungan: median ±2.300):
+  semua 2.438 citra val yang dibuang langkah varian punya kembaran piksel di train (MSE ≤ 25,4), dan semua 1.299
+  pasangan di dalam 212 klaster test memang duplikat (MSE ≤ 37). Sampel 400 dari 56.368 duplikat persis: MSE 0.
+- Duplikat dekat yang lolos pencocokan persis: tidak ada. Jarak Hamming terkecil dari citra val bersih ke hash train
+  adalah 6 bit, dan semua 286 pasangan dengan jarak ≤ 10 bit adalah citra berbeda (MSE ≥ ±800).
+- Tabrakan hash (langkah 6): tiga klaster train terbesar (97, 19, 17 citra) berisi tile hitam *nodata* yang hash-nya
+  sama; 98 anggotanya bukan duplikat wakilnya. Akibatnya ±100 tile train (kebanyakan nodata) hilang dari pilihan wakil;
+  tidak ada kebocoran. 27 klaster berikutnya dari 30 terbesar bersih. Mosaik: `outputs/figures/qa/dedup_clusters.png`.
+
 **Tes wajib:** tidak ada nama citra dan tidak ada klaster di dua split; varian augmentasi buatan dari satu citra
 fixture masuk satu klaster.
 

@@ -1,0 +1,87 @@
+{
+ "created": "2026-10-28T19:18:27+08:00",
+ "git": "edacdea6bc211b5b3b3498f70ffc5dcae8dcf9e8",
+ "train": {
+  "images": 280741,
+  "unique_original_hashes": 114548,
+  "clusters": 29283,
+  "singleton_clusters": 25,
+  "cluster_size_mean": 9.587,
+  "cluster_size_max": 97,
+  "largest_clusters": [
+   [
+    "000000006605.jpg",
+    97
+   ],
+   [
+    "000000017164.jpg",
+    19
+   ],
+   [
+    "000000014750.jpg",
+    17
+   ],
+   [
+    "000000000061.jpg",
+    16
+   ],
+   [
+    "000000000113.jpg",
+    16
+   ],
+   [
+    "000000000115.jpg",
+    16
+   ],
+   [
+    "000000000132.jpg",
+    16
+   ],
+   [
+    "000000000144.jpg",
+    16
+   ],
+   [
+    "000000000151.jpg",
+    16
+   ],
+   [
+    "000000000174.jpg",
+    16
+   ]
+  ]
+ },
+ "val": {
+  "images": 60317,
+  "original_hash_not_in_train_originals": 3949,
+  "no_variant_hash_in_train": 1511,
+  "clean_test_clusters": 212
+ },
+ "splits": {
+  "train_dedup": 26355,
+  "val_tune": 2928,
+  "val_tune_sub": 1000,
+  "val_select": 1928,
+  "test": 212
+ },
+ "params": {
+  "val_fraction": 0.1,
+  "tune_sub_size": 1000,
+  "seed": 0,
+  "variants": [
+   "original",
+   "rot90",
+   "rot180",
+   "rot270",
+   "flip_h",
+   "flip_v"
+  ]
+ },
+ "reference": {
+  "train_images": 280741,
+  "val_images": 60317,
+  "train_unique_original_phash": 114548,
+  "val_without_exact_duplicate_in_train": 3949,
+  "train_unique_after_augmentation": "about 30k (repo README: about 250k of 280k are exact or augmented duplicates)"
+ }
+}
