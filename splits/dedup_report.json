@@ -1,6 +1,6 @@
 {
- "created": "2026-10-28T19:18:27+08:00",
- "git": "edacdea6bc211b5b3b3498f70ffc5dcae8dcf9e8",
+ "created": "2026-10-28T19:54:22+08:00",
+ "git": "51b9c216eca929c239cda971c43e1ac5459d10a7-dirty",
  "train": {
   "images": 280741,
   "unique_original_hashes": 114548,
@@ -55,17 +55,19 @@
   "images": 60317,
   "original_hash_not_in_train_originals": 3949,
   "no_variant_hash_in_train": 1511,
-  "clean_test_clusters": 212
+  "clean_clusters": 212
  },
  "splits": {
-  "train_dedup": 26355,
+  "train_dedup": 23427,
   "val_tune": 2928,
   "val_tune_sub": 1000,
   "val_select": 1928,
-  "test": 212
+  "test": 2928,
+  "val_clean": 212
  },
  "params": {
   "val_fraction": 0.1,
+  "test_fraction": 0.1,
   "tune_sub_size": 1000,
   "seed": 0,
   "variants": [
