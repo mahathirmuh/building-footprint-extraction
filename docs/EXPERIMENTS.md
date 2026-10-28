@@ -34,7 +34,7 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 | FULL-P2 | `exp/full_p2` | U-Net++ | RGB + MBI + celah | 5 | sama | watershed | `theta` | ya |
 | FULL+Y | `exp/full_y` | FULL final + YOLOv8n-OBB | sama dengan FULL final | 5 | — | watershed + seed YOLO | `theta` | YOLO saja |
 
-- **FULL final** = varian FULL yang dipilih dengan aturan §8 (dipakai untuk SOTA, WHU, dan FULL+Y).
+- **FULL final** = FULL-P0 atau FULL-P2, dipilih dengan aturan §8 poin 6 (dipakai untuk SOTA, WHU, dan FULL+Y).
 - **B5′ adalah tambahan** dari slide. Fungsinya memisahkan efek pelatihan dan efek pemanduan head θ.
 - Config inferensi saja (`b5`, `b5p`, `full_y`) menunjuk ke checkpoint run sumbernya dengan seed yang sama; jangan
   menyalin bobot.
@@ -49,7 +49,7 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 | Presisi | AMP fp16 + GradScaler (T4 tidak cocok untuk bf16); loss dalam float32 |
 | Budget | E epoch yang sama untuk semua run satu dataset; E ditetapkan setelah it/s diukur (§5) |
 | Augmentasi | flip H/V, rot90, transpose (p 0,5 masing-masing); brightness/contrast ±0,1 hanya di RGB (p 0,5) |
-| Seleksi checkpoint | IoU foreground di `val_tune` tiap epoch (sama untuk model biner dan 3 kelas); simpan `best.pt` dan `last.pt` |
+| Seleksi checkpoint | IoU foreground di `val_select` tiap epoch (sama untuk model biner dan 3 kelas); simpan `best.pt` dan `last.pt`. `val_tune_sub` tidak dipakai selama training |
 | Early stopping | tidak ada (budget tetap) |
 | Seed | 0, 1, 2; `cudnn.benchmark=True` (variasi antar-seed dilaporkan) |
 | Loader | `num_workers=2` di Colab, `pin_memory=True`, label diturunkan on-the-fly dari cache instance |
@@ -58,7 +58,8 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 
 `val_tune` (10% klaster train) dibagi tetap (seed 0) menjadi:
 - `val_tune_sub` (1.000 citra): tuning post-processing.
-- `val_select` (sisanya): memilih varian FULL final dan keputusan lain yang butuh data yang belum dipakai tuning.
+- `val_select` (sisanya): seleksi checkpoint tiap epoch (§3), memilih varian FULL final, dan keputusan lain yang butuh
+  data yang belum dipakai tuning.
 
 Protokol tuning (CPU, tanpa training ulang):
 1. **Tahap 1, instance:** grid `τ × m_min × A_min` (36 kombinasi) dengan poligon `raw`; pilih berdasarkan AP.
@@ -118,7 +119,7 @@ citra (CPU 1 thread). Catat nama GPU/CPU. Angka efisiensi pembanding dari paper 
 - Model `yolov8n-obb.pt`, `imgsz` = 320 (CrowdAI) / 224 (WHU), 100 epoch, batch 32, seed 0, augmentasi bawaan.
 - `c_y` disetel di `val_tune_sub`. Laporkan tambahan waktu inferensi (YOLO + penggabungan seed).
 
-## 8. Kriteria keputusan (dibekukan 28 Okt 2026)
+## 8. Kriteria keputusan (dibekukan 28 Okt 2026; poin 6 diperjelas 28 Okt 2026, lihat `docs/progress.md`)
 
 Aturan ini ditetapkan sebelum ada hasil apa pun. Kalau ingin mengubahnya, lakukan **sebelum Fase 3** (sebelum angka
 HiSup di data bersih dihitung), dengan alasan tertulis di `docs/progress.md`. Setelah itu tidak boleh diubah.
@@ -135,8 +136,9 @@ HiSup di data bersih dihitung), dengan alasan tertulis di `docs/progress.md`. Se
 4. **"Efek terbesar di area padat"** diklaim hanya bila CI bootstrap berstrata untuk Δpadat − Δjarang (pada metrik utama
    klaim yang bersangkutan) tidak memuat 0.
 5. **"Mendekati SOTA":** selisih AP FULL final terhadap HiSup di `crowdai/test` ≤ 3 poin.
-6. **Pemilihan FULL final:** AP tertinggi di `val_select`; bila selisih < 0,2 AP, pilih varian dengan kanal input
-   lebih sedikit.
+6. **Pemilihan FULL final:** kandidatnya hanya FULL-P0 dan FULL-P2 (Tier 1), dipilih di Fase 6. FULL-P1 (Tier 2)
+   bukan kandidat; ia hanya dipakai untuk atribusi prior (poin 3). Pilih AP tertinggi di `val_select`; bila
+   selisih < 0,2 AP, pilih varian dengan kanal input lebih sedikit (FULL-P0).
 7. Bila kriteria tidak terpenuhi, laporkan apa adanya beserta analisisnya. Perbandingan di luar daftar ini adalah
    eksploratif dan ditandai begitu.
 

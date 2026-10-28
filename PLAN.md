@@ -140,7 +140,8 @@ tersedia.
   log CSV, batas waktu per sesi), `infer.py` (pad/crop, output COCO JSON dengan field `theta_deg` dan `kappa`).
 - Smoke test CPU: 2 iterasi di fixture sintetis dengan `encoder_weights=None`.
 - `notebooks/colab_train.ipynb` sesuai `docs/COLAB.md`. Ukur it/s dan memori di Colab (micro-batch ≥ 8), isi tabel
-  biaya di `docs/EXPERIMENTS.md` §5, lalu **minta persetujuan** sebelum training panjang.
+  biaya di `docs/EXPERIMENTS.md` §5, lalu **minta persetujuan** sebelum training panjang. Run benchmark juga mencatat
+  tiap komponen loss (CE, Dice, `L_θ`) sebagai bahan keputusan λ (Fase 6).
 - Latih **B4 seed 0** saja. Putuskan bobot kelas kontak di sini (`docs/METHOD.md` §5), lalu berlakukan untuk semua model
   3 kelas. B5 = model B4 + `polygonize(mar)`. Setel post-processing di `val_tune_sub`, bekukan, evaluasi test.
 
@@ -155,11 +156,13 @@ B5 (seed 0) di `crowdai/test` tersedia, total dan per strata.
 
 **Tugas**
 - Latih B4 seed 1–2, FULL-P0 ×3 seed, FULL-P2 ×3 seed (prioritas Tier 1, `docs/EXPERIMENTS.md` §5).
-- Sebelum seed 1–2 FULL: cek skala `L_θ` terhadap loss lain di log seed 0; ubah λ hanya bila jelas mendominasi (catat).
+- Sebelum FULL seed 0: tetapkan λ dari run pendek (run benchmark Fase 5 atau pilot singkat FULL-P0) dengan
+  membandingkan skala `L_θ` terhadap loss lain; ubah dari 1 hanya bila `L_θ` jelas mendominasi, lalu bekukan untuk
+  semua seed (catat). Bila λ tetap harus diubah setelah seed 0 berjalan, seed 0 diulang dengan λ baru.
 - B5′ = model FULL-P0 + `polygonize(mar)`. Diagnostik θ: galat sudut θ instance (head dan minAreaRect) vs θ GT.
 - Uji N1 (B5 vs B5′ vs FULL-P0, semua input RGB) dan N3 gabungan (FULL-P2 vs FULL-P0) dengan kriteria
   `docs/EXPERIMENTS.md` §8.
-- Pilih varian FULL final dengan aturan §8 (AP di `val_select`), catat alasannya.
+- Pilih varian FULL final (FULL-P0 atau FULL-P2) dengan aturan §8 poin 6 (AP di `val_select`), catat alasannya.
 
 **Output:** tabel N1 (B5 vs B5′ vs FULL-P0) dan tabel N3 (P0 vs P2), dengan CI bootstrap; keputusan FULL final.
 

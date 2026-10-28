@@ -108,7 +108,8 @@ Konsekuensi untuk kita:
    konsisten (poligon GT dari `findContours` sedikit menyusut, dan model ikut mempelajari itu).
 3. GT WHU berasal dari CC, jadi bangunan yang bersentuhan menjadi satu instance. WHU dipakai untuk banding
    SOTA, **bukan** untuk klaim pemisahan rumah berdempetan. Klaim itu diuji di CrowdAI.
-4. `val_tune` WHU = split val Pix2Poly.
+4. `val_tune` WHU = split val Pix2Poly. Pembagiannya menjadi `val_tune_sub` dan `val_select` ditetapkan bersama
+   protokol WHU di Fase 1.
 
 ### 3.3 Protokol B (alternatif): tile 0,3 m seperti slide
 Instance dari CC; tidak bisa dibandingkan langsung dengan angka C-IoU di paper. Kalau dipilih, banding SOTA di WHU

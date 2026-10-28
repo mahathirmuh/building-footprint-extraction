@@ -306,7 +306,7 @@ grid-nya) dikali 2,25.
 | Radius kontak | r | 2 px | — | tetap | ubah hanya lewat diskusi |
 | Luas min. untuk θ | A_θ | 20 px | — | tetap | |
 | Bobot tepi | α, σ | 5, 3 px | — | tetap | |
-| Bobot loss θ | λ | 1,0 | {0,5; 1; 2} hanya bila L_θ mendominasi | awal Fase 6, sekali | |
+| Bobot loss θ | λ | 1,0 | {0,5; 1; 2} hanya bila L_θ mendominasi | awal Fase 6, sebelum FULL seed 0, sekali | dari run pendek; sama untuk semua seed |
 | Skala MBI | s | 11–81 px, Δs 10 | visual | Fase 2, sekali | |
 | Panjang SE celah | L_g | 9 px | {7, 9, 11} visual | Fase 2, sekali | |
 | Mode celah | — | `contrast` | {`max`, `contrast`} visual | Fase 2, sekali | |
