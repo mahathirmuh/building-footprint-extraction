@@ -1,0 +1,18 @@
+# Data, outputs and model weights are never committed (CLAUDE.md). Anchored to the repo root so that
+# the src/densepoly/data/ package is still tracked.
+/data/
+/outputs/
+*.pt
+*.npz
+.env
+.ipynb_checkpoints/
+
+# Python tooling
+__pycache__/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+/.venv/
+.pytest_cache/
+.ruff_cache/
