@@ -83,12 +83,16 @@ Implementasi sendiri (lebih mudah diuji), mengikuti logika repo tersebut, dengan
    `data/crowdai/hashes/`.
 2. **Klaster train:** union-find, dua citra satu klaster bila salah satu hash variannya sama. Wakil klaster = nama
    file terkecil (deterministik). Simpan anggota tiap klaster (`splits/crowdai_train_clusters.json`).
-3. **val_tune:** acak klaster (seed 0), ambil 10% klaster → wakilnya menjadi `val_tune`; sisanya `train_dedup`.
-   Lalu `val_tune` dibagi tetap (seed 0): `val_tune_sub` = 1.000 citra untuk tuning post-processing, `val_select` =
-   sisanya untuk memilih model (`docs/EXPERIMENTS.md` §4).
-4. **Test bersih (`crowdai_clean`):** citra val yang **tidak satu pun** dari 6 hash-nya muncul di himpunan hash train
-   (semua varian). Lalu klaster val bersih dengan cara yang sama dan ambil satu wakil per klaster. Hasilnya
-   diharapkan ≤ 3.949, karena pencocokan kita juga menangkap duplikat teraugmentasi.
+3. **val_tune dan test:** acak klaster sekali (seed 0). Wakil dari 10% klaster pertama menjadi `val_tune`, 10%
+   berikutnya menjadi `test` (holdout untuk semua klaim N1–N3 dan strata kepadatan), sisanya `train_dedup`. Lalu
+   `val_tune` dibagi tetap (seed 0): `val_tune_sub` = 1.000 citra untuk tuning post-processing, `val_select` =
+   sisanya untuk memilih model (`docs/EXPERIMENTS.md` §4). Karena seluruh klaster masuk satu split, model tidak
+   pernah melihat tile test dalam bentuk putar/cermin apa pun. (Opsi E, 28 Okt 2026; sebelumnya test diambil dari val,
+   lihat langkah 4.)
+4. **Val bersih (`val_clean`, untuk banding HiSup):** citra val yang **tidak satu pun** dari 6 hash-nya muncul di
+   himpunan hash train (semua varian). Lalu klaster val bersih dengan cara yang sama dan ambil satu wakil per klaster.
+   Hasilnya diharapkan ≤ 3.949, karena pencocokan kita juga menangkap duplikat teraugmentasi. Hanya subset ini yang
+   juga bersih bagi HiSup, yang dilatih dengan seluruh train.
 5. `splits/dedup_report.json`: jumlah per langkah, ukuran klaster, dan perbandingan dengan 3.949.
    Bila hasil kita **lebih dari** 3.949, kemungkinan p-hash kita berbeda dari hash repo (versi `imagehash` atau Pillow
    berbeda). Bandingkan hash asli kita dengan `train_hashes.json` untuk 100 citra sebelum melanjutkan.
@@ -103,9 +107,10 @@ Implementasi sendiri (lebih mudah diuji), mengikuti logika repo tersebut, dengan
 | p-hash asli unik di train | 114.548 | 114.548 (sama) |
 | Val tanpa duplikat persis di train | 3.949, himpunan nama identik | 3.949 (sama) |
 | Val yang tidak satu pun hash variannya ada di train | 1.511 | – |
-| Test bersih = klaster di antara 1.511 citra itu | **212 tile** (1.769 bangunan; 2–15 salinan per tile) | – |
+| `val_clean` = klaster di antara 1.511 citra itu | **212 tile** (1.769 bangunan; 2–15 salinan per tile) | – |
 | Klaster train | 29.283 (25 tunggal; rata-rata 9,6 citra, maks 97) | ±30 rb |
-| `train_dedup` / `val_tune` / `val_tune_sub` / `val_select` | 26.355 / 2.928 / 1.000 / 1.928 | – |
+| `train_dedup` / `val_tune` (`val_tune_sub` + `val_select`) / `test` | 23.427 / 2.928 (1.000 + 1.928) / 2.928 | – |
+| Citra train yang tercakup klaster tiap split | 224.527 / 28.279 / 27.935 (total 280.741) | – |
 
 - Hash asli kita identik dengan file repo untuk **semua** 280.741 citra train dan 60.317 val, dan daftar
   `duplicates_in_train` identik untuk semua citra val.
@@ -193,7 +198,7 @@ terpisah di anotasi resmi, set ini bisa menjadi uji tambahan untuk pemisahan rum
 - **Ambang:** tertil `q33` dan `q67` dari `n` pada tile test dengan `n ≥ 1`. Strata: `jarang` (n ≤ q33),
   `sedang` (q33 < n ≤ q67), `padat` (n > q67), `kosong` (n = 0). Karena `n` bilangan bulat, ukuran strata bisa tidak
   persis sama; laporkan ukurannya.
-- Ambang yang sama dipakai untuk `val_tune` (definisi identik).
+- Ambang yang sama dipakai untuk `val_tune` dan `val_clean` (definisi identik).
 - **Indeks sekunder (analisis ketahanan):** rasio bersentuhan = fraksi instance yang punya piksel kontak (§3.2
   METHOD, r = 2). Perbandingan utama diulang dengan tertil indeks ini dan dilaporkan di lampiran.
 - Strata `kosong` tidak masuk AP/PoLiS/MTA (tidak terdefinisi), tetapi masuk metrik piksel dan hitungan positif palsu.
@@ -217,8 +222,10 @@ terpisah di anotasi resmi, set ini bisa menjadi uji tambahan untuk pemisahan rum
 | `crowdai_val_tune.txt` | satu nama file per baris (gabungan dua file di bawah) |
 | `crowdai_val_tune_sub.txt` | 1.000 citra untuk tuning post-processing |
 | `crowdai_val_select.txt` | sisa `val_tune`, untuk pemilihan model |
-| `crowdai_clean_test.txt` | satu nama file per baris |
+| `crowdai_test.txt` | 10% klaster train yang disisihkan (holdout), satu nama file per baris |
+| `crowdai_val_clean.txt` | val tanpa duplikat di train, satu wakil per klaster (banding HiSup) |
 | `crowdai_train_clusters.json` | `{wakil: [anggota...]}` |
+| `crowdai_val_clean_clusters.json` | `{wakil: [anggota...]}` untuk `val_clean` (anggota = citra val) |
 | `dedup_report.json` | jumlah per langkah dan perbandingan |
 | `density_<dataset>_<split>.json` | definisi, ambang, strata → daftar `image_id` |
 

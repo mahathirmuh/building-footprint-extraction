@@ -7,7 +7,7 @@
 | RQ2 / N1 (head θ) | B5 vs B5′ vs FULL-P0 (semua input RGB) | `PoLiS_paired` dan `MTA_inst` di strata padat | `crowdai/test` |
 | RQ1 / N3 (prior morfologi) | FULL-P2 vs FULL-P0 (MBI + celah sekaligus) | `merge_rate` di strata padat | `crowdai/test` |
 | Atribusi N3 | FULL-P2 vs FULL-P1 (peta celah); FULL-P1 vs FULL-P0 (MBI) | sama | `crowdai/test` (Tier 2) |
-| RQ3 (dekat SOTA, biaya) | FULL final vs HiSup (prediksi rilisan, data bersih); vs angka paper; efisiensi | AP; juga AP_boundary, PoLiS, C-IoU, parameter, FPS | `crowdai/test`, WHU |
+| RQ3 (dekat SOTA, biaya) | FULL final vs HiSup (prediksi rilisan, data bersih); vs angka paper; efisiensi | AP; juga AP_boundary, PoLiS, C-IoU, parameter, FPS | `crowdai/val_clean` (HiSup), WHU |
 | N2 (evaluasi per kepadatan) | semua baris di atas per strata; Δpadat − Δjarang | sama | semua |
 | Klasik vs deep learning | B0 vs B2 / B4 | AP, IoU (deskriptif) | `crowdai/test` |
 
@@ -98,9 +98,12 @@ mengurangi seed Tier 1. Diskusikan dulu.
 ## 6. Protokol perbandingan SOTA
 
 **CrowdAI bersih**
-- HiSup: file prediksi rilisan → filter ke `image_id` di `crowdai/test` → evaluasi dengan `run_eval` yang sama
-  dengan model kita. File GT subset dibuat dari `val/annotation.json` dengan id yang sama.
-- Kita: FULL final, rata-rata ± SD 3 seed.
+- HiSup: file prediksi rilisan → filter ke `image_id` di `crowdai/val_clean` → evaluasi dengan `run_eval` yang sama
+  dengan model kita. File GT subset dibuat dari `val/annotation.json` dengan id yang sama. `val_clean` adalah
+  satu-satunya subset yang juga bersih bagi HiSup (HiSup dilatih dengan seluruh train v1.0); `crowdai/test` diambil
+  dari train, jadi tidak bisa dipakai untuk HiSup.
+- Kita: FULL final, rata-rata ± SD 3 seed, di `crowdai/val_clean` yang sama. Karena hanya 212 tile, sertakan CI
+  bootstrap.
 - Laporkan `CIoU` (semua citra) dan `CIoU_p2p` (aturan Pix2Poly), serta PoLiS dan MTA versi vendor, untuk kedua metode.
 - Tabel terpisah **"dilaporkan di paper (val CrowdAI, bocor)"**: FFL, PolyWorld, HiSup, PolyR-CNN, Pix2Poly. Salin
   ulang angkanya dari PDF asli dan cantumkan nomor tabelnya (`configs/paper_numbers.yaml`); jangan disalin dari slide.
@@ -119,7 +122,7 @@ citra (CPU 1 thread). Catat nama GPU/CPU. Angka efisiensi pembanding dari paper 
 - Model `yolov8n-obb.pt`, `imgsz` = 320 (CrowdAI) / 224 (WHU), 100 epoch, batch 32, seed 0, augmentasi bawaan.
 - `c_y` disetel di `val_tune_sub`. Laporkan tambahan waktu inferensi (YOLO + penggabungan seed).
 
-## 8. Kriteria keputusan (dibekukan 28 Okt 2026; poin 6 diperjelas 28 Okt 2026, lihat `docs/progress.md`)
+## 8. Kriteria keputusan (dibekukan 28 Okt 2026; poin 6 diperjelas dan split poin 5 diubah 28 Okt 2026, lihat `docs/progress.md`)
 
 Aturan ini ditetapkan sebelum ada hasil apa pun. Kalau ingin mengubahnya, lakukan **sebelum Fase 3** (sebelum angka
 HiSup di data bersih dihitung), dengan alasan tertulis di `docs/progress.md`. Setelah itu tidak boleh diubah.
@@ -135,7 +138,9 @@ HiSup di data bersih dihitung), dengan alasan tertulis di `docs/progress.md`. Se
    FULL-P1 vs FULL-P0 (MBI) dilaporkan deskriptif.
 4. **"Efek terbesar di area padat"** diklaim hanya bila CI bootstrap berstrata untuk Δpadat − Δjarang (pada metrik utama
    klaim yang bersangkutan) tidak memuat 0.
-5. **"Mendekati SOTA":** selisih AP FULL final terhadap HiSup di `crowdai/test` ≤ 3 poin.
+5. **"Mendekati SOTA":** selisih AP FULL final terhadap HiSup di `crowdai/val_clean` ≤ 3 poin. (Split diubah dari
+   `crowdai/test` pada 28 Okt 2026, opsi E; ambangnya tetap. Karena hanya 212 tile, CI bootstrap selisihnya ikut
+   dilaporkan.)
 6. **Pemilihan FULL final:** kandidatnya hanya FULL-P0 dan FULL-P2 (Tier 1), dipilih di Fase 6. FULL-P1 (Tier 2)
    bukan kandidat; ia hanya dipakai untuk atribusi prior (poin 3). Pilih AP tertinggi di `val_select`; bila
    selisih < 0,2 AP, pilih varian dengan kanal input lebih sedikit (FULL-P0).

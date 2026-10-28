@@ -43,7 +43,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 |---|---|
 | CrowdAI train / val | 280.741 / 60.317 citra (dari file hash repo `CrowdAI_Hash_and_search`) |
 | CrowdAI train, p-hash unik (tanpa augmentasi) | 114.548; README repo: ±250 rb dari 280 rb adalah duplikat persis **atau** teraugmentasi |
-| CrowdAI val tanpa duplikat persis di train | **3.949** citra (dari `val_in_train_np.json`) → kandidat test bersih |
+| CrowdAI val tanpa duplikat persis di train | **3.949** citra (dari `val_in_train_np.json`; direproduksi persis). Bila varian putar/cermin ikut dicek: 1.511 citra = **212 tile unik** (`val_clean`) |
 | HiSup | merilis file prediksi val CrowdAI (JSON) → bisa dievaluasi ulang tanpa menjalankan model HiSup |
 | Pix2Poly, protokol WHU | data `WHU_aerial_0.2` (0,2 m), patch 224 × 224 overlap 34, GT dari mask biner (connected component + simplify 1,8) |
 | WHU resmi | ada versi 0,3 m (8.189 tile 512²), versi 0,2 m (raster + **format COCO**), dan shapefile seluruh area |
@@ -87,10 +87,12 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 6. **Tanpa resize.** Tile CrowdAI 300 × 300 di-pad ke 320 (citra: reflect; label: ignore 255), prediksi di-crop
    kembali ke 300.
 7. **Deduplikasi CrowdAI wajib.** Train = satu wakil per klaster duplikat (p-hash dengan augmentasi rotasi/flip).
-   Test = val CrowdAI yang tidak punya duplikat di train (`crowdai_clean`). `val_tune` = 10% klaster train
-   (dipisah per klaster), dibagi lagi menjadi `val_tune_sub` (1.000 citra, tuning post-processing) dan `val_select`
-   (sisanya, pemilihan model). Val CrowdAI yang bocor (`val_full`) **tidak dipakai** untuk training, tuning, atau
-   klaim; hanya untuk mereproduksi angka HiSup.
+   Klaster train diacak sekali (seed 0): 10% pertama = `val_tune`, dibagi lagi menjadi `val_tune_sub` (1.000 citra,
+   tuning post-processing) dan `val_select` (sisanya, pemilihan model); 10% berikutnya = `test` (holdout, untuk
+   semua klaim N1–N3 dan strata kepadatan); sisanya `train_dedup`. `val_clean` = val CrowdAI yang tidak punya
+   duplikat (termasuk putar/cermin) di train, satu wakil per klaster (212 tile), khusus untuk banding HiSup. Val
+   CrowdAI yang bocor (`val_full`) **tidak dipakai** untuk training, tuning, atau klaim; hanya untuk mereproduksi
+   angka HiSup. (Diubah 28 Okt 2026, opsi E: val bersih hanya 212 tile, terlalu kecil untuk klaim utama.)
 8. **Strata kepadatan (N2)** dihitung dari GT test **sebelum** evaluasi model, disimpan di
    `splits/density_<dataset>_<split>.json`, lalu dibekukan. Default: tertil jumlah bangunan GT per tile; tile tanpa bangunan = strata "kosong".
 9. **Ablasi satu perubahan per langkah** (`docs/EXPERIMENTS.md`). Uji N1 seluruhnya memakai input RGB: B5 (model B4,
@@ -99,7 +101,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 10. **Post-processing disetel per model dengan grid yang sama** di `val_tune_sub`, lalu dibekukan ke
    `configs/postproc/<dataset>/<exp>.yaml` sebelum test. Kriteria keputusan di `docs/EXPERIMENTS.md` §8 sudah
    dibekukan (28 Okt 2026).
-11. **Pembanding SOTA:** HiSup dievaluasi dari file prediksi rilisannya, difilter ke `crowdai_clean`. PolyR-CNN dan
+11. **Pembanding SOTA:** HiSup dievaluasi dari file prediksi rilisannya, difilter ke `val_clean` (satu-satunya
+    subset yang juga bersih bagi HiSup, yang dilatih dengan seluruh train v1.0). PolyR-CNN dan
     Pix2Poly di CrowdAI hanya dikutip dari paper (split bocor, ditandai). Di WHU (protokol A, default), ikuti
     protokol Pix2Poly persis agar angka C-IoU sebanding.
 12. **Evaluasi:** pakai skrip metrik Pix2Poly (`polis`, `angle`/MTA, `ciou`) yang di-vendor + pycocotools +
@@ -112,13 +115,14 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 
 | Dataset | Peran | Catatan |
 |---|---|---|
-| CrowdAI Mapping Challenge | train, `val_tune`, test bersih; metrik poligon; banding HiSup | v1.0, unduh manual dari AIcrowd (perlu akun); v2.0 tidak dipakai (lihat "Yang perlu saya putuskan") |
+| CrowdAI Mapping Challenge | train, `val_tune`, `test` (holdout); metrik poligon; banding HiSup di `val_clean` | v1.0, unduh manual dari AIcrowd (perlu akun); v2.0 tidak dipakai (lihat "Yang perlu saya putuskan") |
 | WHU Building (aerial) | banding C-IoU dengan Pix2Poly/HiSup | default protokol Pix2Poly 0,2 m (lihat "Yang perlu saya putuskan") |
 | SpaceNet 6 Rotterdam (opsional) | gambar kualitatif, uji lintas-dataset | CC BY-SA 4.0 |
 
 **Nama dataset dan split** (dipakai di CLI, config, dan path output): dataset `crowdai` dan `whu`; split
-`train_dedup`, `val_tune`, `test`. Untuk CrowdAI, `test` = test bersih (`crowdai_clean`). Split `val_full` (val
-CrowdAI asli yang bocor) hanya dipakai untuk mereproduksi angka HiSup.
+`train_dedup`, `val_tune` (`val_tune_sub`, `val_select`), `test`. Untuk CrowdAI, `test` = 10% klaster train yang
+disisihkan. Khusus CrowdAI: `val_clean` (212 tile val tanpa duplikat di train) untuk banding HiSup, dan `val_full`
+(val asli yang bocor) hanya untuk mereproduksi angka HiSup.
 
 Path data selalu dari variabel lingkungan `DENSEPOLY_DATA` (default `./data`), output dari `DENSEPOLY_OUT`
 (default `./outputs`). Jangan menulis path absolut di kode.
@@ -165,7 +169,7 @@ densepoly/
 ├── tests/           # fixtures/ sintetis + test_*.py
 ├── reference/       # demo/ (kode demo ETS) dan prototypes/ (uji spesifikasi); hanya referensi
 ├── docs/            # METHOD, DATA, EXPERIMENTS, EVALUATION, COLAB, progress
-├── splits/          # daftar id dedup, val_tune, test bersih, density_*.json (di-commit, kecil)
+├── splits/          # daftar id dedup, val_tune, test, val_clean, density_*.json (di-commit, kecil)
 ├── data/            # (gitignored)
 └── outputs/         # (gitignored) gt/, runs/, preds/, metrics/, tables/, figures/
 ```
@@ -230,10 +234,12 @@ python scripts/tables.py && python scripts/figures.py
 
 - **Protokol WHU: A dipilih** (28 Okt 2026) = protokol Pix2Poly 0,2 m (angka C-IoU sebanding dengan slide: HiSup
   79,62; Pix2Poly 81,63). Alternatif B (tile 0,3 m 512² seperti di slide) tidak dipakai.
-- **CrowdAI: v1.0 + deduplikasi sendiri dipilih** (28 Okt 2026, opsi A; keputusan #7 tetap). v2.0 (Mei 2025,
-  kebocoran antar-split diperbaiki panitia) tidak dipakai di eksperimen inti, karena prediksi HiSup dan angka paper
-  pembanding hanya ada di v1.0. v2.0 disebut di laporan. Opsional di akhir: satu run FULL di v2.0 bila waktu GPU
-  tersisa.
+- **CrowdAI: v1.0 + deduplikasi sendiri dipilih** (28 Okt 2026, opsi A). v2.0 (Mei 2025, kebocoran antar-split
+  diperbaiki panitia) tidak dipakai di eksperimen inti, karena prediksi HiSup dan angka paper pembanding hanya ada di
+  v1.0. v2.0 disebut di laporan. Opsional di akhir: satu run FULL di v2.0 bila waktu GPU tersisa.
+- **Desain test CrowdAI: opsi E** (28 Okt 2026; keputusan #7 diubah). `test` = 10% klaster train yang disisihkan
+  (2.928 tile) untuk semua klaim N1–N3 dan strata kepadatan; `val_clean` = 212 tile val bersih untuk banding HiSup.
+  Alasan: val yang bebas duplikat (termasuk putar/cermin) di train hanya 212 tile (`docs/DATA.md` §2.2).
 - Unduhan CrowdAI v1.0 selesai (28 Okt 2026). Unduhan WHU; ruang Google Drive: `TODO`.
 - Tier GPU Colab (T4 gratis / Pro): `TODO`. Repo GitHub privat + token di Colab Secrets: `TODO`.
 - Definisi kepadatan: default disetujui (28 Okt 2026), yaitu jumlah bangunan GT per tile dibagi tertil. Angka ambangnya

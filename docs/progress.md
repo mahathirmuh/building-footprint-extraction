@@ -122,14 +122,14 @@ dan definisi kepadatan (Fase 1).
 
 ---
 
-## Fase 1 — Data (sedang berjalan: deduplikasi selesai, menunggu keputusan desain test)
+## Fase 1 — Data (sedang berjalan: split CrowdAI final, menunggu persetujuan ambang kepadatan)
 
 **Dibuat** (diuji di data sintetis; `pytest -q` → 186 tes lolos):
 - `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
   anotasi (citra tanpa anotasi, ring tidak valid, multi-ring, piksel tumpang tindih, anotasi tertutup penuh), cek
   konvensi titik penutup dan arah putaran, cek file di anotasi vs di disk.
 - `src/densepoly/data/dedup.py` + `scripts/dedup_crowdai.py`: p-hash 6 varian (cache per 5.000 citra, bisa
-  dilanjutkan bila terputus), union-find, split `train_dedup`/`val_tune`/`val_tune_sub`/`val_select`/test bersih,
+  dilanjutkan bila terputus), union-find, split `train_dedup`/`val_tune`/`val_tune_sub`/`val_select`/`test`/`val_clean`,
   laporan dibanding angka referensi, mosaik QA (10 klaster terbesar + 40 acak). `--benchmark N` mengukur waktu dulu.
 - `src/densepoly/data/density.py` + `scripts/make_density.py`: strata tertil + indeks sekunder rasio bersentuhan;
   file strata yang sudah ada tidak ditimpa tanpa `--force`.
@@ -204,21 +204,29 @@ sesuai definisi `docs/METHOD.md` §3.2; celah 2 px tidak. `tests/test_contact.py
 **Hasil deduplikasi** (28 Okt 2026; detail dan bukti di `docs/DATA.md` §2.2):
 - Kedua angka referensi tepat: 114.548 hash asli unik di train dan 3.949 val tanpa duplikat persis (himpunan nama
   identik). Hash asli kita identik dengan file repo untuk semua citra.
-- 29.283 klaster train (sesuai "±30 rb" di README repo). Split: `train_dedup` 26.355, `val_tune` 2.928
-  (`val_tune_sub` 1.000, `val_select` 1.928).
+- 29.283 klaster train (sesuai "±30 rb" di README repo). Split awal: `train_dedup` 26.355, `val_tune` 2.928
+  (`val_tune_sub` 1.000, `val_select` 1.928); setelah opsi E, lihat di bawah.
 - **Test bersih hanya 212 tile** (1.769 bangunan). Dari 3.949 citra val itu, 2.438 adalah salinan rotasi/flip citra
   train, dan 1.511 sisanya hanyalah 212 tile yang masing-masing muncul 2–15 kali. Semua pasangan dicek di tingkat
   piksel: tidak ada yang salah buang, dan tidak ada duplikat dekat yang lolos pencocokan persis.
 - Tabrakan hash hanya terjadi di tiga klaster train terbesar (tile hitam nodata). Akibatnya ±100 tile train hilang,
   tetapi tidak ada kebocoran.
 
-**Masalah yang perlu diputuskan:** dengan 212 tile, strata kepadatan hanya 82/69/61 tile (ambang tertil 5 dan 11
-bangunan), sehingga uji N1–N3 dan kriteria §8 (≤ 3 AP dari HiSup) lemah secara statistik. Ini menyentuh keputusan #7
-dan #8. Opsi yang diusulkan:
-- A: test tetap 212 tile (tanpa perubahan).
-- E (usulan): tetap v1.0; 10% klaster train (2.928 tile) disisihkan sebagai test utama untuk N1–N3 dan strata; 212
-  tile val bersih khusus untuk banding HiSup; `train_dedup` turun ke 23.427.
-- B/C: pindah ke v2.0 (test 6.400 tile). Banding HiSup hilang atau perlu investigasi lintas-versi.
+**Masalah:** dengan 212 tile, strata kepadatan hanya 82/69/61 tile (ambang tertil 5 dan 11 bangunan), sehingga uji
+N1–N3 dan kriteria §8 (≤ 3 AP dari HiSup) lemah secara statistik. Opsi yang dibahas: A (test tetap 212 tile), E (test
+holdout dari train), B/C (pindah ke v2.0: test 6.400 tile, tetapi banding HiSup hilang atau perlu investigasi
+lintas-versi).
+
+**Keputusan (28 Okt 2026): opsi E** (keputusan #7 dan kriteria §8 poin 5 diubah, sebelum Fase 3):
+- Klaster train diacak sekali (seed 0): 10% pertama `val_tune` (identik dengan sebelumnya), 10% berikutnya `test`
+  (2.928 tile, untuk semua klaim N1–N3 dan strata), sisanya `train_dedup` (23.427). Seluruh klaster masuk satu split,
+  jadi model tidak pernah melihat tile test dalam bentuk putar/cermin apa pun.
+- 212 tile val bersih menjadi split `val_clean`, khusus banding HiSup. Alasannya, HiSup dilatih dengan seluruh train
+  v1.0, sehingga hanya subset inilah yang juga bersih baginya. Kriteria "mendekati SOTA" (≤ 3 AP) kini diukur di
+  `val_clean`, dengan CI bootstrap.
+- Kode: `split_train` (+ tes bahwa `val_tune` tidak berubah), nama split `val_clean` (khusus CrowdAI, seperti
+  `val_full`), `crowdai_val_clean_clusters.json`. Dokumen yang disesuaikan: CLAUDE.md #7 dan #11, `docs/DATA.md`
+  §2.2 dan §6, `docs/EXPERIMENTS.md` RQ3, §6, dan §8.5, PLAN Fase 1, 3, dan 9, serta `docs/COLAB.md` §1.
 
 **Menunggu:** keputusan desain test (A, E, atau B/C); setelah itu cache instance dan strata kepadatan (angka ambang
 minta persetujuan dulu); data WHU 0,2 m di `data/whu/raw_0.2/` lalu konversi.

@@ -10,7 +10,7 @@ boleh ditulis di notebook. Pekerjaan CPU berat (hash, prior, evaluasi besar, tun
 MyDrive/densepoly/
 ├── data_tar/
 │   ├── crowdai_train_dedup.tar      # citra train_dedup + val_tune + cache instance + cache prior
-│   ├── crowdai_clean_test.tar       # citra test bersih + cache
+│   ├── crowdai_test.tar             # citra test (holdout dari train) + val_clean + cache
 │   ├── crowdai_gt.tar               # anotasi GT, file GT subset, prediksi HiSup
 │   └── whu_pix2poly_224.tar         # bila protokol A dipakai
 └── outputs/                         # = DENSEPOLY_OUT (runs/, preds/, metrics/, tables/, figures/)

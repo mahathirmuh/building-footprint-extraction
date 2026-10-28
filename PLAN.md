@@ -39,7 +39,8 @@ persis dengan rasterisasi pycocotools dari poligon GT-nya.
 - `src/densepoly/data/crowdai.py`: baca anotasi COCO, rasterisasi peta instance per citra (`docs/DATA.md` §2.3).
   Catat statistik tumpang tindih dan jumlah citra tanpa anotasi.
 - `scripts/dedup_crowdai.py --data crowdai` (`docs/DATA.md` §2.2): p-hash 6 varian, klaster union-find,
-  `train_dedup`, `val_tune` (beserta `val_tune_sub` dan `val_select`), test bersih, dan `splits/dedup_report.json`.
+  `train_dedup`, `val_tune` (beserta `val_tune_sub` dan `val_select`), `test` (holdout 10% klaster train),
+  `val_clean` (val bersih, untuk banding HiSup), dan `splits/dedup_report.json`.
   Pekerjaan CPU ±0,6 jam-inti untuk hashing saja (tambah waktu baca disk); lihat `docs/COLAB.md` §8 untuk tempat
   menjalankannya. Minta konfirmasi sebelum menjalankan di seluruh data.
 - Cek konvensi titik penutup poligon dan arah putaran di GT CrowdAI; catat di `docs/progress.md`.
@@ -97,10 +98,10 @@ prosesnya; fraksi piksel kontak dan fraksi piksel ber-θ valid per dataset dilap
   `eval/stats.py` (bootstrap per citra **dan** bootstrap AP dari `evalImgs` yang di-cache, §4).
 - Uji kewarasan `docs/EVALUATION.md` §6.1, §6.2, §6.4, dan §6.6. Uji §6.3 dikerjakan di Fase 4, §6.5 di Fase 8.
 
-**Output:** paket evaluasi; `outputs/metrics/crowdai/hisup_release/ref/{val_full,test}.json`; `docs/sanity_report.md`.
+**Output:** paket evaluasi; `outputs/metrics/crowdai/hisup_release/ref/{val_full,val_clean}.json`; `docs/sanity_report.md`.
 
 **Selesai jika:** uji kewarasan §6.1, §6.2, §6.4, §6.6 lolos; AP HiSup hasil reproduksi di val penuh berada dalam
-±0,3 poin dari paper (79,4), atau selisihnya dijelaskan; metrik HiSup di `crowdai/test` (total + per strata)
+±0,3 poin dari paper (79,4), atau selisihnya dijelaskan; metrik HiSup di `crowdai/val_clean` (total + per strata)
 tersedia.
 
 ---
@@ -186,7 +187,8 @@ B5 (seed 0) di `crowdai/test` tersedia, total dan per strata.
 ## Fase 8 — Perbandingan SOTA dan analisis kepadatan (N2)
 
 **Tugas**
-- `crowdai/test`: FULL final vs HiSup (prediksi rilisan) — total dan per strata, `CIoU` dan `CIoU_p2p`. Tabel terpisah
+- `crowdai/val_clean`: FULL final vs HiSup (prediksi rilisan) — total dan per strata (212 tile, sertakan CI),
+  `CIoU` dan `CIoU_p2p`. Tabel terpisah
   untuk angka paper (PolyR-CNN, Pix2Poly, FFL, HiSup di val bocor), ditandai "dilaporkan di paper".
 - WHU: evaluasi dengan skrip Pix2Poly yang di-vendor; bandingkan dengan angka paper. Opsional: uji kewarasan §6.5
   (checkpoint Pix2Poly rilisan pada test yang sama).
