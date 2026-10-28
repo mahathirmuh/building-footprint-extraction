@@ -4,7 +4,7 @@
 
 | Data | Sumber | Catatan |
 |---|---|---|
-| CrowdAI Mapping Challenge | https://www.aicrowd.com/challenges/mapping-challenge/dataset_files | perlu akun AIcrowd; `train.tar.gz`, `val.tar.gz` |
+| CrowdAI Mapping Challenge | https://www.aicrowd.com/challenges/mapping-challenge/dataset_files | perlu akun AIcrowd. Sejak revisi 2024 bernama `train-v1.0-DEPRECATED.tar.gz` dan `val-v1.0-DEPRECATED.tar.gz` (v1.0, versi yang dipakai paper pembanding). Ada juga `mapping-challenge-v2.0.tar.gz`, lihat `docs/progress.md` Fase 1 |
 | Prediksi HiSup untuk val CrowdAI | Google Drive di README HiSup (bagian *Evaluation*) | file JSON format COCO |
 | WHU Building (aerial) | http://gpcv.whu.edu.cn/data/building_dataset.html | lihat §3 untuk versi yang diunduh |
 | Checkpoint Pix2Poly (opsional) | Google Drive / MEGA di README Pix2Poly | untuk memastikan protokol WHU |
