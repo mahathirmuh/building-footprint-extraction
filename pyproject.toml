@@ -43,10 +43,15 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+filterwarnings = [
+    # pycocotools 2.0.11 mask.decode under numpy 2.x: third-party, harmless for now (logged in docs/progress.md)
+    "ignore:__array__ implementation doesn't accept a copy keyword:DeprecationWarning",
+]
 
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+src = ["src", "."]
 extend-exclude = ["reference", "third_party"]
 
 [tool.ruff.lint]
