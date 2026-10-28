@@ -14,8 +14,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 DATASETS = ("crowdai", "whu")
-# val_tune_sub and val_select are the two parts of val_tune; val_full (leaky CrowdAI val) only reproduces HiSup.
-SPLITS = ("train_dedup", "val_tune", "val_tune_sub", "val_select", "test", "val_full")
+# val_tune_sub and val_select are the two parts of val_tune. CrowdAI only: val_clean (val tiles without any duplicate
+# in train) compares with HiSup's released predictions; val_full (the whole, leaky val) only reproduces HiSup.
+SPLITS = ("train_dedup", "val_tune", "val_tune_sub", "val_select", "test", "val_clean", "val_full")
+CROWDAI_ONLY = ("val_clean", "val_full")
 
 
 def _env_dir(var: str, default: Path) -> Path:
@@ -28,6 +30,8 @@ def _check(dataset: str, split: str | None = None) -> None:
         raise ValueError(f"unknown dataset {dataset!r}; expected one of {DATASETS}")
     if split is not None and split not in SPLITS:
         raise ValueError(f"unknown split {split!r}; expected one of {SPLITS}")
+    if split in CROWDAI_ONLY and dataset != "crowdai":
+        raise ValueError(f"split {split!r} exists only for crowdai")
 
 
 def data_root() -> Path:
@@ -49,10 +53,9 @@ def splits_dir() -> Path:
 
 
 def split_list(dataset: str, split: str, root: Path | None = None) -> Path:
-    """Text file with one image file name per line (docs/DATA.md §6); CrowdAI's test split is the clean test."""
+    """Text file with one image file name per line (docs/DATA.md §6)."""
     _check(dataset, split)
-    name = "clean_test" if (dataset, split) == ("crowdai", "test") else split
-    return (root or splits_dir()) / f"{dataset}_{name}.txt"
+    return (root or splits_dir()) / f"{dataset}_{split}.txt"
 
 
 def density_file(dataset: str, split: str, root: Path | None = None) -> Path:
@@ -72,11 +75,11 @@ def dataset_dir(dataset: str) -> Path:
 
 
 def source_folder(dataset: str, split: str) -> str:
-    """Folder holding a split's images: CrowdAI download train/ or val/ (test and val_full come from val);
-    WHU protocol A conversion train/, val/ (val_tune and its parts) or test/."""
+    """Folder holding a split's images: CrowdAI download train/ or val/ (test is held out from train; val_clean and
+    val_full come from val); WHU protocol A conversion train/, val/ (val_tune and its parts) or test/."""
     _check(dataset, split)
     if dataset == "crowdai":
-        return "val" if split in ("test", "val_full") else "train"
+        return "val" if split in CROWDAI_ONLY else "train"
     return {"train_dedup": "train", "test": "test"}.get(split, "val")
 
 

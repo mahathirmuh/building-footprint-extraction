@@ -3,6 +3,7 @@ an existing file is never overwritten without --force.
 
     python scripts/make_density.py --data crowdai --split test       # thresholds come from this split
     python scripts/make_density.py --data crowdai --split val_tune   # reuses the test thresholds
+    python scripts/make_density.py --data crowdai --split val_clean  # likewise (HiSup comparison per stratum)
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ from densepoly.utils.provenance import git_revision, timestamp
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data", choices=["crowdai", "whu"], required=True)
-    parser.add_argument("--split", choices=["test", "val_tune"], required=True)
+    parser.add_argument("--split", choices=["test", "val_tune", "val_clean"], required=True)
     parser.add_argument("--splits-dir", type=Path, help="folder of split files (default: repo splits/)")
     parser.add_argument("--force", action="store_true", help="overwrite; only allowed before any model evaluation")
     args = parser.parse_args(argv)

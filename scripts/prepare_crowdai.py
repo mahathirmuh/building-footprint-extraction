@@ -1,7 +1,7 @@
 """Check the CrowdAI download and cache instance maps (docs/DATA.md §1-2).
 
-    python scripts/prepare_crowdai.py --stats                            # layout + annotation statistics
-    python scripts/prepare_crowdai.py --cache train_dedup val_tune test  # uint16 instance maps (after dedup)
+    python scripts/prepare_crowdai.py --stats                                      # layout + annotation statistics
+    python scripts/prepare_crowdai.py --cache train_dedup val_tune test val_clean  # uint16 instance maps (after dedup)
 
 Expected layout under $DENSEPOLY_DATA/crowdai: {train,val}/images/*.jpg and {train,val}/annotation.json.
 --stats writes splits/crowdai_stats.json; --cache writes $DENSEPOLY_DATA/instances/crowdai/<split>/<image_id>.png,
@@ -19,7 +19,7 @@ from densepoly.data import crowdai
 from densepoly.utils.io import read_json, read_lines, write_json, write_lines, write_png
 from densepoly.utils.provenance import git_revision, timestamp
 
-CACHE_SPLITS = ("train_dedup", "val_tune", "test")
+CACHE_SPLITS = ("train_dedup", "val_tune", "test", "val_clean")
 
 
 def write_stats(root: Path, out: Path) -> dict:

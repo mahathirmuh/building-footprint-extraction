@@ -1,11 +1,11 @@
-"""Deduplicate CrowdAI and write the train_dedup / val_tune / test splits (docs/DATA.md §2.2).
+"""Deduplicate CrowdAI and write the train_dedup / val_tune / test / val_clean splits (docs/DATA.md §2.2).
 
     python scripts/dedup_crowdai.py --data crowdai --benchmark 1000   # time 1,000 images first; writes nothing
     python scripts/dedup_crowdai.py --data crowdai                    # full run (ask before running it)
 
 Hashes are cached per chunk under $DENSEPOLY_DATA/crowdai/hashes/, so an interrupted run resumes. Outputs: split
-lists, crowdai_train_clusters.json and dedup_report.json in splits/, and the QA mosaic in
-$DENSEPOLY_OUT/figures/qa/dedup_clusters.png.
+lists, crowdai_train_clusters.json, crowdai_val_clean_clusters.json and dedup_report.json in splits/, and the QA
+mosaic in $DENSEPOLY_OUT/figures/qa/dedup_clusters.png.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from densepoly.data.crowdai import list_images
 from densepoly.utils.io import write_json, write_lines
 from densepoly.utils.provenance import git_revision, timestamp
 
-SPLITS = ("train_dedup", "val_tune", "val_tune_sub", "val_select", "test")
+SPLITS = ("train_dedup", "val_tune", "val_tune_sub", "val_select", "test", "val_clean")
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -53,6 +53,7 @@ def main(argv: list[str] | None = None) -> None:
     for split in SPLITS:
         write_lines(paths.split_list(args.data, split, out), result.splits[split])
     write_json(out / f"{args.data}_train_clusters.json", result.train_clusters, indent=None)
+    write_json(out / f"{args.data}_val_clean_clusters.json", result.val_clean_clusters, indent=None)
     write_json(out / "dedup_report.json", {"created": timestamp(), "git": git_revision(), **result.report})
 
     qa_file = paths.out_root() / "figures" / "qa" / "dedup_clusters.png"

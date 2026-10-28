@@ -40,10 +40,14 @@ def test_unknown_names_are_rejected():
         paths.pred_file("CrowdAI", "b4", "seed0", "test")
     with pytest.raises(ValueError, match="split"):
         paths.gt_file("crowdai", "val")
+    for split in ("val_clean", "val_full"):  # both are subsets of the CrowdAI val download
+        with pytest.raises(ValueError, match="only for crowdai"):
+            paths.split_list("whu", split)
 
 
 def test_split_and_density_file_names_follow_docs_data_section_6(tmp_path):
-    assert paths.split_list("crowdai", "test").name == "crowdai_clean_test.txt"
+    assert paths.split_list("crowdai", "test").name == "crowdai_test.txt"
+    assert paths.split_list("crowdai", "val_clean").name == "crowdai_val_clean.txt"
     assert paths.split_list("crowdai", "val_tune_sub").name == "crowdai_val_tune_sub.txt"
     assert paths.split_list("whu", "test", root=tmp_path) == tmp_path / "whu_test.txt"
     assert paths.density_file("crowdai", "test") == paths.REPO_ROOT / "splits" / "density_crowdai_test.json"
@@ -52,19 +56,20 @@ def test_split_and_density_file_names_follow_docs_data_section_6(tmp_path):
 def test_split_sources_follow_the_data_layout(monkeypatch, tmp_path):
     monkeypatch.setenv("DENSEPOLY_DATA", str(tmp_path))
     data = tmp_path.resolve()
-    crowdai = {
-        s: paths.source_folder("crowdai", s) for s in ("train_dedup", "val_tune", "val_select", "test", "val_full")
-    }
+    crowdai = {s: paths.source_folder("crowdai", s) for s in paths.SPLITS}
     assert crowdai == {
         "train_dedup": "train",
         "val_tune": "train",
+        "val_tune_sub": "train",
         "val_select": "train",
-        "test": "val",
+        "test": "train",  # held out from the train clusters
+        "val_clean": "val",
         "val_full": "val",
     }
     whu = {s: paths.source_folder("whu", s) for s in ("train_dedup", "val_tune", "val_tune_sub", "test")}
     assert whu == {"train_dedup": "train", "val_tune": "val", "val_tune_sub": "val", "test": "test"}
-    assert paths.annotation_file("crowdai", "test") == data / "crowdai/val/annotation.json"
+    assert paths.annotation_file("crowdai", "test") == data / "crowdai/train/annotation.json"
+    assert paths.image_dir("crowdai", "val_clean") == data / "crowdai/val/images"
     assert paths.annotation_file("whu", "val_select") == data / "whu/pix2poly_224/val/annotation.json"
     assert paths.image_dir("whu", "train_dedup") == data / "whu/pix2poly_224/train/images"
 

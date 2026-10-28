@@ -1,4 +1,6 @@
-"""Deduplication (docs/DATA.md §2.2): variant hashes, clustering, splits and the clean test."""
+"""Deduplication (docs/DATA.md §2.2): variant hashes, clustering, splits, the held-out test and val_clean."""
+
+import itertools
 
 import numpy as np
 import pytest
@@ -67,27 +69,42 @@ def synthetic_clusters(n=200, seed=0):
 
 def test_split_train_is_disjoint_complete_and_deterministic():
     clusters = synthetic_clusters()
-    splits = dedup.split_train(clusters, val_fraction=0.1, tune_sub_size=8, seed=0)
-    assert splits == dedup.split_train(clusters, val_fraction=0.1, tune_sub_size=8, seed=0)
-    train, tune = set(splits["train_dedup"]), set(splits["val_tune"])
-    assert len(tune) == 20 and not train & tune and train | tune == set(clusters)
+    splits = dedup.split_train(clusters, val_fraction=0.1, test_fraction=0.1, tune_sub_size=8, seed=0)
+    assert splits == dedup.split_train(clusters, val_fraction=0.1, test_fraction=0.1, tune_sub_size=8, seed=0)
+    train, tune, test = (set(splits[s]) for s in ("train_dedup", "val_tune", "test"))
+    assert (len(train), len(tune), len(test)) == (160, 20, 20)
+    assert not train & tune and not train & test and not tune & test and train | tune | test == set(clusters)
     sub, select = set(splits["val_tune_sub"]), set(splits["val_select"])
     assert len(sub) == 8 and not sub & select and sub | select == tune
-    train_members = {m for rep in train for m in clusters[rep]}
-    assert train_members.isdisjoint(m for rep in tune for m in clusters[rep])  # no cluster spans two splits
+    members = [{m for rep in part for m in clusters[rep]} for part in (train, tune, test)]
+    assert all(a.isdisjoint(b) for a, b in itertools.combinations(members, 2))  # no cluster spans two splits
     assert dedup.split_train(clusters, seed=1)["val_tune"] != splits["val_tune"]
+
+
+def test_held_out_test_leaves_val_tune_unchanged():
+    """The test clusters come after the val_tune clusters in the same shuffle, so adding them only shrinks
+    train_dedup."""
+    clusters = synthetic_clusters()
+    with_test = dedup.split_train(clusters, test_fraction=0.1, tune_sub_size=8)
+    without = dedup.split_train(clusters, test_fraction=0.0, tune_sub_size=8)
+    for split in ("val_tune", "val_tune_sub", "val_select"):
+        assert with_test[split] == without[split]
+    assert without["test"] == []
+    assert set(without["train_dedup"]) == set(with_test["train_dedup"]) | set(with_test["test"])
 
 
 def test_build_splits_keeps_only_clean_and_deduplicated_val_images():
     train_names, train_hashes = ["t1", "t2"], [["a", "b"], ["c", "d"]]
     val_names = ["v1", "v2", "v3", "v4"]
     val_hashes = [["x", "b"], ["e", "f"], ["g", "e"], ["h", "i"]]  # v1 leaks from t1; v3 copies v2
-    result = dedup.build_splits(train_names, train_hashes, val_names, val_hashes, tune_sub_size=1)
-    assert result.splits["test"] == ["v2", "v4"]
-    assert result.test_clusters == {"v2": ["v2", "v3"], "v4": ["v4"]}
+    result = dedup.build_splits(train_names, train_hashes, val_names, val_hashes, test_fraction=0.5, tune_sub_size=1)
+    assert result.splits["val_clean"] == ["v2", "v4"]
+    assert result.val_clean_clusters == {"v2": ["v2", "v3"], "v4": ["v4"]}
     assert result.report["val"]["no_variant_hash_in_train"] == 3
     assert result.report["val"]["original_hash_not_in_train_originals"] == 4
-    assert result.report["splits"]["test"] == 2
+    assert result.report["splits"]["val_clean"] == 2
+    held_out = result.splits["test"]  # the held-out test is one of the train clusters, never a val image
+    assert held_out in (["t1"], ["t2"]) and sorted(held_out + result.splits["train_dedup"]) == train_names
 
 
 def save_images(folder, images):

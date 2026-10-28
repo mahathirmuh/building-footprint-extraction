@@ -25,40 +25,50 @@ def test_phase1_scripts_on_a_fake_download(tmp_path, monkeypatch):
     splits_dir = tmp_path / "splits"
     common = ["--splits-dir", str(splits_dir)]
 
-    # deduplication: copies collapse, the leaked val image and the val-internal copy leave the test set
+    # deduplication: copies collapse into 10 train clusters, one of which is held out as the test; the leaked val
+    # image and the val-internal copy leave val_clean
     load_script("dedup_crowdai").main(["--data", "crowdai", "--workers", "1", *common])
-    names = ("train_dedup", "val_tune", "val_tune_sub", "val_select", "test")
+    names = ("train_dedup", "val_tune", "val_tune_sub", "val_select", "test", "val_clean")
     split = {name: read_lines(paths.split_list("crowdai", name, splits_dir)) for name in names}
-    assert split["test"] == ["v20.png", "v21.png"]
-    assert len(split["train_dedup"]) == 9 and len(split["val_tune"]) == 1
-    assert not set(split["train_dedup"]) & set(split["val_tune"])
-    assert {"t00_rot.png", "t01_flip.png"}.isdisjoint(split["train_dedup"] + split["val_tune"])
+    assert split["val_clean"] == ["v20.png", "v21.png"]
+    assert [len(split[s]) for s in ("train_dedup", "val_tune", "test")] == [8, 1, 1]
+    representatives = split["train_dedup"] + split["val_tune"] + split["test"]
+    assert len(set(representatives)) == 10 and {"t00_rot.png", "t01_flip.png"}.isdisjoint(representatives)
     report = read_json(splits_dir / "dedup_report.json")
-    assert report["train"]["clusters"] == 10 and report["val"]["clean_test_clusters"] == 2
+    assert report["train"]["clusters"] == 10 and report["val"]["clean_clusters"] == 2
+    clean_clusters = read_json(splits_dir / "crowdai_val_clean_clusters.json")
+    assert clean_clusters == {"v20.png": ["v20.png", "v20_copy.png"], "v21.png": ["v21.png"]}
     assert (tmp_path / "outputs" / "figures" / "qa" / "dedup_clusters.png").is_file()
     assert len(read_json(tmp_path / "data" / "crowdai" / "hashes" / "train_aug.json")) == 12
 
-    # download check and instance cache
+    # download check and instance cache; the held-out test is a train tile (train image ids follow t00 ... t09)
     prepare = load_script("prepare_crowdai")
     prepare.main(["--stats", *common])
     stats = read_json(splits_dir / "crowdai_stats.json")
     assert (stats["train"]["images"], stats["train"]["images_without_annotations"]) == (12, 2)
     assert stats["val"]["missing_files"] == stats["val"]["extra_files"] == 0
-    prepare.main(["--cache", "train_dedup", "val_tune", "test", *common])
-    cached = read_png(paths.instance_cache("crowdai", "test", 1))  # v20.png has image id 1
+    prepare.main(["--cache", "train_dedup", "val_tune", "test", "val_clean", *common])
+    cached = read_png(paths.instance_cache("crowdai", "val_clean", 1))  # v20.png has image id 1
     np.testing.assert_array_equal(cached, scenes["val"]["v20.png"].instance_map)
-    assert read_json(splits_dir / "crowdai_raster_stats.json")["test"]["images"] == 2
+    held_out = split["test"][0]
+    held_out_id = list(scenes["train"]).index(held_out) + 1
+    cached = read_png(paths.instance_cache("crowdai", "test", held_out_id))
+    np.testing.assert_array_equal(cached, scenes["train"][held_out].instance_map)
+    raster = read_json(splits_dir / "crowdai_raster_stats.json")
+    assert (raster["test"]["images"], raster["val_clean"]["images"]) == (1, 2)
 
-    # density strata: test first, frozen afterwards, val_tune reuses its thresholds
+    # density strata: test first, frozen afterwards; val_tune and val_clean reuse its thresholds
     make_density = load_script("make_density")
     make_density.main(["--data", "crowdai", "--split", "test", *common])
     with pytest.raises(SystemExit):
         make_density.main(["--data", "crowdai", "--split", "test", *common])
-    make_density.main(["--data", "crowdai", "--split", "val_tune", *common])
     test_strata = read_json(paths.density_file("crowdai", "test", splits_dir))
-    tune_strata = read_json(paths.density_file("crowdai", "val_tune", splits_dir))
-    assert tune_strata["thresholds"] == test_strata["thresholds"]
-    assert sorted(i for ids in test_strata["main"]["strata"].values() for i in ids) == [1, 2]
+    assert sorted(i for ids in test_strata["main"]["strata"].values() for i in ids) == [held_out_id]
+    for name in ("val_tune", "val_clean"):
+        make_density.main(["--data", "crowdai", "--split", name, *common])
+        assert read_json(paths.density_file("crowdai", name, splits_dir))["thresholds"] == test_strata["thresholds"]
+    clean_strata = read_json(paths.density_file("crowdai", "val_clean", splits_dir))
+    assert sorted(i for ids in clean_strata["main"]["strata"].values() for i in ids) == [1, 2]
 
 
 def test_whu_scripts_on_a_fake_download(tmp_path, monkeypatch):

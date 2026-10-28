@@ -3,7 +3,7 @@
 train: scenes 0-9 (t00.png ... t09.png) plus an exact 90° rotation of t00 (t00_rot.png) and an exact horizontal flip
 of t01 (t01_flip.png): 12 images in 10 duplicate clusters.
 val: scene 20 (v20.png, image id 1), scene 21 (v21.png, id 2), a transposed copy of train t03 (v_leak.png, leaked
-from train) and a vertically flipped copy of v20 (v20_copy.png): the clean test is v20.png and v21.png.
+from train) and a vertically flipped copy of v20 (v20_copy.png): val_clean is v20.png and v21.png.
 Copies carry no annotations. Images are PNG so that the copies are pixel-exact; real CrowdAI tiles are JPEG.
 """
 

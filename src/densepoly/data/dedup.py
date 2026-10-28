@@ -129,28 +129,35 @@ def cluster(names: Sequence[str], hashes: Sequence[Sequence[str]]) -> dict[str, 
 
 
 def split_train(
-    clusters: dict[str, list[str]], val_fraction: float = 0.1, tune_sub_size: int = 1000, seed: int = 0
+    clusters: dict[str, list[str]],
+    val_fraction: float = 0.1,
+    test_fraction: float = 0.1,
+    tune_sub_size: int = 1000,
+    seed: int = 0,
 ) -> dict[str, list[str]]:
-    """One representative per cluster. A random `val_fraction` of the clusters (seed) forms val_tune, the rest
-    train_dedup; val_tune is then split (same seed) into val_tune_sub (tune_sub_size images) and val_select."""
+    """One representative per cluster. The clusters are shuffled once (seed): the first `val_fraction` of them form
+    val_tune, the next `test_fraction` the held-out test, the rest train_dedup. val_tune is then split (same seed)
+    into val_tune_sub (tune_sub_size images) and val_select."""
     reps = sorted(clusters)
-    chosen = set(np.random.default_rng(seed).permutation(len(reps))[: int(round(val_fraction * len(reps)))].tolist())
-    val_tune = [r for i, r in enumerate(reps) if i in chosen]
-    train_dedup = [r for i, r in enumerate(reps) if i not in chosen]
+    order = np.random.default_rng(seed).permutation(len(reps)).tolist()
+    n_val, n_test = int(round(val_fraction * len(reps))), int(round(test_fraction * len(reps)))
+    tune, test = set(order[:n_val]), set(order[n_val : n_val + n_test])
+    val_tune = [r for i, r in enumerate(reps) if i in tune]
     sub = set(np.random.default_rng(seed).permutation(len(val_tune))[:tune_sub_size].tolist())
     return {
-        "train_dedup": train_dedup,
+        "train_dedup": [r for i, r in enumerate(reps) if i not in tune and i not in test],
         "val_tune": val_tune,
         "val_tune_sub": [r for i, r in enumerate(val_tune) if i in sub],
         "val_select": [r for i, r in enumerate(val_tune) if i not in sub],
+        "test": [r for i, r in enumerate(reps) if i in test],
     }
 
 
 @dataclass
 class DedupResult:
-    splits: dict[str, list[str]]  # train_dedup, val_tune, val_tune_sub, val_select, test
+    splits: dict[str, list[str]]  # train_dedup, val_tune, val_tune_sub, val_select, test, val_clean
     train_clusters: dict[str, list[str]]
-    test_clusters: dict[str, list[str]]
+    val_clean_clusters: dict[str, list[str]]
     report: dict
 
 
@@ -160,22 +167,23 @@ def build_splits(
     val_names: Sequence[str],
     val_hashes: Sequence[Sequence[str]],
     val_fraction: float = 0.1,
+    test_fraction: float = 0.1,
     tune_sub_size: int = 1000,
     seed: int = 0,
 ) -> DedupResult:
     """All splits of docs/DATA.md §2.2 plus a report comparing our counts with the verified reference numbers.
 
-    The clean test keeps val images none of whose six hashes occurs among any train variant hash, then keeps one
+    val_clean keeps val images none of whose six hashes occurs among any train variant hash, then keeps one
     representative per duplicate cluster inside val.
     """
     train_clusters = cluster(train_names, train_hashes)
-    splits = split_train(train_clusters, val_fraction, tune_sub_size, seed)
+    splits = split_train(train_clusters, val_fraction, test_fraction, tune_sub_size, seed)
     train_any = {h for hs in train_hashes for h in hs}
     train_original = {hs[0] for hs in train_hashes}
     pairs = list(zip(val_names, val_hashes, strict=True))
     clean = [(n, hs) for n, hs in pairs if train_any.isdisjoint(hs)]
-    test_clusters = cluster([n for n, _ in clean], [hs for _, hs in clean])
-    splits["test"] = sorted(test_clusters)
+    val_clean_clusters = cluster([n for n, _ in clean], [hs for _, hs in clean])
+    splits["val_clean"] = sorted(val_clean_clusters)
 
     sizes = np.array([len(m) for m in train_clusters.values()])
     largest = sorted(train_clusters.items(), key=lambda kv: (-len(kv[1]), kv[0]))[:10]
@@ -193,13 +201,19 @@ def build_splits(
             "images": len(val_names),
             "original_hash_not_in_train_originals": sum(hs[0] not in train_original for _, hs in pairs),
             "no_variant_hash_in_train": len(clean),
-            "clean_test_clusters": len(test_clusters),
+            "clean_clusters": len(val_clean_clusters),
         },
         "splits": {name: len(items) for name, items in splits.items()},
-        "params": {"val_fraction": val_fraction, "tune_sub_size": tune_sub_size, "seed": seed, "variants": VARIANTS},
+        "params": {
+            "val_fraction": val_fraction,
+            "test_fraction": test_fraction,
+            "tune_sub_size": tune_sub_size,
+            "seed": seed,
+            "variants": VARIANTS,
+        },
         "reference": REFERENCE,
     }
-    return DedupResult(splits, train_clusters, test_clusters, report)
+    return DedupResult(splits, train_clusters, val_clean_clusters, report)
 
 
 def cluster_mosaic(
