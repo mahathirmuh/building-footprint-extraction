@@ -122,9 +122,35 @@ dan definisi kepadatan (Fase 1).
 
 ---
 
-## Fase 1 — Data (sedang berjalan: CrowdAI selesai; WHU dikonversi, ambang kepadatan WHU menunggu persetujuan)
+## Fase 1 — Data (selesai 29 Okt 2026, menunggu persetujuan penutupan)
 
-**Dibuat** (diuji di data sintetis; `pytest -q` → 188 tes lolos):
+**Ringkasan** (rincian di bawah; `pytest -q` → 197 tes lolos):
+
+- **CrowdAI v1.0:**
+  - Unduhan lengkap: 280.741 + 60.317 citra.
+  - Hash identik dengan rilisan paper deduplikasi. Angka 114.548 dan 3.949 direproduksi persis.
+  - Split final (opsi E): `train_dedup` 23.427, `val_tune` 2.928 (1.000 + 1.928), `test` 2.928 (holdout klaster
+    train), dan `val_clean` 212 (val bersih, untuk banding HiSup).
+  - Strata dibekukan: ambang 6 dan 11 bangunan per tile; indeks sekunder bersentuhan vs tidak.
+- **WHU 0,2 m:**
+  - Rilisan resmi berupa tile 1024², sedangkan Pix2Poly memakai tile 512² yang test-nya tidak bisa direkonstruksi
+    persis.
+  - Opsi R: kuadran 512² berisi bangunan; test hanya bagian `300`.
+  - GT utama dari bangunan resmi, yang memisahkan rumah berdempetan, ditambah GT `p2p` untuk banding angka paper.
+  - Patch: 84.762 / 13.761 / 35.487.
+  - Strata dibekukan: ambang 3 dan 6 bangunan per patch.
+- **Keputusan selama Fase 1:**
+  - CrowdAI tetap v1.0, bukan v2.0 (opsi A).
+  - Test CrowdAI = holdout klaster train, karena val bersih hanya 212 tile (opsi E; keputusan #7 dan §8.5 diubah).
+  - Indeks kepadatan sekunder dibuat biner, karena 95% tile CrowdAI tidak punya bangunan bersentuhan.
+  - WHU memakai opsi R (keputusan #11 diubah).
+- **Temuan untuk fase berikut:**
+  - Bangunan bersentuhan jarang di CrowdAI: hanya 1,3% bangunan berjarak ≤ 2 px. Di WHU angkanya 5,7% (r = 3).
+    Ini penting untuk radius kontak (Fase 2) dan bobot kelas kontak (Fase 5).
+  - Poligon GT CrowdAI mengulang titik pertama.
+  - Ring GT berluas nol (±0,7%) dan GT id 0 di WHU perlu ditangani di Fase 3.
+
+**Dibuat** (diuji di data sintetis):
 - `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
   anotasi (citra tanpa anotasi, ring tidak valid, multi-ring, piksel tumpang tindih, anotasi tertutup penuh), cek
   konvensi titik penutup dan arah putaran, cek file di anotasi vs di disk.
@@ -302,10 +328,15 @@ CrowdAI disetujui dan dibekukan.
 - Gambar QA `outputs/figures/qa/whu_gt_main_vs_p2p.png`: rumah gandeng yang digabung GT `p2p` menjadi satu poligon
   dipisah per bangunan oleh GT utama.
 
-**Strata kepadatan WHU** (dari GT utama, per patch 224²; **menunggu persetujuan, belum dibekukan**):
+**Strata kepadatan WHU** (dari GT utama, per patch 224²; **disetujui dan dibekukan 29 Okt 2026**, dihitung ulang di
+`0acb993` agar provenance bersih, dan isinya identik):
 - Tertil jumlah bangunan per patch di test = **3 dan 6**. Test: kosong 6.399 (= 6.153 patch negatif + 246 patch tanpa
   anotasi), jarang 11.189, sedang 10.030, padat 7.869. `val_tune`: 3.886 / 4.976 / 2.834 / 2.065.
 - Indeks sekunder (r = 3): test 1.371 patch bersentuhan vs 27.717 tidak; `val_tune` 371 vs 9.504.
 
-**Menunggu:** persetujuan ambang WHU 3 dan 6 (lalu file strata WHU dibekukan). Setelah itu kriteria "Selesai jika"
-Fase 1 terpenuhi untuk kedua dataset.
+**Status kriteria "Selesai jika" Fase 1 (29 Okt 2026): terpenuhi.**
+- Jumlah citra CrowdAI cocok dengan semua angka referensi, dan selisih test (212 tile `val_clean`) dijelaskan.
+- Tes membuktikan tidak ada citra atau klaster di dua split. Split WHU terpisah per area resmi.
+- Ambang kepadatan CrowdAI dan WHU disetujui dan dibekukan.
+
+**Menunggu:** persetujuan untuk menutup Fase 1 dan mulai Fase 2 (label dan prior morfologi).

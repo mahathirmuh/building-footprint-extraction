@@ -50,9 +50,9 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 | smp 0.6.0 | `in_channels≠3` menyalin bobot RGB secara siklik lalu mengalikan 3/in_ch; input wajib kelipatan 32 |
 | Ultralytics 8.4.x | `yolov8n-obb.pt` tersedia; label OBB: `cls x1 y1 x2 y2 x3 y3 x4 y4` ternormalisasi |
 
-- Fase 0 selesai (kerangka repo, config, paths, fixture sintetis; lihat `docs/progress.md`). Fase 1 berjalan: CrowdAI
-  selesai (split dan strata dibekukan); WHU 0,2 m dikonversi dengan opsi R (`docs/DATA.md` §3.2), ambang kepadatan
-  WHU menunggu persetujuan. Belum ada model.
+- Fase 0 selesai (kerangka repo, config, paths, fixture sintetis; lihat `docs/progress.md`). Fase 1 dikerjakan
+  (29 Okt 2026): split dan strata kepadatan CrowdAI dan WHU (opsi R, `docs/DATA.md` §3.2) dibekukan, dan penutupan
+  fase menunggu persetujuan. Belum ada model.
 
 ## Cara bekerja di proyek ini
 
@@ -255,7 +255,8 @@ python scripts/tables.py && python scripts/figures.py
 - Tier GPU Colab (T4 gratis / Pro): `TODO`. Repo GitHub privat + token di Colab Secrets: `TODO`.
 - Definisi kepadatan: default disetujui (28 Okt 2026), yaitu jumlah bangunan GT per tile dibagi tertil. Ambang CrowdAI
   disetujui dan dibekukan 28 Okt 2026: 6 dan 11 bangunan per tile. Indeks sekunder diganti menjadi tile bersentuhan
-  vs tidak (r = 2), karena tertil rasio bersentuhan degenerasi. Ambang WHU menyusul setelah data WHU dikonversi.
+  vs tidak (r = 2), karena tertil rasio bersentuhan degenerasi. Ambang WHU (GT utama, per patch 224², r = 3)
+  disetujui dan dibekukan 29 Okt 2026: 3 dan 6 bangunan per patch.
 - Kriteria keputusan di `docs/EXPERIMENTS.md` §8 (termasuk ambang "mendekati SOTA" ≤ 3 AP dan aturan pemilihan FULL
   final) sudah dibekukan. Kalau mau diubah, ubah **sebelum Fase 3** dan tulis alasannya; setelah itu tidak boleh.
 - Sitasi yang perlu dicek: Dahatonde dkk. (2024) [lengkapi]; Huang & Zhang (2011) halaman/DOI; halaman Pix2Poly

@@ -253,6 +253,14 @@ terpisah di anotasi resmi, set ini bisa menjadi uji tambahan untuk pemisahan rum
   | `val_tune` | 0 | 1.191 | 873 | 864 | 127 / 2.801 |
   | `val_clean` | 0 | 91 | 60 | 61 | 10 / 202 |
 
+- **WHU (disetujui dan dibekukan 29 Okt 2026):** dihitung dari GT utama, per patch 224². `q33` = 3 dan `q67` = 6
+  bangunan per patch. Indeks sekunder memakai r = 3 px.
+
+  | Split | kosong | jarang (≤ 3) | sedang (4–6) | padat (≥ 7) | bersentuhan / tidak |
+  |---|---|---|---|---|---|
+  | `test` | 6.399 | 11.189 | 10.030 | 7.869 | 1.371 / 27.717 |
+  | `val_tune` | 3.886 | 4.976 | 2.834 | 2.065 | 371 / 9.504 |
+
 - Strata `kosong` tidak masuk AP/PoLiS/MTA (tidak terdefinisi), tetapi masuk metrik piksel dan hitungan positif palsu.
 - File `splits/density_<dataset>_<split>.json` berisi definisi, ambang, ukuran strata, daftar `image_id` per strata, tanggal,
   dan hash git. Dibuat **sebelum** evaluasi model mana pun, lalu dibekukan. Ambang dihitung hanya dari jumlah GT,
