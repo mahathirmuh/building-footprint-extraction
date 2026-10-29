@@ -1,0 +1,35 @@
+{
+ "train_dedup": {
+  "created": "2026-10-29T21:56:05+08:00",
+  "git": "191fb96287f4a908e374a7f472005f271b61ad4a",
+  "units": 2604,
+  "computed_now": 2604,
+  "already_cached": 0,
+  "workers": 12,
+  "wall_seconds": 8759.4,
+  "core_seconds": 104449.9,
+  "seconds_per_unit": 40.111
+ },
+ "val_tune": {
+  "created": "2026-10-29T22:21:08+08:00",
+  "git": "191fb96287f4a908e374a7f472005f271b61ad4a",
+  "units": 490,
+  "computed_now": 490,
+  "already_cached": 0,
+  "workers": 12,
+  "wall_seconds": 1493.5,
+  "core_seconds": 17680.4,
+  "seconds_per_unit": 36.082
+ },
+ "test": {
+  "created": "2026-10-29T23:26:36+08:00",
+  "git": "191fb96287f4a908e374a7f472005f271b61ad4a",
+  "units": 1173,
+  "computed_now": 1173,
+  "already_cached": 0,
+  "workers": 12,
+  "wall_seconds": 3926.5,
+  "core_seconds": 46694.7,
+  "seconds_per_unit": 39.808
+ }
+}

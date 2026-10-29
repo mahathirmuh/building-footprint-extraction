@@ -1,0 +1,46 @@
+{
+ "train_dedup": {
+  "created": "2026-10-29T16:56:04+08:00",
+  "git": "191fb96287f4a908e374a7f472005f271b61ad4a",
+  "units": 23427,
+  "computed_now": 23427,
+  "already_cached": 0,
+  "workers": 12,
+  "wall_seconds": 4221.4,
+  "core_seconds": 50030.6,
+  "seconds_per_unit": 2.136
+ },
+ "val_tune": {
+  "created": "2026-10-29T17:09:22+08:00",
+  "git": "191fb96287f4a908e374a7f472005f271b61ad4a",
+  "units": 2928,
+  "computed_now": 2928,
+  "already_cached": 0,
+  "workers": 12,
+  "wall_seconds": 789.2,
+  "core_seconds": 9225.0,
+  "seconds_per_unit": 3.151
+ },
+ "test": {
+  "created": "2026-10-29T17:23:10+08:00",
+  "git": "191fb96287f4a908e374a7f472005f271b61ad4a",
+  "units": 2928,
+  "computed_now": 2928,
+  "already_cached": 0,
+  "workers": 12,
+  "wall_seconds": 820.5,
+  "core_seconds": 9580.0,
+  "seconds_per_unit": 3.272
+ },
+ "val_clean": {
+  "created": "2026-10-29T17:24:47+08:00",
+  "git": "191fb96287f4a908e374a7f472005f271b61ad4a",
+  "units": 212,
+  "computed_now": 212,
+  "already_cached": 0,
+  "workers": 12,
+  "wall_seconds": 85.5,
+  "core_seconds": 842.3,
+  "seconds_per_unit": 3.973
+ }
+}
