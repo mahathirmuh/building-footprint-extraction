@@ -340,3 +340,65 @@ CrowdAI disetujui dan dibekukan.
 - Ambang kepadatan CrowdAI dan WHU disetujui dan dibekukan.
 
 **Fase 1 disetujui dan ditutup 29 Okt 2026.** Berikutnya Fase 2 (label dan prior morfologi).
+
+## Fase 2 — Label dan prior morfologi (sedang berjalan)
+
+**Dibuat** (diuji di data sintetis; `pytest -q` → 265 tes lolos):
+
+- `labels/orientation.py`: θ dari sisi kotak `minAreaRect` yang lebih panjang. Bangunan selebar 1 px (misalnya
+  terpotong tepi tile) tetap mendapat arahnya. Hasilnya (sin 4θ, cos 4θ) dan mask valid V (luas ≥ A_θ).
+- `labels/boundary_weight.py`: piksel batas (kedua sisi setiap tepi tetangga-4), lalu `w = 1 + α·exp(−d²/2σ²)`.
+- `labels/targets.py`: semua target diturunkan dari satu peta instance.
+- `labels/instances.py`: cache peta instance untuk kedua dataset. WHU memakai GT utama (`--cache`).
+- `data/transforms.py`: geometri dihedral pada RGB, prior, dan peta instance, lalu target diturunkan sesudahnya.
+  Fotometrik ±10% hanya pada RGB. Padding: reflect; kelas 255; θ, V, dan w 0. Tes membuktikan target yang diturunkan
+  ulang sama dengan target yang ditransformasi, mengikuti tabel tanda sin 4θ di METHOD §3.5.
+- `priors/mbi.py` (*white top-hat by reconstruction*, DMP), `priors/gap.py` (mode `max` dan `contrast`),
+  `priors/cache.py` (PNG R = MBI, G = celah; skala persentil 99,5; statistik normalisasi).
+- Skrip: `precompute_priors.py` (`--benchmark`, `--stats`, cache yang bisa dilanjutkan), `label_stats.py`,
+  `figures.py --qa-labels/--qa-gap-mode`, dan `gap_check.py`.
+- `paths`: `val_tune_sub` dan `val_select` memakai folder cache `val_tune`. Prior WHU dikunci per tile resmi.
+
+**Ketidaksesuaian spesifikasi:** SE garis harus berpanjang ganjil (METHOD §2.2, §10), sedangkan skala WHU
+15, 30, …, 120 berisi bilangan genap. Usulan: 15, 31, 45, 61, 75, 91, 105, 121 (15·k dibulatkan ke ganjil
+berikutnya). Sudah dipakai di `configs/data/whu.yaml`; **menunggu persetujuan**.
+
+**Statistik label** (`splits/<ds>_label_stats.json`):
+
+| Dataset / split | Kontak / piksel bangunan | Tile/patch dengan kontak | θ-valid / piksel bangunan |
+|---|---|---|---|
+| CrowdAI `train_dedup` (r = 2) | 0,012% (55.405 px) | 4,5% | 99,995% |
+| CrowdAI `test` | 0,014% | 5,0% | 99,995% |
+| WHU train (r = 3) | 0,014% (119.434 px) | 4,5% | 99,99% |
+| WHU test | 0,011% | 3,9% | 99,99% |
+
+- Kontak sangat langka di kedua dataset: sekitar 1 piksel per 8.000 piksel bangunan.
+- Di WHU, poligon GT utama (konvensi kontur Pix2Poly) menyusut ±0,5 px per sisi. Celah antar-rumah jadi bertambah
+  ±1 px, sehingga sebagian pasangan berjarak 2–3 px keluar dari r = 3.
+- Label dihitung saat training (tidak di-cache), jadi radius r dan bobot kelas kontak masih bisa diputuskan di Fase 5
+  tanpa mengulang cache.
+
+**Pemeriksaan peta celah di `val_tune`** (`outputs/metrics/<ds>/phase2/gap_check_val_tune.json`, commit `34854e4`):
+- Metrik: AUC piksel celah sempit (latar yang melihat dua bangunan dalam r + 1 px) terhadap latar lain dan terhadap
+  atap.
+- CrowdAI (2.928 tile): `contrast` lebih baik di setiap L_g (L_g 9: 0,788 vs 0,782; L_g 11: 0,797 vs 0,792).
+- WHU (1.000 patch): `max` sedikit lebih baik (L_g 13: 0,733 vs 0,722).
+- Selisih antar-mode dan antar-L_g ≤ 0,02, jadi pilihannya hampir tidak berpengaruh.
+
+**Gambar QA:** `outputs/figures/qa/{crowdai,whu}_{labels,gap_mode}.png`.
+- Kontak hanya garis tipis di tile yang bersentuhan.
+- θ di CrowdAI didominasi 0°/90° (pola grid), sedangkan di WHU beragam.
+- MBI menyala di atap terang, tetapi juga di jalan dan kolam renang, dan lemah di atap gelap (kelemahan MBI yang
+  dikenal).
+- Peta celah menangkap celah antar-atap, dan juga bayangan serta tepi jalan.
+
+**Benchmark prior** (12 worker):
+- CrowdAI: 29.495 tile, ±1,6 jam.
+- WHU: 4.267 tile resmi 1024², ±4,8 jam.
+- Satu core tanpa beban: ±0,6 s per tile 300² dan ±13 s per tile 1024²; per satuan luas sesuai METHOD (±1,3 s per
+  320²). Saat 12 proses berjalan bersamaan, waktu per unit naik ±3× karena laptop didominasi E-core.
+
+**Menunggu persetujuan:**
+1. Mode celah dan L_g.
+2. Skala MBI, termasuk pembulatan ganjil skala WHU.
+3. Run prior penuh (±6,4 jam).

@@ -1,0 +1,32 @@
+{
+ "train_dedup": {
+  "created": "2026-10-29T14:33:37+08:00",
+  "git": "34854e4604d038e52c097b343f415142ba041bfc",
+  "images": 84762,
+  "instances": 356219,
+  "skipped": 10366,
+  "empty": 0,
+  "overlap_px": 0,
+  "hidden": 0
+ },
+ "val_tune": {
+  "created": "2026-10-29T14:35:26+08:00",
+  "git": "34854e4604d038e52c097b343f415142ba041bfc",
+  "images": 13761,
+  "instances": 40888,
+  "skipped": 3765,
+  "empty": 0,
+  "overlap_px": 0,
+  "hidden": 0
+ },
+ "test": {
+  "created": "2026-10-29T14:39:26+08:00",
+  "git": "34854e4604d038e52c097b343f415142ba041bfc",
+  "images": 35487,
+  "instances": 140689,
+  "skipped": 6153,
+  "empty": 0,
+  "overlap_px": 0,
+  "hidden": 0
+ }
+}
