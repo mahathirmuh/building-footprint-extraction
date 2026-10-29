@@ -17,7 +17,7 @@ labels:                       # docs/METHOD.md §3
   edge_weight_alpha: 5.0      # α
   edge_weight_sigma_px: ???   # σ
 
-priors:                       # docs/METHOD.md §2; checked visually in Phase 2, then frozen
+priors:                       # docs/METHOD.md §2; frozen after the Phase 2 QA (29 Oct 2026)
   mbi_scales_px: ???          # s
   gap_se_length_px: ???       # L_g
   gap_mode: contrast          # max | contrast

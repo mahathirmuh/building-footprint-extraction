@@ -50,8 +50,7 @@ RGB ──┬──────────────────────�
 - `MBI = mean_{d, s} DMP(s, d)`.
 - Skala didefinisikan dalam **meter** (±3–25 m, sesuai ukuran rumah) lalu dikonversi ke piksel per dataset (§10):
   CrowdAI (±0,3 m) `s ∈ {11, 21, …, 81}` px (Δs = 10); WHU 0,2 m `s ∈ {15, 31, 45, 61, 75, 91, 105, 121}` px (15·k,
-  dibulatkan ke ganjil karena SE garis harus berpusat; diusulkan 29 Okt 2026, menunggu persetujuan QA). Rentang ini boleh
-  disesuaikan saat QA visual Fase 2, lalu dibekukan.
+  dibulatkan ke ganjil karena SE garis harus berpusat). Disetujui setelah QA visual Fase 2 dan **dibekukan 29 Okt 2026**.
 - Waktu terukur saat dokumen disusun: ±1,4 s per tile 320² untuk 32 opening by reconstruction. Kalau di mesinmu jauh
   lebih lambat (> 3 s per tile), boleh memakai opening biasa (seperti demo ETS), **asal dicatat**.
 
@@ -309,9 +308,9 @@ grid-nya) dikali 2,25.
 | Luas min. untuk θ | A_θ | 20 px | — | tetap | |
 | Bobot tepi | α, σ | 5, 3 px | — | tetap | |
 | Bobot loss θ | λ | 1,0 | {0,5; 1; 2} hanya bila L_θ mendominasi | awal Fase 6, sebelum FULL seed 0, sekali | dari run pendek; sama untuk semua seed |
-| Skala MBI | s | 11–81 px, Δs 10 | visual | Fase 2, sekali | |
-| Panjang SE celah | L_g | 9 px | {7, 9, 11} visual | Fase 2, sekali | |
-| Mode celah | — | `contrast` | {`max`, `contrast`} visual | Fase 2, sekali | |
+| Skala MBI | s | 11–81 px, Δs 10 | visual | Fase 2, sekali | dibekukan 29 Okt 2026 (WHU 15–121, ganjil) |
+| Panjang SE celah | L_g | 9 px | {7, 9, 11} visual + AUC `val_tune` | Fase 2, sekali | dibekukan 29 Okt 2026: 9 (WHU 13) |
+| Mode celah | — | `contrast` | {`max`, `contrast`} visual + AUC `val_tune` | Fase 2, sekali | dibekukan 29 Okt 2026: `contrast` |
 | Batas bawah ambang B0 | t_min | 0,15 | {0,05; 0,10; 0,15; 0,20} | `val_tune_sub` | B0 saja; skala MBI [0, 1] |
 | Ambang marker | τ | 0,4 | {0,3; 0,4; 0,5; 0,6} | `val_tune_sub`, per model | |
 | Luas min. marker | m_min | 8 px | {4, 8, 16} | `val_tune_sub`, per model | |

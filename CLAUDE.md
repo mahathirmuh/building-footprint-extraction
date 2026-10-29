@@ -257,6 +257,9 @@ python scripts/tables.py && python scripts/figures.py
   disetujui dan dibekukan 28 Okt 2026: 6 dan 11 bangunan per tile. Indeks sekunder diganti menjadi tile bersentuhan
   vs tidak (r = 2), karena tertil rasio bersentuhan degenerasi. Ambang WHU (GT utama, per patch 224², r = 3)
   disetujui dan dibekukan 29 Okt 2026: 3 dan 6 bangunan per patch.
+- Prior (Fase 2) dibekukan 29 Okt 2026: mode celah `contrast`, L_g 9 px (WHU 13), skala MBI CrowdAI 11–81 px dan WHU
+  15, 31, 45, 61, 75, 91, 105, 121 px (SE garis harus ganjil). Radius kontak r dan bobot kelas kontak dibahas di
+  Fase 5, karena kontak hanya ±0,01% piksel bangunan di kedua dataset (`docs/progress.md` Fase 2).
 - Kriteria keputusan di `docs/EXPERIMENTS.md` §8 (termasuk ambang "mendekati SOTA" ≤ 3 AP dan aturan pemilihan FULL
   final) sudah dibekukan. Kalau mau diubah, ubah **sebelum Fase 3** dan tulis alasannya; setelah itu tidak boleh.
 - Sitasi yang perlu dicek: Dahatonde dkk. (2024) [lengkapi]; Huang & Zhang (2011) halaman/DOI; halaman Pix2Poly

@@ -398,7 +398,8 @@ berikutnya). Sudah dipakai di `configs/data/whu.yaml`; **menunggu persetujuan**.
 - Satu core tanpa beban: ±0,6 s per tile 300² dan ±13 s per tile 1024²; per satuan luas sesuai METHOD (±1,3 s per
   320²). Saat 12 proses berjalan bersamaan, waktu per unit naik ±3× karena laptop didominasi E-core.
 
-**Menunggu persetujuan:**
-1. Mode celah dan L_g.
-2. Skala MBI, termasuk pembulatan ganjil skala WHU.
-3. Run prior penuh (±6,4 jam).
+**Keputusan (29 Okt 2026, disetujui):**
+1. Mode celah `contrast` dengan L_g default 9 px (WHU 13), dibekukan.
+2. Skala MBI dibekukan: CrowdAI 11–81 px; WHU 15, 31, 45, 61, 75, 91, 105, 121 px.
+3. Run prior penuh dijalankan: statistik dari 500 unit train, lalu cache CrowdAI dan WHU berurutan.
+4. Radius kontak r dan bobot kelas kontak dibahas di Fase 5.
