@@ -103,9 +103,10 @@ prior. Gradien bobot kanal prior tetap tidak nol karena inputnya tidak nol.
 ### 3.1 Peta instance `L` (`uint16`, 0 = latar)
 - CrowdAI: rasterisasi tiap anotasi (`pycocotools` `annToMask`), digambar urut **luas menurun** sehingga bangunan
   kecil yang tumpang tindih tetap terlihat. Catat jumlah piksel yang tumpang tindih.
-- WHU protokol A (Pix2Poly): rasterisasi poligon COCO **hasil konversi** Pix2Poly dengan `annToMask` (sama seperti
-  CrowdAI), supaya label training konsisten dengan GT evaluasi. Poligon itu sendiri berasal dari CC mask biner
-  (`docs/DATA.md` §3.2).
+- WHU (opsi R): rasterisasi poligon **GT utama** (`annotation.json`) dengan `annToMask`, sama seperti CrowdAI,
+  supaya label training konsisten dengan GT evaluasi. Poligon itu berasal dari mask per bangunan COCO resmi yang
+  menjalani langkah poligon Pix2Poly, sehingga bangunan yang bersentuhan tetap terpisah (`docs/DATA.md` §3.2).
+  GT `p2p` (CC dari label raster) tidak dipakai untuk training.
 - WHU protokol B (0,3 m): CC dari mask biner dengan konektivitas penuh (8-tetangga, default `skimage.measure.label`).
 
 ### 3.2 Kelas 3 (kontak)

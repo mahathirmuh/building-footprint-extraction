@@ -108,10 +108,12 @@ mengurangi seed Tier 1. Diskusikan dulu.
 - Tabel terpisah **"dilaporkan di paper (val CrowdAI, bocor)"**: FFL, PolyWorld, HiSup, PolyR-CNN, Pix2Poly. Salin
   ulang angkanya dari PDF asli dan cantumkan nomor tabelnya (`configs/paper_numbers.yaml`); jangan disalin dari slide.
 
-**WHU (protokol A)**
-- FULL final dilatih di patch train Pix2Poly, dievaluasi di test dengan skrip yang di-vendor (aturan Pix2Poly:
-  `CIoU_p2p`, PoLiS, MTA).
-- Bandingkan dengan angka paper Pix2Poly (HiSup 79,62; Pix2Poly 81,63; FFL 32,19 / 54,52 C-IoU), ditandai sumbernya.
+**WHU (opsi R, `docs/DATA.md` §3.2)**
+- FULL final dilatih di patch train dengan label dari GT utama.
+- Banding paper: evaluasi test terhadap **GT `p2p`** dengan skrip vendor (aturan Pix2Poly: `CIoU_p2p`, PoLiS, MTA).
+  Bandingkan dengan angka paper Pix2Poly (HiSup 79,62; Pix2Poly 81,63; FFL 32,19 / 54,52 C-IoU), ditandai sumbernya
+  dan diberi catatan **"kira-kira"**: test kita direkonstruksi dari rilisan resmi (3.943 tile 512², Pix2Poly 3.848).
+- Klaim N1–N3 dan analisis N2 di WHU memakai **GT utama** (bangunan resmi, terpisah per bangunan).
 
 **Efisiensi:** jumlah parameter, FPS (batch 1, 320², AMP, 20 warmup + 200 iterasi), dan waktu post-processing per
 citra (CPU 1 thread). Catat nama GPU/CPU. Angka efisiensi pembanding dari paper diberi catatan perangkat berbeda.

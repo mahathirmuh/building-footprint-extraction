@@ -171,7 +171,9 @@ nomor tabel). Bila tidak cocok, periksa versi pycocotools, file anotasi yang dip
 `annotation-small.json`), dan pemakaian skor. Setelah lolos, jalankan di `crowdai/test`.
 
 ### 6.5 (Opsional) Reproduksi Pix2Poly di WHU (Fase 8)
-Bila checkpoint atau prediksi rilisan dipakai, `CIoU_p2p` test harus mendekati 81,63.
+Bila checkpoint atau prediksi rilisan dipakai, `CIoU_p2p` test terhadap GT `p2p` harus mendekati 81,63. Test kita
+direkonstruksi dari rilisan resmi (3.943 tile 512², Pix2Poly 3.848; `docs/DATA.md` §3.2), jadi selisih kecil tidak
+berarti pipeline salah. Catat selisihnya dan jangan menyetel apa pun agar cocok.
 
 ### 6.6 Bootstrap AP (Fase 3)
 Resampel identitas = `stats[0]` persis. Resampel dengan duplikat memberi distribusi AP yang masuk akal (CI memuat

@@ -12,7 +12,7 @@ MyDrive/densepoly/
 │   ├── crowdai_train_dedup.tar      # citra train_dedup + val_tune + cache instance + cache prior
 │   ├── crowdai_test.tar             # citra test (holdout dari train) + val_clean + cache
 │   ├── crowdai_gt.tar               # anotasi GT, file GT subset, prediksi HiSup
-│   └── whu_pix2poly_224.tar         # bila protokol A dipakai
+│   └── whu_pix2poly_224.tar         # tile resmi + annotation*.json + patches.csv (format final di Fase 4)
 └── outputs/                         # = DENSEPOLY_OUT (runs/, preds/, metrics/, tables/, figures/)
 ```
 

@@ -44,10 +44,11 @@ persis dengan rasterisasi pycocotools dari poligon GT-nya.
   Pekerjaan CPU ±0,6 jam-inti untuk hashing saja (tambah waktu baca disk); lihat `docs/COLAB.md` §8 untuk tempat
   menjalankannya. Minta konfirmasi sebelum menjalankan di seluruh data.
 - Cek konvensi titik penutup poligon dan arah putaran di GT CrowdAI; catat di `docs/progress.md`.
-- **WHU:** diskusikan protokol A/B dengan saya (`CLAUDE.md`, "Yang perlu saya putuskan"). Untuk A: siapkan
+- **WHU:** diskusikan protokolnya dengan saya (`CLAUDE.md`, "Yang perlu saya putuskan"). Siapkan
   `scripts/prepare_whu_pix2poly.py` yang mengikuti `data_preprocess/whu_buildings_to_coco.py` Pix2Poly **tanpa mengubah
   logika** (cantumkan atribusi MIT). Cek juga anotasi COCO resmi WHU 0,2 m: apakah bangunan yang bersentuhan
-  terpisah (hitung pasangan poligon yang bersinggungan).
+  terpisah (hitung pasangan poligon yang bersinggungan). Diputuskan 29 Okt 2026: opsi R (kuadran 512² dari tile
+  resmi, GT utama dari bangunan resmi + GT `p2p`; `docs/DATA.md` §3.2).
 - `scripts/make_density.py --data crowdai --split test` (dan `val_tune`, `whu/test`): strata kepadatan
   (`docs/DATA.md` §4) → `splits/density_<dataset>_<split>.json`.
 
@@ -190,8 +191,9 @@ B5 (seed 0) di `crowdai/test` tersedia, total dan per strata.
 - `crowdai/val_clean`: FULL final vs HiSup (prediksi rilisan) — total dan per strata (212 tile, sertakan CI),
   `CIoU` dan `CIoU_p2p`. Tabel terpisah
   untuk angka paper (PolyR-CNN, Pix2Poly, FFL, HiSup di val bocor), ditandai "dilaporkan di paper".
-- WHU: evaluasi dengan skrip Pix2Poly yang di-vendor; bandingkan dengan angka paper. Opsional: uji kewarasan §6.5
-  (checkpoint Pix2Poly rilisan pada test yang sama).
+- WHU: evaluasi terhadap GT `p2p` dengan skrip Pix2Poly yang di-vendor; bandingkan dengan angka paper (kira-kira,
+  test direkonstruksi). Klaim N1–N3 di WHU memakai GT utama. Opsional: uji kewarasan §6.5 (checkpoint Pix2Poly
+  rilisan pada test yang sama).
 - Efisiensi: jumlah parameter, FPS, waktu post-processing di GPU/CPU yang sama.
 - Analisis N2: efek per strata dan Δpadat − Δjarang (bootstrap berstrata).
 
@@ -235,7 +237,8 @@ B5 (seed 0) di `crowdai/test` tersedia, total dan per strata.
   `jupyter nbconvert --execute --to html` ke `outputs/report/demo_hasil.html`, dan juga ke `.ipynb` ter-eksekusi bila
   dosen memintanya.
 - Opsional lebih awal: setelah Fase 4, bagian 1–4 (tanpa model) sudah bisa dibuat sebagai bahan laporan kemajuan.
-- Tulis temuan dan keterbatasan di `docs/progress.md`: GT WHU dari CC, deduplikasi berbasis kesamaan p-hash,
+- Tulis temuan dan keterbatasan di `docs/progress.md`: test WHU direkonstruksi (banding angka Pix2Poly hanya
+  kira-kira), GT `p2p` WHU dari CC, deduplikasi berbasis kesamaan p-hash,
   lubang poligon diabaikan, θ kurang bermakna untuk bangunan non-siku, perilaku metrik vendor (C-IoU hanya citra
   berprediksi, PoLiS cocok via bbox, MTA menggabungkan poligon per citra).
 

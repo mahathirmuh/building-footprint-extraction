@@ -30,9 +30,13 @@ data/
 │   └── hashes/{train,val}_aug.json     # cache p-hash 6 varian (dibuat skrip)
 ├── crowdai_v2/mapping-challenge-v2.0/  # v2.0: hanya JSON yang diekstrak; tidak dipakai (opsi A)
 ├── whu/
-│   ├── raw_0.2/{train,val,test}/{image,label}/   # protokol A (nama folder mengikuti Pix2Poly)
-│   ├── pix2poly_224/{train,val,test}/{images/,annotation.json}
-│   └── raw_0.3/{train,val,test}/{image,label}/   # protokol B (opsional)
+│   ├── raw_0.2/{train,val,test}/{image,label}/<stem>.tif   # tile resmi 1024² (dari whu_raster_1024.rar)
+│   ├── official_coco_0.2/{train,validation,test}.json   # COCO resmi (dari annotation.zip)
+│   ├── pix2poly_224/{train,val,test}/                   # opsi R (§3.2), patch 224² dari kuadran 512²
+│   │   ├── annotation.json        # GT utama: bangunan resmi, terpisah per bangunan
+│   │   ├── annotation_p2p.json    # GT Pix2Poly (CC), hanya untuk banding angka paper
+│   │   └── patches.csv            # file_name, image_id, tile, quadrant, x, y (posisi patch di tile resmi)
+│   └── raw_0.3/{train,val,test}/{image,label}/   # protokol B (tidak dipakai)
 ├── instances/<dataset>/<split>/<image_id>.png    # cache peta instance uint16 (dibuat skrip)
 └── priors/<dataset>/<split>/<image_id>.png       # cache prior: R = MBI, G = celah, B = 0 (uint8)
 ```
@@ -153,9 +157,9 @@ Tidak ada resize.
 Halaman resmi tidak menyebut apakah tile punya georeferensi; yang disebut hanya bahwa citra asli bisa disusun ulang
 dari urutan pemotongan.
 
-### 3.2 Protokol A (dipilih 28 Okt 2026): mengikuti Pix2Poly
+### 3.2 Protokol WHU: opsi R (dipilih 29 Okt 2026; menggantikan protokol A dari 28 Okt 2026)
 
-**Temuan 29 Okt 2026 (keputusan menunggu diskusi):** paper Pix2Poly (arXiv 2412.07899, bagian dataset) menulis
+**Temuan 29 Okt 2026 (alasan opsi R):** paper Pix2Poly (arXiv 2412.07899, bagian dataset) menulis
 tile **512 × 512** 0,2 m: 9.420 train, 1.537 val, 3.848 test, atau 84.780 / 13.833 / 34.632 patch. Rilisan resmi saat
 ini berukuran 1024² (§3.1), dan skrip Pix2Poly tidak bisa membaca nama file berupa angka, jadi Pix2Poly memakai
 salinan yang dipotong dan diganti namanya. Potongan 512² yang berisi bangunan di rilisan ini: train **9.418**, val
@@ -182,16 +186,30 @@ Detail yang baru terlihat setelah kode dibaca utuh (commit `4e4c003`, 28 Okt 202
   (jumlahnya dicatat di `splits/whu_stats.json`).
 - Id citra dan anotasi mulai dari 0; urutan tile mengikuti `os.listdir`, jadi penomoran bisa berbeda antar-mesin.
 
-Konsekuensi untuk kita:
-1. `src/densepoly/data/whu.py` dan `scripts/prepare_whu_pix2poly.py` menjalankan logika yang sama tanpa diubah
-   (atribusi MIT). Salinan persis skrip asli ada di `third_party/pix2poly/`, dan tes membuktikan hasilnya identik.
-   Bedanya hanya urutan tile yang diurutkan (sorted), supaya penomoran bisa direproduksi.
-2. Model WHU dilatih dari **raster poligon COCO hasil konversi** (bukan dari label raster asli), supaya konvensi GT
-   konsisten (poligon GT dari `findContours` sedikit menyusut, dan model ikut mempelajari itu).
-3. GT WHU berasal dari CC, jadi bangunan yang bersentuhan menjadi satu instance. WHU dipakai untuk banding
-   SOTA, **bukan** untuk klaim pemisahan rumah berdempetan. Klaim itu diuji di CrowdAI.
-4. `val_tune` WHU = split val Pix2Poly. `val_tune_sub` = tile utuh yang diambil acak (seed 0) sampai berisi
-   ≥ 1.000 patch, sisanya `val_select`. Pembagian dilakukan per tile karena patch satu tile saling tumpang tindih 34 px.
+**Opsi R** (`src/densepoly/data/whu.py`, `scripts/prepare_whu_pix2poly.py`):
+1. **Tiling:** setiap tile resmi 1024² dipotong menjadi empat kuadran 512². Hanya kuadran yang punya piksel
+   bangunan (menurut label raster) yang dipakai. Test hanya memakai bagian `300` (`TEST_PART`). Setiap kuadran lalu
+   diproses persis seperti satu tile Pix2Poly (patch 224, overlap 34; 9 patch per kuadran).
+2. **Dua GT pada patch yang sama** (id citra sama):
+   - `annotation.json` (**GT utama**): poligon COCO resmi dirasterisasi per tile, lalu **mask setiap bangunan**
+     menjalani langkah poligon Pix2Poly (kontur, simplify 1,8, filter bbox ≤ 5 px, aturan sampel negatif).
+     Bangunan yang bersentuhan tetap terpisah.
+   - `annotation_p2p.json` (**GT p2p**): konversi Pix2Poly persis dari label raster (CC). Dipakai hanya untuk banding
+     dengan angka paper Pix2Poly. Tes membuktikan hasilnya identik dengan skrip asli yang dijalankan pada setiap
+     kuadran.
+3. **Perubahan pembungkus:**
+   - Nama tile diambil dari nama file (`stem`), karena parser Pix2Poly gagal pada nama berupa angka. Untuk nama yang
+     bisa dibaca parser itu, hasilnya sama.
+   - Konversi berjalan paralel per tile, lalu id dibagikan berurutan.
+   - Label bernilai negatif ditolak.
+   - Patch citra tidak ditulis. Patch adalah potongan persis tile resmi pada posisi di `patches.csv`; format
+     penyimpanannya untuk Colab diputuskan di Fase 4.
+4. **Label training WHU** = rasterisasi poligon **GT utama** (bukan label raster asli), supaya konvensi GT konsisten.
+   Poligon dari `findContours` sedikit menyusut, dan model ikut mempelajarinya. WHU dengan GT utama boleh dipakai
+   untuk klaim pemisahan rumah berdempetan; GT p2p tidak.
+5. **Split val:** `val_tune` WHU = folder val resmi. `val_tune_sub` = tile resmi utuh yang diambil acak (seed 0)
+   sampai berisi ≥ 1.000 patch, sisanya `val_select`. Pembagian dilakukan per tile resmi, karena patch dalam satu
+   kuadran saling tumpang tindih dan kuadran satu tile saling berbatasan.
 
 ### 3.3 Protokol B (alternatif): tile 0,3 m seperti slide
 Instance dari CC; tidak bisa dibandingkan langsung dengan angka C-IoU di paper. Kalau dipilih, banding SOTA di WHU
@@ -256,6 +274,8 @@ terpisah di anotasi resmi, set ini bisa menjadi uji tambahan untuk pemisahan rum
 | `crowdai_train_clusters.json` | `{wakil: [anggota...]}` |
 | `crowdai_val_clean_clusters.json` | `{wakil: [anggota...]}` untuk `val_clean` (anggota = citra val) |
 | `dedup_report.json` | jumlah per langkah dan perbandingan |
+| `whu_{train_dedup,val_tune,val_tune_sub,val_select,test}.txt` | nama patch WHU (`<stem>_<kuadran>-<id>.tif`), satu per baris |
+| `whu_stats.json` | jumlah tile, kuadran, patch, dan anotasi kedua GT per folder; pasangan bersentuhan COCO resmi |
 | `density_<dataset>_<split>.json` | definisi, ambang, strata → daftar `image_id` |
 
 ## 7. Lisensi dan atribusi

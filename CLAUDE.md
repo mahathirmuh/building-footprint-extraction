@@ -45,8 +45,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 | CrowdAI train, p-hash unik (tanpa augmentasi) | 114.548; README repo: ±250 rb dari 280 rb adalah duplikat persis **atau** teraugmentasi |
 | CrowdAI val tanpa duplikat persis di train | **3.949** citra (dari `val_in_train_np.json`; direproduksi persis). Bila varian putar/cermin ikut dicek: 1.511 citra = **212 tile unik** (`val_clean`) |
 | HiSup | merilis file prediksi val CrowdAI (JSON) → bisa dievaluasi ulang tanpa menjalankan model HiSup |
-| Pix2Poly, protokol WHU | data `WHU_aerial_0.2` (0,2 m), patch 224 × 224 overlap 34, GT dari mask biner (connected component + simplify 1,8) |
-| WHU resmi | ada versi 0,3 m (8.189 tile 512²), versi 0,2 m (raster + **format COCO**), dan shapefile seluruh area |
+| Pix2Poly, protokol WHU | data `WHU_aerial_0.2` (0,2 m), tile **512²** (paper: 9.420 / 1.537 / 3.848), patch 224 × 224 overlap 34, GT dari mask biner (connected component + simplify 1,8) |
+| WHU resmi | ada versi 0,3 m (8.189 tile 512²), versi 0,2 m (raster + **format COCO**), dan shapefile seluruh area. Raster 0,2 m (29 Okt 2026): tile **1024²** GeoTIFF, train 2.943 / val 627 / test 2.220, label dibuat ulang Jul 2024; COCO resmi memisahkan bangunan per bangunan |
 | smp 0.6.0 | `in_channels≠3` menyalin bobot RGB secara siklik lalu mengalikan 3/in_ch; input wajib kelipatan 32 |
 | Ultralytics 8.4.x | `yolov8n-obb.pt` tersedia; label OBB: `cls x1 y1 x2 y2 x3 y3 x4 y4` ternormalisasi |
 
@@ -104,8 +104,11 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
    dibekukan (28 Okt 2026).
 11. **Pembanding SOTA:** HiSup dievaluasi dari file prediksi rilisannya, difilter ke `val_clean` (satu-satunya
     subset yang juga bersih bagi HiSup, yang dilatih dengan seluruh train v1.0). PolyR-CNN dan
-    Pix2Poly di CrowdAI hanya dikutip dari paper (split bocor, ditandai). Di WHU (protokol A, default), ikuti
-    protokol Pix2Poly persis agar angka C-IoU sebanding.
+    Pix2Poly di CrowdAI hanya dikutip dari paper (split bocor, ditandai). Di WHU (opsi R, 29 Okt 2026), tile resmi
+    1024² dipotong menjadi kuadran 512² yang berisi bangunan (test: bagian `300` saja), lalu dibuat patch Pix2Poly
+    224/34. GT `p2p` (konversi Pix2Poly persis) dipakai untuk banding angka paper; perbandingannya hanya kira-kira,
+    karena test Pix2Poly tidak bisa direkonstruksi persis. GT utama (bangunan resmi, terpisah per bangunan) dipakai
+    untuk training dan klaim N1–N3 di WHU.
 12. **Evaluasi:** pakai skrip metrik Pix2Poly (`polis`, `angle`/MTA, `ciou`) yang di-vendor + pycocotools +
     boundary-iou-api, untuk angka yang sebanding dengan paper. Klaim N1 memakai metrik berpasangan per instance
     (`PoLiS_paired`, `MTA_inst`); C-IoU dilaporkan dalam dua varian (`CIoU` semua citra, `CIoU_p2p` aturan Pix2Poly).
@@ -117,7 +120,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 | Dataset | Peran | Catatan |
 |---|---|---|
 | CrowdAI Mapping Challenge | train, `val_tune`, `test` (holdout); metrik poligon; banding HiSup di `val_clean` | v1.0, unduh manual dari AIcrowd (perlu akun); v2.0 tidak dipakai (lihat "Yang perlu saya putuskan") |
-| WHU Building (aerial) | banding C-IoU dengan Pix2Poly/HiSup | default protokol Pix2Poly 0,2 m (lihat "Yang perlu saya putuskan") |
+| WHU Building (aerial) | banding C-IoU dengan Pix2Poly/HiSup (GT `p2p`, kira-kira); uji kedua rumah berdempetan (GT utama) | 0,2 m, opsi R (`docs/DATA.md` §3.2) |
 | SpaceNet 6 Rotterdam (opsional) | gambar kualitatif, uji lintas-dataset | CC BY-SA 4.0 |
 
 **Nama dataset dan split** (dipakai di CLI, config, dan path output): dataset `crowdai` dan `whu`; split
@@ -220,9 +223,12 @@ python scripts/tables.py && python scripts/figures.py
   - MTA menggabungkan semua poligon per citra (`unary_union`), sehingga dinding antar-rumah bersentuhan hilang.
   - `angle_eval.py` mengimpor `descartes` hanya untuk plot; impor itu dihapus.
   - `COCOeval.evaluate()` membuang `imgIds` duplikat, jadi bootstrap AP harus memakai `evalImgs` yang di-cache.
-- **WHU raster:** instance dari connected component menyatukan bangunan yang bersentuhan. Itu juga cara Pix2Poly
-  membuat GT WHU, jadi untuk banding WHU ikuti cara yang sama, tetapi jangan pakai WHU untuk klaim "rumah
-  berdempetan". Klaim itu diuji di CrowdAI.
+- **WHU:**
+  - GT `p2p` (cara Pix2Poly: connected component dari label raster) menyatukan bangunan yang bersentuhan. GT utama
+    dari COCO resmi memisahkannya. Klaim "rumah berdempetan" di WHU hanya boleh memakai GT utama.
+  - TIFF resmi berkompresi LZW, jadi perlu `imagecodecs`.
+  - Tile tanpa bangunan disimpan sebagai `int8`. Nilainya nol semua, tetapi label bernilai negatif harus ditolak.
+  - Patch tidak disimpan sebagai citra. Potong dari tile resmi memakai `patches.csv`.
 - **AMP:** hitung softmax, CE, dan Dice dalam float32 (`logits.float()`).
 - **EfficientNet + BatchNorm:** micro-batch < 8 membuat BN tidak stabil. Gradient accumulation hanya memperbesar
   batch efektif untuk optimizer, tidak untuk statistik BN, jadi micro-batch tetap minimal 8.
@@ -233,10 +239,11 @@ python scripts/tables.py && python scripts/figures.py
 
 ## Yang perlu saya putuskan / lengkapi
 
-- **Protokol WHU: A dipilih** (28 Okt 2026) = protokol Pix2Poly 0,2 m (angka C-IoU sebanding dengan slide: HiSup
-  79,62; Pix2Poly 81,63). Alternatif B (tile 0,3 m 512² seperti di slide) tidak dipakai. **Ditinjau ulang 29 Okt 2026:**
-  Pix2Poly memakai tile 512² yang tidak bisa direkonstruksi persis dari rilisan resmi (1024²), jadi keterbandingannya
-  hanya kira-kira; COCO resmi memisahkan bangunan bersentuhan (`docs/DATA.md` §3.2, §3.4). Menunggu keputusan.
+- **Protokol WHU: opsi R dipilih** (29 Okt 2026; menggantikan protokol A dari 28 Okt 2026). Pix2Poly memakai tile
+  512² yang tidak bisa direkonstruksi persis dari rilisan resmi (1024²), sehingga angka C-IoU paper (HiSup 79,62;
+  Pix2Poly 81,63) hanya bisa dibandingkan secara kira-kira. Karena COCO resmi memisahkan bangunan yang bersentuhan,
+  WHU dipakai dengan dua GT pada patch yang sama (keputusan #11, `docs/DATA.md` §3.2). Alternatif B (tile 0,3 m 512²
+  seperti di slide) tidak dipakai.
 - **CrowdAI: v1.0 + deduplikasi sendiri dipilih** (28 Okt 2026, opsi A). v2.0 (Mei 2025, kebocoran antar-split
   diperbaiki panitia) tidak dipakai di eksperimen inti, karena prediksi HiSup dan angka paper pembanding hanya ada di
   v1.0. v2.0 disebut di laporan. Opsional di akhir: satu run FULL di v2.0 bila waktu GPU tersisa.
