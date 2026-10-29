@@ -268,11 +268,20 @@ terpisah di anotasi resmi, set ini bisa menjadi uji tambahan untuk pemisahan rum
 
 ## 5. Cache dan statistik
 
-- Prior: satu PNG per tile (R = MBI, G = celah). Mudah dilihat dan cukup satu file per tile.
-- Statistik prior di `configs/data/<ds>_prior_stats.json`: `q99.5` (skala), serta mean dan std setelah diskalakan,
-  dihitung dari 500 tile train acak (seed 0).
-- Laporkan waktu hitung prior per tile (CPU) dan total; dipakai untuk metrik efisiensi. Saat dokumen disusun: ±1,4 s
-  per tile 320² (MBI) + ±20 ms (celah), atau ±14 jam-inti untuk ±35 rb tile. Tempat menjalankan: `docs/COLAB.md` §8.
+- Prior: satu PNG `uint8` per unit (R = MBI, G = celah, B = 0). OpenCV menulis kanal sebagai B, G, R, jadi
+  `priors/cache.py` menyusunnya terbalik; tesnya memastikan kanal merah di file adalah MBI.
+  - CrowdAI: unit = satu citra 300², disimpan di `priors/crowdai/<split>/<image_id>.png`.
+  - WHU: unit = tile resmi 1024² yang punya patch, disimpan di `priors/whu/<split>/<stem>.png`. Patch dipotong dari
+    tile itu memakai `patches.csv`, sehingga skala MBI hingga 121 px melihat konteks penuh dan patch yang tumpang
+    tindih tidak dihitung dua kali.
+  - `val_tune_sub` dan `val_select` memakai folder `val_tune`.
+- Statistik prior di `configs/data/<ds>_prior_stats.json`: `q99.5` (skala), serta mean dan std setelah diskalakan.
+  Dihitung dari 500 unit train acak (seed 0), 20.000 piksel acak per unit, lalu dibekukan.
+- Waktu hitung prior dicatat di `splits/<ds>_prior_cache.json` dan dipakai untuk metrik efisiensi. Ukuran di laptop
+  ini (29 Okt 2026, `docs/progress.md` Fase 2):
+  - Satu core: ±0,6 s per tile 300² dan ±13 s per tile 1024².
+  - 12 worker: CrowdAI ±1,6 jam, WHU ±4,8 jam.
+  - Tempat menjalankan: `docs/COLAB.md` §8.
 
 ## 6. Format `splits/`
 
