@@ -122,7 +122,7 @@ dan definisi kepadatan (Fase 1).
 
 ---
 
-## Fase 1 — Data (sedang berjalan: bagian CrowdAI selesai; WHU menunggu keputusan protokol)
+## Fase 1 — Data (sedang berjalan: CrowdAI selesai; WHU dikonversi, ambang kepadatan WHU menunggu persetujuan)
 
 **Dibuat** (diuji di data sintetis; `pytest -q` → 188 tes lolos):
 - `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
@@ -272,5 +272,40 @@ CrowdAI disetujui dan dibekukan.
 - Val: IoU piksel terhadap raster 0,975; CC 8-tetangga menggabungkan 1,1% bangunan; 5,7% bangunan punya tetangga
   dalam r = 3 px (≈ 0,6 m). Di CrowdAI, dengan r = 2 px, angkanya 1,3%.
 
-**Menunggu:** keputusan protokol WHU (tiling, GT dari CC Pix2Poly atau dari COCO resmi, bagian test); setelah itu
-ekstraksi citra, konversi, cek jumlah patch, dan strata WHU (ambangnya minta persetujuan).
+**Keputusan (29 Okt 2026): opsi R** menggantikan protokol A (keputusan #11; `docs/DATA.md` §3.2):
+- Tile resmi 1024² dipotong menjadi kuadran 512². Hanya kuadran yang berisi bangunan yang dipakai, dan test hanya
+  memakai bagian `300`. Setiap kuadran diproses seperti satu tile Pix2Poly (patch 224, overlap 34).
+- Ada dua GT pada patch yang sama. GT utama (`annotation.json`) berasal dari bangunan resmi yang dirunut per bangunan
+  dengan langkah poligon Pix2Poly. GT `p2p` (`annotation_p2p.json`) adalah konversi Pix2Poly persis.
+- `patches.csv` menyimpan tile dan posisi setiap patch. Patch citra tidak ditulis ke disk.
+- Kode baru: `whu.quadrants`, `instance_patch_annotations`, `convert_tile` (paralel), `official_by_tile`,
+  `paths.annotation_file(..., variant="p2p")`, `paths.patch_index`, dan dependensi `imagecodecs`.
+- Fixture WHU palsu kini meniru rilisan resmi. Ada 197 tes; salah satunya membuktikan GT `p2p` identik dengan skrip
+  asli Pix2Poly yang dijalankan pada setiap kuadran.
+- Citra resmi diekstrak (16,4 GB). GeoTIFF memastikan GSD 0,2 m: sampel 117 tile, semuanya 1024 × 1024 × 3.
+- Label `int8` hanya muncul di tile tanpa bangunan (nol semua): 339 / 137 / 535 tile, sama dengan jumlah citra tanpa
+  anotasi di COCO resmi.
+
+**Hasil konversi** (8 worker, 10,5 menit; `splits/whu_stats.json`):
+
+| Folder | Tile dipakai | Kuadran | Patch (Pix2Poly) | Poligon GT utama / p2p | Negatif utama / p2p |
+|---|---|---|---|---|---|
+| train | 2.943 | 9.418 | 84.762 (84.780) | 356.219 / 354.231 | 10.366 / 10.308 |
+| val | 627 | 1.529 | 13.761 (13.833) | 40.888 / 40.685 | 3.765 / 3.753 |
+| test | 1.540 (bagian `300`) | 3.943 | 35.487 (34.632) | 140.689 / 139.962 | 6.153 / 6.133 |
+
+- Selisih jumlah patch dengan Pix2Poly berasal dari 2, 8, dan 95 tile 512² (× 9 patch).
+- GT utama berisi ±0,5% lebih banyak poligon, karena bangunan berdempetan dipisah. GT `p2p` punya lebih banyak poligon
+  berlubang (train 233 vs 13), karena gumpalan gabungan bisa mengurung halaman di antara rumah.
+- Semua anotasi resmi di tile yang dipakai dirasterisasi tanpa tumpang tindih. WHU `val_tune_sub` 1.017 patch,
+  `val_select` 12.744.
+- Gambar QA `outputs/figures/qa/whu_gt_main_vs_p2p.png`: rumah gandeng yang digabung GT `p2p` menjadi satu poligon
+  dipisah per bangunan oleh GT utama.
+
+**Strata kepadatan WHU** (dari GT utama, per patch 224²; **menunggu persetujuan, belum dibekukan**):
+- Tertil jumlah bangunan per patch di test = **3 dan 6**. Test: kosong 6.399 (= 6.153 patch negatif + 246 patch tanpa
+  anotasi), jarang 11.189, sedang 10.030, padat 7.869. `val_tune`: 3.886 / 4.976 / 2.834 / 2.065.
+- Indeks sekunder (r = 3): test 1.371 patch bersentuhan vs 27.717 tidak; `val_tune` 371 vs 9.504.
+
+**Menunggu:** persetujuan ambang WHU 3 dan 6 (lalu file strata WHU dibekukan). Setelah itu kriteria "Selesai jika"
+Fase 1 terpenuhi untuk kedua dataset.

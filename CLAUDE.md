@@ -51,8 +51,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 | Ultralytics 8.4.x | `yolov8n-obb.pt` tersedia; label OBB: `cls x1 y1 x2 y2 x3 y3 x4 y4` ternormalisasi |
 
 - Fase 0 selesai (kerangka repo, config, paths, fixture sintetis; lihat `docs/progress.md`). Fase 1 berjalan: CrowdAI
-  selesai (split dan strata dibekukan); WHU 0,2 m sudah diunduh dan dicek, protokolnya menunggu keputusan (temuan
-  29 Okt 2026, `docs/DATA.md` §3). Belum ada model.
+  selesai (split dan strata dibekukan); WHU 0,2 m dikonversi dengan opsi R (`docs/DATA.md` §3.2), ambang kepadatan
+  WHU menunggu persetujuan. Belum ada model.
 
 ## Cara bekerja di proyek ini
 

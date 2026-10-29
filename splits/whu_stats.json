@@ -4,5 +4,88 @@
   "file": "test.json",
   "annotations": 70063,
   "touching_pairs": 394
+ },
+ "train": {
+  "created": "2026-10-29T12:33:46+08:00",
+  "git": "6f5798d84b2225795da025815ea7eb1e9640bb81",
+  "official_coco": "train.json",
+  "tiles": 2943,
+  "tiles_used": 2943,
+  "quadrants_kept": 9418,
+  "patches": 84762,
+  "p2p": {
+   "building_annotations": 354231,
+   "negative_patches": 10308,
+   "patches_without_annotation": 545,
+   "multi_ring_annotations": 233
+  },
+  "main": {
+   "building_annotations": 356219,
+   "negative_patches": 10366,
+   "patches_without_annotation": 560,
+   "multi_ring_annotations": 13
+  },
+  "official_in_used_tiles": {
+   "annotations": 143252,
+   "skipped": 0,
+   "overlap_px": 0,
+   "hidden": 0
+  }
+ },
+ "val": {
+  "created": "2026-10-29T12:34:41+08:00",
+  "git": "6f5798d84b2225795da025815ea7eb1e9640bb81",
+  "official_coco": "validation.json",
+  "tiles": 627,
+  "tiles_used": 627,
+  "quadrants_kept": 1529,
+  "patches": 13761,
+  "p2p": {
+   "building_annotations": 40685,
+   "negative_patches": 3753,
+   "patches_without_annotation": 120,
+   "multi_ring_annotations": 24
+  },
+  "main": {
+   "building_annotations": 40888,
+   "negative_patches": 3765,
+   "patches_without_annotation": 121,
+   "multi_ring_annotations": 0
+  },
+  "official_in_used_tiles": {
+   "annotations": 15926,
+   "skipped": 0,
+   "overlap_px": 0,
+   "hidden": 0
+  },
+  "val_tune_sub": 1017,
+  "val_select": 12744
+ },
+ "test": {
+  "created": "2026-10-29T12:37:41+08:00",
+  "git": "6f5798d84b2225795da025815ea7eb1e9640bb81",
+  "official_coco": "test.json",
+  "tiles": 2220,
+  "tiles_used": 1540,
+  "quadrants_kept": 3943,
+  "patches": 35487,
+  "p2p": {
+   "building_annotations": 139962,
+   "negative_patches": 6133,
+   "patches_without_annotation": 227,
+   "multi_ring_annotations": 86
+  },
+  "main": {
+   "building_annotations": 140689,
+   "negative_patches": 6153,
+   "patches_without_annotation": 246,
+   "multi_ring_annotations": 2
+  },
+  "official_in_used_tiles": {
+   "annotations": 57932,
+   "skipped": 0,
+   "overlap_px": 0,
+   "hidden": 0
+  }
  }
 }

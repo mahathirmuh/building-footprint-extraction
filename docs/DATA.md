@@ -211,6 +211,11 @@ Detail yang baru terlihat setelah kode dibaca utuh (commit `4e4c003`, 28 Okt 202
    sampai berisi ≥ 1.000 patch, sisanya `val_select`. Pembagian dilakukan per tile resmi, karena patch dalam satu
    kuadran saling tumpang tindih dan kuadran satu tile saling berbatasan.
 
+**Hasil konversi** (29 Okt 2026, `splits/whu_stats.json`):
+- Patch train 84.762, val 13.761 (`val_tune_sub` 1.017, `val_select` 12.744), test 35.487. Angka Pix2Poly:
+  84.780, 13.833, dan 34.632.
+- Poligon GT utama vs `p2p`: train 356.219 vs 354.231, val 40.888 vs 40.685, test 140.689 vs 139.962.
+
 ### 3.3 Protokol B (alternatif): tile 0,3 m seperti slide
 Instance dari CC; tidak bisa dibandingkan langsung dengan angka C-IoU di paper. Kalau dipilih, banding SOTA di WHU
 harus menjalankan ulang checkpoint pembanding, atau tidak dilakukan sama sekali.
