@@ -4,13 +4,15 @@ COCO patches, with two ground truths on the same patches.
     python scripts/prepare_whu_pix2poly.py                        # train, val and test
     python scripts/prepare_whu_pix2poly.py --split test           # one folder
     python scripts/prepare_whu_pix2poly.py --official-coco FILE   # touching pairs in an official COCO file
+    python scripts/prepare_whu_pix2poly.py --cache train_dedup val_tune test  # instance maps of the main GT
 
 Input under $DENSEPOLY_DATA/whu: raw_0.2/{train,val,test}/{image,label}/<stem>.tif (official 1024² tiles) and
 official_coco_0.2/{train,validation,test}.json (official COCO).
 Output per folder in $DENSEPOLY_DATA/whu/pix2poly_224/<folder>/: annotation.json (main ground truth, official
 buildings), annotation_p2p.json (Pix2Poly's ground truth) and patches.csv (offset of every patch in its official
 tile); the split lists whu_*.txt and whu_stats.json in splits/. The conversion logic is Pix2Poly's (MIT), see
-src/densepoly/data/whu.py.
+src/densepoly/data/whu.py. --cache writes $DENSEPOLY_DATA/instances/whu/<split>/<image_id>.png from the main ground
+truth, an index.csv per split, and splits/whu_raster_stats.json.
 """
 
 from __future__ import annotations
@@ -22,21 +24,24 @@ from pathlib import Path
 
 from densepoly import paths
 from densepoly.data import whu
+from densepoly.labels import instances
 from densepoly.utils.io import read_json, write_json, write_lines
 from densepoly.utils.provenance import git_revision, timestamp
 
 FOLDERS = ("train", "val", "test")
 SPLIT_OF_FOLDER = {"train": "train_dedup", "val": "val_tune", "test": "test"}
+CACHE_SPLITS = tuple(SPLIT_OF_FOLDER.values())
 
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--split", nargs="+", choices=FOLDERS, default=[], help="raw folders to convert (default: all)")
     parser.add_argument("--official-coco", type=Path, help="official WHU 0.2 m COCO file: count touching pairs")
+    parser.add_argument("--cache", nargs="+", choices=CACHE_SPLITS, metavar="SPLIT", help="cache instance maps")
     parser.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 1))
     parser.add_argument("--splits-dir", type=Path, help="folder of split files and stats (default: repo splits/)")
     args = parser.parse_args(argv)
-    folders = args.split or ([] if args.official_coco else list(FOLDERS))
+    folders = args.split or ([] if args.official_coco or args.cache else list(FOLDERS))
 
     out = args.splits_dir or paths.splits_dir()
     stats_file = out / "whu_stats.json"
@@ -75,6 +80,14 @@ def main(argv: list[str] | None = None) -> None:
         }
     write_json(stats_file, stats)
     print(json.dumps(stats, indent=1))
+    if args.cache:
+        raster_file = out / "whu_raster_stats.json"
+        raster = read_json(raster_file) if raster_file.exists() else {}
+        for split in args.cache:
+            totals = instances.cache_instances("whu", split, out)
+            raster[split] = {"created": timestamp(), "git": git_revision(), **totals}
+        write_json(raster_file, raster)
+        print(json.dumps(raster, indent=1))
 
 
 if __name__ == "__main__":

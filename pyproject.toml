@@ -47,6 +47,8 @@ addopts = "-ra"
 filterwarnings = [
     # pycocotools 2.0.11 mask.decode under numpy 2.x: third-party, harmless for now (logged in docs/progress.md)
     "ignore:__array__ implementation doesn't accept a copy keyword:DeprecationWarning",
+    # scikit-image 0.26 morphology.reconstruction sets ndarray.shape, deprecated in numpy 2.5: third-party, harmless
+    "ignore:Setting the shape on a NumPy array has been deprecated:DeprecationWarning",
 ]
 
 [tool.ruff]

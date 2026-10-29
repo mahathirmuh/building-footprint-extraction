@@ -12,5 +12,5 @@ labels:
   edge_weight_sigma_px: 4.5
 
 priors:
-  mbi_scales_px: [15, 30, 45, 60, 75, 90, 105, 120]
+  mbi_scales_px: [15, 31, 45, 61, 75, 91, 105, 121]  # 15·k rounded up to odd: line SEs need an odd length
   gap_se_length_px: 13

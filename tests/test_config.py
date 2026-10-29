@@ -70,9 +70,11 @@ def test_whu_pixel_parameters_follow_the_gsd_rule():
     assert whu.labels.theta_min_area_px == round(crowdai.labels.theta_min_area_px * 2.25)
     gap_se = whu.priors.gap_se_length_px
     assert gap_se % 2 == 1 and abs(gap_se - crowdai.priors.gap_se_length_px * 1.5) <= 1
-    for cfg, step in ((crowdai, 10), (whu, 15)):
-        scales = list(cfg.priors.mbi_scales_px)
-        assert len(scales) == 8 and all(b - a == step for a, b in pairwise(scales))
+    crowdai_scales, whu_scales = list(crowdai.priors.mbi_scales_px), list(whu.priors.mbi_scales_px)
+    assert len(crowdai_scales) == 8 and all(b - a == 10 for a, b in pairwise(crowdai_scales))
+    # WHU: 15·k px (3 m steps at 0.2 m), rounded up to the next odd length since a line SE must be centred
+    assert all(s % 2 == 1 for s in crowdai_scales + whu_scales)
+    assert len(whu_scales) == 8 and all(0 <= s - 15 * k <= 1 for k, s in enumerate(whu_scales, start=1))
 
 
 def write_tree(root, base, data, exp):

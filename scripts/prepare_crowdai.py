@@ -16,7 +16,8 @@ from pathlib import Path
 
 from densepoly import paths
 from densepoly.data import crowdai
-from densepoly.utils.io import read_json, read_lines, write_json, write_lines, write_png
+from densepoly.labels import instances
+from densepoly.utils.io import read_json, write_json
 from densepoly.utils.provenance import git_revision, timestamp
 
 CACHE_SPLITS = ("train_dedup", "val_tune", "test", "val_clean")
@@ -37,27 +38,12 @@ def write_stats(root: Path, out: Path) -> dict:
 def write_cache(splits: list[str], out: Path) -> dict:
     stats_file = out / "crowdai_raster_stats.json"
     summary = read_json(stats_file) if stats_file.exists() else {}
-    cocos = {}
+    cocos = {}  # train_dedup, val_tune and test share the large train annotation file
     for split in splits:
         annotation = paths.annotation_file("crowdai", split)
         if annotation not in cocos:
             cocos[annotation] = crowdai.load_coco(annotation)
-        coco = cocos[annotation]
-        by_name = {img["file_name"]: img for img in coco.dataset["images"]}
-        totals = {"images": 0, "instances": 0, "skipped": 0, "empty": 0, "overlap_px": 0, "hidden": 0}
-        index = ["file_name,image_id,instances"]
-        for name in read_lines(paths.split_list("crowdai", split, out)):
-            img = by_name[name]
-            result = crowdai.rasterize_instances(coco.imgToAnns.get(img["id"], []), img["height"], img["width"])
-            write_png(paths.instance_cache("crowdai", split, img["id"]), result.instance_map)
-            index.append(f"{name},{img['id']},{len(result.annotation_ids)}")
-            totals["images"] += 1
-            totals["instances"] += len(result.annotation_ids)
-            totals["skipped"] += result.n_skipped
-            totals["empty"] += result.n_empty
-            totals["overlap_px"] += result.overlap_px
-            totals["hidden"] += result.n_hidden
-        write_lines(paths.instance_dir("crowdai", split) / "index.csv", index)
+        totals = instances.cache_instances("crowdai", split, out, cocos[annotation])
         summary[split] = {"created": timestamp(), "git": git_revision(), **totals}
     write_json(stats_file, summary)
     return summary

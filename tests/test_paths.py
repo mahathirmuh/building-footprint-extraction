@@ -85,6 +85,14 @@ def test_whu_ground_truth_variant_and_patch_index(monkeypatch, tmp_path):
         paths.patch_index("crowdai", "test")
 
 
+def test_parts_of_val_tune_share_its_cache_folders(monkeypatch, tmp_path):
+    monkeypatch.setenv("DENSEPOLY_DATA", str(tmp_path))
+    for part in ("val_tune_sub", "val_select"):
+        assert paths.instance_dir("crowdai", part) == paths.instance_dir("crowdai", "val_tune")
+        assert paths.prior_cache("whu", part, "20000") == paths.prior_cache("whu", "val_tune", "20000")
+    assert paths.prior_cache("whu", "test", "3000") == tmp_path.resolve() / "priors/whu/test/3000.png"
+
+
 def test_run_name():
     assert paths.run_name(0) == "seed0"
     assert paths.run_name(None) == "ref"

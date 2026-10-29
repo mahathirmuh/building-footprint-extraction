@@ -110,10 +110,15 @@ def image_dir(dataset: str, split: str) -> Path:
     return _layout_root(dataset) / source_folder(dataset, split) / "images"
 
 
+def cache_split(split: str) -> str:
+    """Split whose cache folder holds a split's files: val_tune_sub and val_select are parts of val_tune."""
+    return {"val_tune_sub": "val_tune", "val_select": "val_tune"}.get(split, split)
+
+
 def instance_dir(dataset: str, split: str) -> Path:
     """Folder of a split's cached instance maps (one uint16 PNG per image plus index.csv)."""
     _check(dataset, split)
-    return data_root() / "instances" / dataset / split
+    return data_root() / "instances" / dataset / cache_split(split)
 
 
 def instance_cache(dataset: str, split: str, image_id: int | str) -> Path:
@@ -121,10 +126,11 @@ def instance_cache(dataset: str, split: str, image_id: int | str) -> Path:
     return instance_dir(dataset, split) / f"{image_id}.png"
 
 
-def prior_cache(dataset: str, split: str, image_id: int | str) -> Path:
-    """uint8 PNG prior of one image (R = MBI, G = gap map, B = 0)."""
+def prior_cache(dataset: str, split: str, key: int | str) -> Path:
+    """uint8 PNG prior (R = MBI, G = gap map, B = 0) of one CrowdAI image id or one official WHU tile stem (WHU priors
+    are computed on the official 1024² tiles and cropped to the patches, docs/DATA.md §5)."""
     _check(dataset, split)
-    return data_root() / "priors" / dataset / split / f"{image_id}.png"
+    return data_root() / "priors" / dataset / cache_split(split) / f"{key}.png"
 
 
 def run_dir(dataset: str, exp: str, run: str) -> Path:

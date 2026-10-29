@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from densepoly import paths
+from densepoly.data.crowdai import rasterize_instances
 from densepoly.utils.io import read_json, read_lines, read_png
 from tests.fixtures.fake_crowdai import make_fake_crowdai
 from tests.fixtures.fake_whu import make_fake_whu
@@ -94,6 +95,18 @@ def test_whu_scripts_on_a_fake_download(tmp_path, monkeypatch):
     load_script("prepare_whu_pix2poly").main(["--official-coco", str(official_test), *common])
     shared_walls = sum(len(b.neighbors) for tile in tiles["test"].values() for b in tile.buildings) // 2
     assert read_json(splits_dir / "whu_stats.json")["official_coco"]["touching_pairs"] == shared_walls > 0
+
+    # instance cache of the main ground truth (touching houses stay apart); val_tune_sub lives in the val_tune folder
+    load_script("prepare_whu_pix2poly").main(["--cache", "test", "val_tune", *common])
+    first = main["images"][0]
+    expected = rasterize_instances(
+        [a for a in main["annotations"] if a["image_id"] == first["id"]], first["height"], first["width"]
+    )
+    np.testing.assert_array_equal(read_png(paths.instance_cache("whu", "test", first["id"])), expected.instance_map)
+    raster = read_json(splits_dir / "whu_raster_stats.json")
+    assert raster["test"]["images"] == 27 and raster["val_tune"]["images"] == 54
+    sub_id = int(read_lines(paths.split_list("whu", "val_tune_sub", splits_dir))[0].rsplit("-", 1)[1][:-4])
+    assert paths.instance_cache("whu", "val_tune_sub", sub_id).is_file()  # all 54 fake val patches: no val_select
 
     # density strata come from the main ground truth
     make_density = load_script("make_density")

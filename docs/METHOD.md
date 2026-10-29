@@ -49,7 +49,8 @@ RGB ──┬──────────────────────�
 - Differential morphological profile: `DMP(s, d) = |WTH(s + Δs, d) − WTH(s, d)|`.
 - `MBI = mean_{d, s} DMP(s, d)`.
 - Skala didefinisikan dalam **meter** (±3–25 m, sesuai ukuran rumah) lalu dikonversi ke piksel per dataset (§10):
-  CrowdAI (±0,3 m) `s ∈ {11, 21, …, 81}` px (Δs = 10); WHU 0,2 m `s ∈ {15, 30, …, 120}` px (Δs = 15). Rentang ini boleh
+  CrowdAI (±0,3 m) `s ∈ {11, 21, …, 81}` px (Δs = 10); WHU 0,2 m `s ∈ {15, 31, 45, 61, 75, 91, 105, 121}` px (15·k,
+  dibulatkan ke ganjil karena SE garis harus berpusat; diusulkan 29 Okt 2026, menunggu persetujuan QA). Rentang ini boleh
   disesuaikan saat QA visual Fase 2, lalu dibekukan.
 - Waktu terukur saat dokumen disusun: ±1,4 s per tile 320² untuk 32 opening by reconstruction. Kalau di mesinmu jauh
   lebih lambat (> 3 s per tile), boleh memakai opening biasa (seperti demo ETS), **asal dicatat**.
@@ -299,7 +300,7 @@ Label OBB dibuat dari peta instance: `cv2.boxPoints(cv2.minAreaRect(...))` → 4
 ## 10. Parameter
 
 Nilai berpiksel di bawah untuk CrowdAI (GSD ±0,3 m). Untuk WHU 0,2 m, kalikan 1,5 lalu bulatkan (ke bilangan ganjil
-untuk panjang SE): r = 3, σ = 4,5, A_θ = 45, s = 15–120 (Δs 15), L_g = 13; parameter luas (m_min, A_min, beserta
+untuk panjang SE): r = 3, σ = 4,5, A_θ = 45, s = 15–121 (15·k dibulatkan ke ganjil), L_g = 13; parameter luas (m_min, A_min, beserta
 grid-nya) dikali 2,25.
 
 | Parameter | Simbol | Default (CrowdAI) | Grid tuning | Disetel di | Catatan |
