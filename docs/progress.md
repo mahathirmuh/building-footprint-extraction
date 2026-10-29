@@ -122,7 +122,7 @@ dan definisi kepadatan (Fase 1).
 
 ---
 
-## Fase 1 — Data (sedang berjalan: bagian CrowdAI selesai, menunggu data WHU)
+## Fase 1 — Data (sedang berjalan: bagian CrowdAI selesai; WHU menunggu keputusan protokol)
 
 **Dibuat** (diuji di data sintetis; `pytest -q` → 188 tes lolos):
 - `src/densepoly/data/crowdai.py`: rasterisasi peta instance (urut luas menurun, identik dengan fixture), statistik
@@ -249,5 +249,28 @@ tabel di `docs/DATA.md` §4):
 (212 tile `val_clean`) dijelaskan; tes membuktikan tidak ada citra atau klaster di dua split; ambang kepadatan
 CrowdAI disetujui dan dibekukan.
 
-**Menunggu:** data WHU 0,2 m di `data/whu/raw_0.2/{train,val,test}/{image,label}/`, lalu konversi protokol A, cek
-jumlah patch, dan strata WHU (ambangnya minta persetujuan).
+**Unduhan WHU (29 Okt 2026)** (detail di `docs/DATA.md` §3.1, §3.2, dan §3.4):
+- `whu_raster_1024.rar` (16,0 GB, RAR5) membungkus tiga ZIP tanpa kompresi: `r_train.zip`, `r_val.zip`, dan
+  `r_test.zip`. CRC32 ketiganya cocok dengan header RAR, jadi unduhan utuh.
+- `tar.exe` bawaan Windows (libarchive) salah membaca arsip ini sebagai ZIP terakhir dan hanya menampilkan isi val.
+  ZIP-nya dibaca langsung dari rentang byte di dalam RAR.
+- Isi: tile 1024² dengan nama berupa angka, train 2.943, val 627, test 2.220 (dua bagian area: `300` 1.540 dan
+  `310` 680). Label dibuat ulang 20 Jul 2024. TIFF memakai kompresi LZW, sehingga `skimage.io.imread` (dipakai port
+  Pix2Poly) butuh paket `imagecodecs`; OpenCV bisa membacanya.
+- Baru label (165 MB) dan COCO resmi yang diekstrak, ke `data/whu/raw_0.2/{split}/label/` dan
+  `data/whu/official_coco_0.2/`. Citra (16,4 GB) belum.
+
+**Bertentangan dengan dokumen** (keputusan #11, `docs/DATA.md` §3.1–3.2), jadi konversi ditahan:
+- Paper Pix2Poly memakai tile 512² 0,2 m: 9.420 / 1.537 / 3.848 citra, atau 84.780 / 13.833 / 34.632 patch.
+- Skrip Pix2Poly tidak bisa membaca nama file berupa angka.
+- Potongan 512² yang berisi bangunan di rilisan resmi: train 9.418, val 1.529, test 5.431 (bagian `300` saja: 3.943).
+  Train dan val hampir sama dengan Pix2Poly, tetapi test tidak bisa direkonstruksi persis. Angka C-IoU WHU di paper
+  (HiSup 79,62; Pix2Poly 81,63) jadi hanya sebanding secara kira-kira.
+
+**COCO resmi** memisahkan bangunan yang bersentuhan:
+- Test: 394 pasang poligon berjarak < 1 px.
+- Val: IoU piksel terhadap raster 0,975; CC 8-tetangga menggabungkan 1,1% bangunan; 5,7% bangunan punya tetangga
+  dalam r = 3 px (≈ 0,6 m). Di CrowdAI, dengan r = 2 px, angkanya 1,3%.
+
+**Menunggu:** keputusan protokol WHU (tiling, GT dari CC Pix2Poly atau dari COCO resmi, bagian test); setelah itu
+ekstraksi citra, konversi, cek jumlah patch, dan strata WHU (ambangnya minta persetujuan).

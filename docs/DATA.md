@@ -146,14 +146,23 @@ Tidak ada resize.
 | Versi | Isi | Catatan |
 |---|---|---|
 | 0,3 m | 8.189 tile 512 × 512, label raster | split per area: train 4.736, val 1.036, test 2.416 (sesuai slide; jumlahnya 8.188, halaman resmi menyebut 8.189) |
-| 0,2 m raster | tile dan label raster (`whu_raster_1024`) | dipakai Pix2Poly (`WHU_aerial_0.2`) |
-| 0,2 m COCO | `train.zip`, `validation.zip`, `test.zip`, `annotation.zip` | format COCO resmi |
+| 0,2 m raster | `whu_raster_1024.rar` (16,0 GB): tile **1024 × 1024**, TIFF LZW, nama berupa angka | train 2.943, val 627, test 2.220 (bagian `300`: 1.540 + bagian `310`: 680). Citra bertanggal 25 Des 2019, label **20 Jul 2024** (dibuat ulang). Pix2Poly memakai tile 512², bukan rilisan ini apa adanya (§3.2) |
+| 0,2 m COCO | `train.zip`, `validation.zip`, `test.zip`, `annotation.zip` | tile 1024² dan nama yang sama dengan raster; instance **per bangunan** (`category_id` 1): train 143.252, val 15.926, test 70.063 anotasi (§3.4) |
 | Asli 0,075 m | satu citra besar + shapefile seluruh area | instance vektor sebenarnya |
 
 Halaman resmi tidak menyebut apakah tile punya georeferensi; yang disebut hanya bahwa citra asli bisa disusun ulang
 dari urutan pemotongan.
 
 ### 3.2 Protokol A (dipilih 28 Okt 2026): mengikuti Pix2Poly
+
+**Temuan 29 Okt 2026 (keputusan menunggu diskusi):** paper Pix2Poly (arXiv 2412.07899, bagian dataset) menulis
+tile **512 × 512** 0,2 m: 9.420 train, 1.537 val, 3.848 test, atau 84.780 / 13.833 / 34.632 patch. Rilisan resmi saat
+ini berukuran 1024² (§3.1), dan skrip Pix2Poly tidak bisa membaca nama file berupa angka, jadi Pix2Poly memakai
+salinan yang dipotong dan diganti namanya. Potongan 512² yang berisi bangunan di rilisan ini: train **9.418**, val
+**1.529**, test 5.431 (bagian `300` saja: **3.943**). Train dan val hampir sama dengan Pix2Poly, tetapi test tidak bisa
+direkonstruksi persis, sehingga angka C-IoU WHU di paper hanya bisa dibandingkan secara kira-kira. Detail ada di
+`docs/progress.md` Fase 1.
+
 Angka WHU di slide (HiSup C-IoU 79,62; Pix2Poly 81,63; FFL 32,19 vs 54,52) diukur Pix2Poly dengan protokol ini.
 Hasil pembacaan `data_preprocess/whu_buildings_to_coco.py`:
 - Input `WHU_aerial_0.2/{split}/image` dan `label` (raster 0,2 m).
@@ -191,6 +200,16 @@ harus menjalankan ulang checkpoint pembanding, atau tidak dilakukan sama sekali.
 ### 3.4 Analisis opsional: COCO resmi WHU 0,2 m
 Hitung berapa pasang poligon GT yang bersinggungan (`touches` atau jarak < 1 px). Kalau bangunan berdempetan memang
 terpisah di anotasi resmi, set ini bisa menjadi uji tambahan untuk pemisahan rumah di WHU.
+
+**Hasil (29 Okt 2026):**
+- **Test:** 70.063 anotasi, dengan **394 pasang** poligon bersentuhan atau berjarak < 1 px
+  (`splits/whu_stats.json`). Jadi bangunan yang berdempetan memang dipisah per bangunan.
+- **Val (627 tile), dibandingkan dengan label raster:**
+  - IoU piksel union COCO terhadap raster 0,975; 2,4% piksel hanya ada di raster.
+  - *Connected component* 8-tetangga (aturan Pix2Poly) akan menggabungkan **1,1%** bangunan (181 bangunan dalam
+    89 komponen). Raster sendiri hanya punya 15.623 komponen untuk 15.926 bangunan.
+  - Bangunan yang punya tetangga dalam radius kontak WHU (r = 3 px ≈ 0,6 m): **5,7%**. Di CrowdAI, dengan r = 2 px
+    ≈ 0,6 m, angkanya 1,3%.
 
 ## 4. Strata kepadatan (kontribusi N2)
 

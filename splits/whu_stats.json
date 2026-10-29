@@ -1,0 +1,8 @@
+{
+ "official_coco": {
+  "created": "2026-10-29T12:00:14+08:00",
+  "file": "test.json",
+  "annotations": 70063,
+  "touching_pairs": 394
+ }
+}
