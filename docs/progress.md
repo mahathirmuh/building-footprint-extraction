@@ -122,7 +122,7 @@ dan definisi kepadatan (Fase 1).
 
 ---
 
-## Fase 1 — Data (selesai 29 Okt 2026, menunggu persetujuan penutupan)
+## Fase 1 — Data (selesai dan disetujui 29 Oktober 2026)
 
 **Ringkasan** (rincian di bawah; `pytest -q` → 197 tes lolos):
 
@@ -339,4 +339,4 @@ CrowdAI disetujui dan dibekukan.
 - Tes membuktikan tidak ada citra atau klaster di dua split. Split WHU terpisah per area resmi.
 - Ambang kepadatan CrowdAI dan WHU disetujui dan dibekukan.
 
-**Menunggu:** persetujuan untuk menutup Fase 1 dan mulai Fase 2 (label dan prior morfologi).
+**Fase 1 disetujui dan ditutup 29 Okt 2026.** Berikutnya Fase 2 (label dan prior morfologi).
