@@ -72,25 +72,32 @@ def test_phase1_scripts_on_a_fake_download(tmp_path, monkeypatch):
 
 
 def test_whu_scripts_on_a_fake_download(tmp_path, monkeypatch):
-    make_fake_whu(tmp_path / "data")
+    tiles = make_fake_whu(tmp_path / "data")
     monkeypatch.setenv("DENSEPOLY_DATA", str(tmp_path / "data"))
     splits_dir = tmp_path / "splits"
     common = ["--splits-dir", str(splits_dir)]
 
-    load_script("prepare_whu_pix2poly").main(common)
+    # 9 patches per kept 512² quadrant: train 4 + 3 quadrants, val 2 + 4, test 3 (part 300 only)
+    load_script("prepare_whu_pix2poly").main(["--workers", "1", *common])
     split = {s: read_lines(paths.split_list("whu", s, splits_dir)) for s in ("train_dedup", "val_tune", "test")}
-    assert [len(split[s]) for s in ("train_dedup", "val_tune", "test")] == [18, 18, 9]  # 9 patches per 512² tile
+    assert [len(split[s]) for s in ("train_dedup", "val_tune", "test")] == [63, 54, 27]
     assert read_lines(paths.split_list("whu", "val_tune_sub", splits_dir)) == split["val_tune"]  # fewer than 1,000
     stats = read_json(splits_dir / "whu_stats.json")
-    assert stats["test"]["patches"] == 9 and stats["test"]["tiles"] == 1
-    test_coco = read_json(paths.annotation_file("whu", "test"))
-    assert [img["file_name"] for img in test_coco["images"]] == split["test"]
+    assert (stats["test"]["tiles_used"], stats["train"]["quadrants_kept"]) == (1, 7)
+    main, p2p = (read_json(paths.annotation_file("whu", "test", variant)) for variant in (None, "p2p"))
+    assert main["images"] == p2p["images"] and [img["file_name"] for img in main["images"]] == split["test"]
+    index = read_lines(paths.patch_index("whu", "test"))
+    assert index[0] == "file_name,image_id,tile,quadrant,x,y" and len(index) == 1 + 27
 
-    load_script("prepare_whu_pix2poly").main(["--official-coco", str(paths.annotation_file("whu", "test")), *common])
-    assert read_json(splits_dir / "whu_stats.json")["official_coco"]["touching_pairs"] == 0  # CC never touch
+    # the official COCO keeps the touching houses of every row group apart (both test tiles are in the file)
+    official_test = tmp_path / "data" / "whu" / "official_coco_0.2" / "test.json"
+    load_script("prepare_whu_pix2poly").main(["--official-coco", str(official_test), *common])
+    shared_walls = sum(len(b.neighbors) for tile in tiles["test"].values() for b in tile.buildings) // 2
+    assert read_json(splits_dir / "whu_stats.json")["official_coco"]["touching_pairs"] == shared_walls > 0
 
+    # density strata come from the main ground truth
     make_density = load_script("make_density")
     make_density.main(["--data", "whu", "--split", "test", *common])
     make_density.main(["--data", "whu", "--split", "val_tune", *common])
     strata = read_json(paths.density_file("whu", "test", splits_dir))
-    assert strata["contact_radius_px"] == 3 and sum(strata["main"]["sizes"].values()) == 9
+    assert strata["contact_radius_px"] == 3 and sum(strata["main"]["sizes"].values()) == 27

@@ -1,16 +1,22 @@
-"""WHU protocol A port (docs/DATA.md §3.2): identical to Pix2Poly's original code, plus its documented quirks."""
+"""WHU conversion (docs/DATA.md §3.2): the Pix2Poly port is identical to the original code and keeps its documented
+quirks; the 512² quadrants, the main ground truth from the official buildings and the patch index are checked on a
+fake of the official release."""
 
 import importlib.util
+import os
+from itertools import groupby
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
+import tifffile
 from scipy import ndimage as ndi
 from shapely.geometry import mapping
 
 from densepoly import paths
 from densepoly.data import whu
 from densepoly.utils.io import read_json
-from tests.fixtures.fake_whu import make_tile
+from tests.fixtures.fake_whu import make_fake_whu
 
 
 @pytest.fixture(scope="module")
@@ -21,6 +27,18 @@ def original():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture(scope="module")
+def fake(tmp_path_factory):
+    """The fake official release (tests/fixtures/fake_whu.py) with its official COCO grouped by tile."""
+    root = tmp_path_factory.mktemp("data")
+    tiles = make_fake_whu(root)
+    official = {
+        folder: whu.official_by_tile(read_json(root / "whu" / "official_coco_0.2" / f"{name}.json"))
+        for folder, name in whu.OFFICIAL_COCO_NAMES.items()
+    }
+    return SimpleNamespace(tiles=tiles, raw=root / "whu" / "raw_0.2", official=official)
 
 
 def crafted_mask():
@@ -108,19 +126,93 @@ def pix2poly_patch_loop(original, image_data, gt_im_data, label_name, im_id=0, o
     return images, annotations
 
 
-def test_convert_split_reproduces_the_pix2poly_patch_loop(original, tmp_path):
-    from skimage import io
+def test_p2p_ground_truth_is_pix2poly_run_on_every_kept_quadrant(original, fake):
+    """Each 512² quadrant with buildings is one Pix2Poly tile; ids run on across quadrants and tiles."""
+    result = whu.convert_split(fake.raw / "train", "train")
+    images, annotations = [], []
+    for stem, tile in sorted(fake.tiles["train"].items()):
+        for q, y0, x0 in whu.quadrants(tile.label):
+            image, label = (a[y0 : y0 + whu.QUADRANT, x0 : x0 + whu.QUADRANT] for a in (tile.image, tile.label))
+            more = pix2poly_patch_loop(original, image, label, f"{stem}_{q}", len(images), len(annotations))
+            images += more[0]
+            annotations += more[1]
+    assert result.images == images and result.p2p == annotations and result.main is None
+    assert result.counts["quadrants_kept"] == 7 and result.counts["patches"] == 63  # quadrant 3 of 10001 is empty
+    assert "10002" not in {p["tile"] for p in result.patches}  # all-zero int8 label: no quadrant kept
 
-    image, label = make_tile(7)
-    for kind, array in (("image", image), ("label", label)):
-        (tmp_path / "raw" / kind).mkdir(parents=True)
-        io.imsave(str(tmp_path / "raw" / kind / "tile_5_1.tif"), array, check_contrast=False)
-    counts, names = whu.convert_split(tmp_path / "raw", tmp_path / "out", "test")
-    ours = read_json(tmp_path / "out" / "annotation.json")
-    images, annotations = pix2poly_patch_loop(original, image, label, "tile_5_1")
-    assert ours["images"] == images and ours["annotations"] == annotations
-    assert counts["patches"] == len(names) == 9 and names[0] == "tile_5_1-0.tif"
-    assert len(list((tmp_path / "out" / "images").glob("*.tif"))) == 9
+
+def test_main_ground_truth_keeps_touching_houses_apart():
+    p_inst = np.zeros((224, 224), np.uint16)
+    p_inst[40:80, 30:60] = 1
+    p_inst[40:80, 60:95] = 2  # shares a wall with building 1: one blob for Pix2Poly
+    p_inst[150:180, 150:190] = 3
+    p2p = whu.patch_annotations((p_inst > 0).astype(np.uint8) * 255, 0, 0)
+    main = whu.instance_patch_annotations(p_inst, 0, 0)
+    assert len(p2p) == 2 and len(main) == 3 and [a["id"] for a in main] == [0, 1, 2]
+    assert main[2]["segmentation"] == p2p[1]["segmentation"]  # an isolated building is traced the same way
+    assert main[0]["bbox"] == [30.0, 40.0, 29.0, 39.0]  # half a pixel inside its own mask, as in Pix2Poly
+
+
+def test_main_negative_sample_counts_all_building_pixels():
+    p_inst = np.zeros((224, 224), np.uint16)
+    p_inst[5, 5:8] = 1
+    p_inst[9, 5:7] = 2  # 5 building pixels in two buildings
+    expected = {"id": 9, "image_id": 4, "segmentation": [], "area": 0.0, "bbox": [], "category_id": 100, "iscrowd": 0}
+    assert whu.instance_patch_annotations(p_inst, image_id=4, first_ann_id=9) == [expected]
+
+
+def test_quadrants_keep_only_quadrants_with_buildings():
+    label = np.zeros((1024, 1024), np.uint8)
+    label[10, 600] = 255
+    label[700, 700] = 255
+    assert whu.quadrants(label) == [(1, 0, 512), (3, 512, 512)]
+    with pytest.raises(ValueError, match="quadrants"):
+        whu.quadrants(np.zeros((600, 1024), np.uint8))
+
+
+def test_convert_split_main_ground_truth_and_patch_offsets(fake):
+    result = whu.convert_split(fake.raw / "train", "train", fake.official["train"])
+    assert [img["id"] for img in result.images] == list(range(63))
+    assert [a["id"] for a in result.main] == list(range(len(result.main)))
+    assert result.counts["main"]["building_annotations"] > result.counts["p2p"]["building_annotations"]  # rows
+    assert result.counts["official_in_used_tiles"]["annotations"] == sum(
+        len(t.buildings) for t in fake.tiles["train"].values()
+    )
+    for patch in result.patches:  # the offset gives back the patch: Pix2Poly's annotations of that crop
+        label = fake.tiles["train"][patch["tile"]].label
+        p_gt = label[patch["y"] : patch["y"] + 224, patch["x"] : patch["x"] + 224]
+        got = [a["segmentation"] for a in result.p2p if a["image_id"] == patch["image_id"]]
+        assert got == [a["segmentation"] for a in whu.patch_annotations(p_gt, 0, 0)]
+        assert result.images[patch["image_id"]]["file_name"] == patch["file_name"]
+
+
+def test_test_split_keeps_part_300_only(fake):
+    result = whu.convert_split(fake.raw / "test", "test", fake.official["test"])
+    assert (result.counts["tiles"], result.counts["tiles_used"], result.counts["patches"]) == (2, 1, 27)
+    assert {p["tile"] for p in result.patches} == {"3000"}
+
+
+def test_parallel_conversion_matches_serial(fake):
+    serial = whu.convert_split(fake.raw / "val", "val", fake.official["val"], workers=1)
+    parallel = whu.convert_split(fake.raw / "val", "val", fake.official["val"], workers=2)
+    assert (parallel.images, parallel.main, parallel.p2p, parallel.patches) == (
+        serial.images,
+        serial.main,
+        serial.p2p,
+        serial.patches,
+    )
+
+
+def test_negative_label_values_are_rejected(tmp_path):
+    for kind, array in (("image", np.zeros((1024, 1024, 3), np.uint8)), ("label", np.full((1024, 1024), -1, np.int8))):
+        (tmp_path / kind).mkdir()
+        tifffile.imwrite(tmp_path / kind / "1.tif", array, photometric="rgb" if kind == "image" else "minisblack")
+    with pytest.raises(ValueError, match="negative"):
+        whu.convert_tile(tmp_path, "1.tif", None)
+
+
+def test_official_by_tile_lists_every_tile(fake):
+    assert set(fake.official["train"]) == {"10000", "10001", "10002"} and fake.official["train"]["10002"] == []
 
 
 def test_negative_patch_gets_one_empty_annotation():
@@ -153,20 +245,28 @@ def test_holes_larger_than_10_px_become_extra_rings():
     assert len(ann["segmentation"]) == 2
 
 
-def test_tile_names_follow_pix2poly_parsing():
-    assert whu.tile_name("tile_123.tif", "train") == "tile_123"
-    assert whu.tile_name("tile_12_34.tif", "test") == "tile_12_34"
+def pix2poly_tile_name(label_file, split):
+    """Lines 298-302 of the original script: the first two digit/non-digit runs of the name, four for test."""
+    label_info = ["".join(g) for _, g in groupby(label_file, key=lambda x: x.isdigit())]
+    return "".join(label_info[:4]) if split == "test" else "".join(label_info[:2])
 
 
-def test_val_split_keeps_tiles_whole():
-    names = [f"tile{t}-{t * 9 + k}.tif" for t in range(20) for k in range(9)]
+def test_file_stem_is_the_name_pix2poly_parses_wherever_its_parser_works():
+    for name, split in (("tile_123.tif", "train"), ("tile_12_34.tif", "test")):
+        assert pix2poly_tile_name(name, split) == os.path.splitext(name)[0]
+    # the official names are digits only: Pix2Poly would look for 10000.tif.tif
+    assert pix2poly_tile_name("10000.tif", "train") == "10000.tif"
+
+
+def test_val_split_keeps_official_tiles_whole():
+    names = [f"{20000 + t}_{q}-{(4 * t + q) * 9 + k}.tif" for t in range(20) for q in range(4) for k in range(9)]
     sub, select = whu.split_val_by_tile(names, tune_sub_size=40, seed=0)
 
     def tiles(items):
-        return {n.rsplit("-", 1)[0] for n in items}
+        return {n.split("_")[0] for n in items}
 
     assert not tiles(sub) & tiles(select) and sorted(sub + select) == sorted(names)
-    assert 40 <= len(sub) < 40 + 9 and len(sub) % 9 == 0
+    assert 40 <= len(sub) < 40 + 36 and len(sub) % 36 == 0  # 36 patches per official tile
     assert sub == [n for n in names if n in set(sub)]  # patch order is kept
 
 

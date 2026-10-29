@@ -18,6 +18,9 @@ DATASETS = ("crowdai", "whu")
 # in train) compares with HiSup's released predictions; val_full (the whole, leaky val) only reproduces HiSup.
 SPLITS = ("train_dedup", "val_tune", "val_tune_sub", "val_select", "test", "val_clean", "val_full")
 CROWDAI_ONLY = ("val_clean", "val_full")
+# WHU has two ground truths on the same patches (docs/DATA.md §3.2): annotation.json keeps the official buildings
+# apart; variant "p2p" (annotation_p2p.json) is Pix2Poly's, only for comparing with the Pix2Poly paper.
+GT_VARIANTS = {"whu": ("p2p",)}
 
 
 def _env_dir(var: str, default: Path) -> Path:
@@ -87,9 +90,20 @@ def _layout_root(dataset: str) -> Path:
     return dataset_dir("whu") / "pix2poly_224" if dataset == "whu" else dataset_dir(dataset)
 
 
-def annotation_file(dataset: str, split: str) -> Path:
-    """COCO ground truth that holds a split's images (docs/DATA.md §1)."""
-    return _layout_root(dataset) / source_folder(dataset, split) / "annotation.json"
+def annotation_file(dataset: str, split: str, variant: str | None = None) -> Path:
+    """COCO ground truth that holds a split's images (docs/DATA.md §1); variant selects another ground truth of the
+    same images (GT_VARIANTS)."""
+    if variant is not None and variant not in GT_VARIANTS.get(dataset, ()):
+        raise ValueError(f"unknown ground truth variant {variant!r} for {dataset}")
+    name = "annotation.json" if variant is None else f"annotation_{variant}.json"
+    return _layout_root(dataset) / source_folder(dataset, split) / name
+
+
+def patch_index(dataset: str, split: str) -> Path:
+    """WHU only: patches.csv with the official tile and offset of every patch (patches are not stored as images)."""
+    if dataset != "whu":
+        raise ValueError("only WHU patches are cut from larger tiles")
+    return _layout_root(dataset) / source_folder(dataset, split) / "patches.csv"
 
 
 def image_dir(dataset: str, split: str) -> Path:

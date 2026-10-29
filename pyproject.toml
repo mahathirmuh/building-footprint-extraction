@@ -16,6 +16,7 @@ dependencies = [
     "segmentation-models-pytorch==0.6.*",
     "opencv-python-headless>=4.10,<5",
     "scikit-image",
+    "imagecodecs",  # LZW-compressed TIFF of the official WHU 0.2 m release (read through skimage/tifffile)
     "scipy",
     "shapely>=2",
     "pycocotools",

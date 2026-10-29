@@ -74,6 +74,17 @@ def test_split_sources_follow_the_data_layout(monkeypatch, tmp_path):
     assert paths.image_dir("whu", "train_dedup") == data / "whu/pix2poly_224/train/images"
 
 
+def test_whu_ground_truth_variant_and_patch_index(monkeypatch, tmp_path):
+    monkeypatch.setenv("DENSEPOLY_DATA", str(tmp_path))
+    data = tmp_path.resolve()
+    assert paths.annotation_file("whu", "test", "p2p") == data / "whu/pix2poly_224/test/annotation_p2p.json"
+    assert paths.patch_index("whu", "val_select") == data / "whu/pix2poly_224/val/patches.csv"
+    with pytest.raises(ValueError, match="variant"):
+        paths.annotation_file("crowdai", "test", "p2p")
+    with pytest.raises(ValueError, match="WHU"):
+        paths.patch_index("crowdai", "test")
+
+
 def test_run_name():
     assert paths.run_name(0) == "seed0"
     assert paths.run_name(None) == "ref"
