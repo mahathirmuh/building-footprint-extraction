@@ -91,6 +91,30 @@ def test_label_statistics(phase1):
     assert stats["theta_valid_share_of_building_px"] == 1.0  # every synthetic house is above A_θ
 
 
+def test_gap_check_helpers():
+    script = load_script("gap_check")
+    flat = np.zeros(10)
+    flat[3] = 5
+    low, high = np.zeros(10), np.zeros(10)
+    low[2], high[8] = 7, 4
+    assert (script.auc(flat, flat), script.auc(high, low), script.auc(low, high)) == (0.5, 1.0, 0.0)
+    labels = np.zeros((20, 30), np.uint16)
+    labels[5:15, 2:10] = 1
+    labels[5:15, 12:20] = 2  # 2 px gap: columns 10 and 11
+    labels[5:15, 26:29] = 3  # 6 px from house 2: not a narrow gap at radius 3
+    assert sorted(set(np.nonzero(script.narrow_gaps(labels, 3))[1].tolist())) == [10, 11]
+
+
+def test_gap_check_on_the_fake_download(phase1):
+    load_script("gap_check").main(["--data", "crowdai"])
+    record = read_json(phase1.root / "outputs" / "metrics" / "crowdai" / "phase2" / "gap_check_val_tune.json")
+    assert record["tiles"] == 1 and len(record["results"]) == 6  # 2 modes × L_g in {7, 9, 11}
+    best = max(record["results"], key=lambda r: r["auc_gap_vs_background"])
+    assert (
+        best["auc_gap_vs_background"] > 0.75
+    )  # well above chance (0.5); narrow gaps also hold plain ground near walls
+
+
 @pytest.mark.parametrize("dataset", ["crowdai", "whu"])
 def test_qa_figures(phase1, dataset):
     load_script("figures").main(["--data", dataset, "--qa-labels", "--qa-gap-mode", *phase1.common])

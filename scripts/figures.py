@@ -153,7 +153,7 @@ def qa_labels(dataset: str, splits_dir: Path | None = None, seed: int = 0) -> Pa
     for ax, title in zip(axes[0], titles, strict=True):
         ax.set_title(title, fontsize=9)
     fig.suptitle(f"{dataset} val_tune: label dan prior (r = {source.cfg.labels.contact_radius_px} px)", fontsize=11)
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0, 1, 0.985))  # leave room for the suptitle above the column titles
     return save(fig, dataset, "labels")
 
 
@@ -179,7 +179,7 @@ def qa_gap_mode(dataset: str, splits_dir: Path | None = None, seed: int = 0) -> 
     for ax, title in zip(axes[0], titles, strict=True):
         ax.set_title(title, fontsize=9)
     fig.suptitle(f"{dataset} val_tune: mode peta celah", fontsize=11)
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0, 1, 0.985))  # leave room for the suptitle above the column titles
     return save(fig, dataset, "gap_mode")
 
 
