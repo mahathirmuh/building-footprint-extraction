@@ -361,7 +361,7 @@ CrowdAI disetujui dan dibekukan.
 
 **Ketidaksesuaian spesifikasi:** SE garis harus berpanjang ganjil (METHOD §2.2, §10), sedangkan skala WHU
 15, 30, …, 120 berisi bilangan genap. Usulan: 15, 31, 45, 61, 75, 91, 105, 121 (15·k dibulatkan ke ganjil
-berikutnya). Sudah dipakai di `configs/data/whu.yaml`; **menunggu persetujuan**.
+berikutnya). Sudah dipakai di `configs/data/whu.yaml`; disetujui 29 Okt 2026 (keputusan 2 di bawah).
 
 **Statistik label** (`splits/<ds>_label_stats.json`):
 
@@ -403,3 +403,42 @@ berikutnya). Sudah dipakai di `configs/data/whu.yaml`; **menunggu persetujuan**.
 2. Skala MBI dibekukan: CrowdAI 11–81 px; WHU 15, 31, 45, 61, 75, 91, 105, 121 px.
 3. Run prior penuh dijalankan: statistik dari 500 unit train, lalu cache CrowdAI dan WHU berurutan.
 4. Radius kontak r dan bobot kelas kontak dibahas di Fase 5.
+
+**Run prior penuh** (29 Okt 2026, 15.44–23.26, 12 worker, kode commit `191fb96`):
+
+Statistik beku (`configs/data/<ds>_prior_stats.json`; 500 unit train, 20.000 piksel per unit, seed 0):
+
+| Dataset | q99,5 (MBI / celah) | mean (MBI / celah) | std (MBI / celah) |
+|---|---|---|---|
+| CrowdAI | 0,0521 / 0,2902 | 0,0771 / 0,1020 | 0,1624 / 0,1545 |
+| WHU | 0,0604 / 0,6392 | 0,1039 / 0,1436 | 0,1980 / 0,1848 |
+
+Cache (`splits/<ds>_prior_cache.json`):
+
+| Dataset / split | Unit | Wall | Detik per unit di worker |
+|---|---|---|---|
+| CrowdAI `train_dedup` | 23.427 | 70,4 menit | 2,14 |
+| CrowdAI `val_tune` | 2.928 | 13,2 menit | 3,15 |
+| CrowdAI `test` | 2.928 | 13,7 menit | 3,27 |
+| CrowdAI `val_clean` | 212 | 1,4 menit | 3,97 |
+| WHU `train_dedup` | 2.604 | 146,0 menit | 40,1 |
+| WHU `val_tune` | 490 | 24,9 menit | 36,1 |
+| WHU `test` | 1.173 | 65,4 menit | 39,8 |
+
+- Total wall: CrowdAI 1,64 jam, WHU 3,94 jam (benchmark: ±1,6 dan ±4,8 jam).
+- "Detik per unit di worker" diukur saat 12 worker berjalan bersamaan di Intel Core Ultra 7 165U (12 core, 14 thread,
+  sebagian besar E-core). Nilainya beberapa kali angka satu core tanpa beban (±0,6 s dan ±13 s), jadi bukan biaya per
+  citra untuk tabel efisiensi.
+- `seconds_per_unit` = 180,1 di `whu_prior_stats.json` **tidak sah** sebagai ukuran waktu. Laptop masuk *sleep* pukul
+  17.42–19.12 saat statistik WHU dihitung, dan pengukur waktu tetap berjalan selama *sleep*. Nilai q, mean, dan std
+  tidak terpengaruh, karena proses hanya berhenti lalu lanjut. Waktu prior WHU yang sah ada di tabel cache.
+- Layar mati (*Modern Standby*) beberapa kali antara 19.26 dan 23.26 tidak menghentikan proses: file prior WHU
+  tertulis di setiap jendela 10 menit (146–209 tile per jendela).
+
+Pemeriksaan sesudah run (skrip sekali jalan, di luar repo):
+- Lengkap: di setiap split jumlah file = jumlah unit, tanpa file hilang atau berlebih. Ukuran setiap PNG sama dengan
+  citra sumbernya, dan kanal B = 0.
+- Hitung ulang: 5 unit acak per split (35 unit) dihitung ulang dengan statistik beku, dan hasilnya identik byte demi
+  byte dengan cache.
+- Sampel 200 unit per split: piksel jenuh (255) di `train_dedup` 0,69% / 0,55% (CrowdAI, MBI / celah) dan
+  0,56% / 0,49% (WHU), dekat 0,5% yang diharapkan dari q = persentil 99,5.

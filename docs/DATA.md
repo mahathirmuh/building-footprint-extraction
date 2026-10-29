@@ -277,10 +277,15 @@ terpisah di anotasi resmi, set ini bisa menjadi uji tambahan untuk pemisahan rum
   - `val_tune_sub` dan `val_select` memakai folder `val_tune`.
 - Statistik prior di `configs/data/<ds>_prior_stats.json`: `q99.5` (skala), serta mean dan std setelah diskalakan.
   Dihitung dari 500 unit train acak (seed 0), 20.000 piksel acak per unit, lalu dibekukan.
-- Waktu hitung prior dicatat di `splits/<ds>_prior_cache.json` dan dipakai untuk metrik efisiensi. Ukuran di laptop
-  ini (29 Okt 2026, `docs/progress.md` Fase 2):
-  - Satu core: ±0,6 s per tile 300² dan ±13 s per tile 1024².
-  - 12 worker: CrowdAI ±1,6 jam, WHU ±4,8 jam.
+- Waktu hitung prior dicatat di `splits/<ds>_prior_cache.json` dan dipakai untuk metrik efisiensi. Per split:
+  `wall_seconds` (waktu nyata) dan `seconds_per_unit` (rata-rata waktu satu unit di dalam worker, saat semua worker
+  berjalan bersamaan). Cache dibangun 29 Okt 2026 di laptop ini dengan 12 worker (`docs/progress.md` Fase 2):
+  - CrowdAI: 29.495 citra dalam 1,64 jam.
+  - WHU: 4.267 tile resmi dalam 3,94 jam.
+  - Satu core tanpa beban (benchmark): ±0,6 s per tile 300² dan ±13 s per tile 1024². `seconds_per_unit` di file
+    cache beberapa kali lebih besar, karena 12 worker berbagi CPU.
+  - `seconds_per_unit` di `configs/data/whu_prior_stats.json` tidak sah sebagai ukuran waktu (laptop *sleep* saat
+    statistik dihitung).
   - Tempat menjalankan: `docs/COLAB.md` §8.
 
 ## 6. Format `splits/`
