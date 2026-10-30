@@ -3,6 +3,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 import pickle
 
 import numpy as np
@@ -154,3 +155,17 @@ def test_evaluate_script(env, tmp_path):
     record = read_json(paths.metrics_file("crowdai", "toy", "seed0", "test"))
     assert record["checkpoint"] == "outputs/runs/crowdai/toy/seed0/best.pt"
     assert record["pred_file"] == "preds/crowdai/toy/seed0/test.json"
+
+
+def test_evaluate_script_benchmark_writes_nothing(env, capsys):
+    _, splits = env
+    write_json(paths.pred_file("crowdai", "bench", "ref", "test"), predictions())
+    spec = importlib.util.spec_from_file_location("evaluate", paths.REPO_ROOT / "scripts" / "evaluate.py")
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+    out = paths.out_root()
+    script.main(["--data", "crowdai", "--exp", "bench", "--split", "test", "--workers", "1", "--benchmark", "3",
+                 "--splits-dir", str(splits)])  # fmt: skip
+    summary = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert (summary["images"], summary["of"]) == (3, 6) and summary["projected_minutes"] >= 0
+    assert not (out / "metrics" / "crowdai" / "bench").exists() and paths.out_root() == out

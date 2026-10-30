@@ -1,0 +1,32 @@
+# Numbers reported by other papers (docs/EVALUATION.md §7). Tables cite them from here, always marked "dilaporkan di
+# paper"; they are never compared as if they came from our pipeline unless the split and protocol match (split_note).
+# Values are copied as printed: AP, AR, IoU and C-IoU in percent, PoLiS in pixels.
+
+hisup:
+  crowdai_val:
+    method: HiSup, HRNetV2-W48
+    source:
+      paper: >-
+        Xu, Xu, Xue & Xia, "Accurate Polygonal Mapping of Buildings in Satellite Imagery" (HiSup),
+        arXiv:2208.00609v1, 1 Aug 2022
+      journal: >-
+        ISPRS J. Photogramm. Remote Sens. 198:284-296 (2023), doi:10.1016/j.isprsjprs.2023.03.006;
+        the journal version was not available, so its numbers are not checked against these
+      tables: Table 1 (MS-COCO metrics) and Table 2 (AP_boundary, PoLiS, C-IoU, IoU)
+      page: 9 (page of the arXiv PDF)
+      pdf_sha256: a80edc8bb3e273b5caf5ba150b1769510673c287bcbc1590325bb4c24c2c22ff
+      copied: 2026-10-30
+    split_note: >-
+      AICrowd (CrowdAI) val, 60,317 tiles, which HiSup uses as its test set (Sect. 5.1.1); it leaks from train
+      (docs/DATA.md §2.2). Our counterpart is crowdai/val_full, used only to reproduce these numbers.
+    values:
+      AP: 79.4
+      AP50: 92.7
+      AP75: 85.3
+      AR: 81.5
+      AR50: 93.1
+      AR75: 86.7
+      AP_boundary: 66.5
+      PoLiS: 0.726
+      CIoU: 89.6
+      IoU: 94.3
