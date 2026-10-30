@@ -1,4 +1,6 @@
-"""Sanity checks of the evaluation pipeline (densepoly.eval.sanity; docs/EVALUATION.md §6.1, §6.2, §6.6)."""
+"""Sanity checks of the evaluation pipeline (densepoly.eval.sanity; docs/EVALUATION.md §6.1, §6.2, §6.4, §6.6)."""
+
+import importlib.util
 
 import numpy as np
 import pytest
@@ -84,6 +86,15 @@ def test_report_renders_every_check():
     assert "Belum ada: evaluasi `hisup_release`" in text  # §6.4 before HiSup's release is evaluated
 
 
+def bare_report(hisup: dict | None = None) -> dict:
+    """A report whose only part with checks is §6.4."""
+    return {"created": "now", "git": "abc", "environment": sanity.environment(), "gt_as_prediction": [],
+            "edge_case_tests": [], "determinism": {"checks": []}, "hisup_reproduction": hisup,
+            "bootstrap_ap": {"case": "c", "point_AP": 0.5, "n_rep": 1, "ci95": [0, 1], "sd": 0, "n_naive": 1,
+                             "naive_unique_fraction_mean": 0.6, "naive_ci95": [0, 1],
+                             "proper_ci95_first_n_naive": [0, 1], "width_ratio": 1.0, "checks": []}}  # fmt: skip
+
+
 def fake_hisup_record(ap: float) -> dict:
     overall = {"AP": ap, "AP50": 0.926, "AP75": 0.85, "AP_boundary": 0.66, "PoLiS": 0.73, "CIoU_p2p": 0.89,
                "IoU_p2p": 0.94, "CIoU": 0.88, "IoU": 0.93, "MTA": 30.0}  # fmt: skip
@@ -101,9 +112,18 @@ def test_hisup_reproduction_checks_ap_within_0_3_points(tmp_path, monkeypatch, a
     assert rows["AP"]["paper"] == 79.4 and rows["AP"]["ours"] == pytest.approx(100 * ap)
     assert rows["AR"]["ours"] == pytest.approx(81.0) and rows["PoLiS"]["ours"] == pytest.approx(0.73)
     assert part["checks"][0]["passed"] is passed
-    report = {"created": "now", "git": "abc", "environment": sanity.environment(), "gt_as_prediction": [],
-              "edge_case_tests": [], "determinism": {"checks": []}, "hisup_reproduction": part,
-              "bootstrap_ap": {"case": "c", "point_AP": 0.5, "n_rep": 1, "ci95": [0, 1], "sd": 0, "n_naive": 1,
-                               "naive_unique_fraction_mean": 0.6, "naive_ci95": [0, 1],
-                               "proper_ci95_first_n_naive": [0, 1], "width_ratio": 1.0, "checks": []}}  # fmt: skip
-    assert f"| AP | 79.4 | {100 * ap:.2f} |" in sanity.render_report(report)
+    text = sanity.render_report(bare_report(part))
+    assert f"| AP | 79.4 | {100 * ap:.2f} |" in text
+    assert "| PoLiS | 0.726 | 0.7300 | +0.0040 |" in text  # one decimal more than the paper prints
+
+
+def test_render_only_renders_the_saved_report_again(tmp_path, monkeypatch):
+    monkeypatch.setenv("DENSEPOLY_OUT", str(tmp_path / "outputs"))
+    spec = importlib.util.spec_from_file_location("sanity_checks", paths.REPO_ROOT / "scripts" / "sanity_checks.py")
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+    report = bare_report()
+    write_json(paths.out_root() / "metrics" / "sanity_report.json", report)
+    md = tmp_path / "sanity_report.md"
+    script.main(["--render-only", "--report-md", str(md)])
+    assert md.read_text(encoding="utf-8") == sanity.render_report(report)

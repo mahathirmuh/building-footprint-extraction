@@ -1,11 +1,12 @@
-"""Sanity checks of the evaluation pipeline on real ground truth (docs/EVALUATION.md §6.1, §6.2, §6.6) and their
-report, docs/sanity_report.md, rendered from the JSON the checks write (no number is typed by hand).
+"""Sanity checks of the evaluation pipeline on real ground truth (docs/EVALUATION.md §6.1, §6.2, §6.4, §6.6) and
+their report, docs/sanity_report.md, rendered from the JSON the checks write (no number is typed by hand).
 
 §6.1 evaluates the GT as predictions twice: (i) without the GT whose mask is empty, where every ideal value must
 hold, and (ii) as released, where exactly those empty masks stay unmatched. With overlapping GT polygons, GT as
 predictions also merges and splits some houses; the expected sets follow from the GT alone (gt_overlap_sets).
 §6.6 resamples a perturbed copy of the GT (shifted houses, some dropped, random scores) to check the bootstrap AP
-against COCOeval and to show what passing duplicate imgIds to COCOeval would do instead.
+against COCOeval and to show what passing duplicate imgIds to COCOeval would do instead. §6.4 compares the saved
+evaluation of HiSup's released val predictions with the numbers of its paper.
 """
 
 from __future__ import annotations
@@ -310,6 +311,12 @@ def _fmt(value) -> str:
     return str(value)
 
 
+def _printed_decimals(value) -> int:
+    """Decimals of a number as a paper printed it: 79.4 → 1, 0.726 → 3."""
+    text = str(value)
+    return len(text.split(".")[1]) if "." in text else 0
+
+
 def render_report(report: dict) -> str:
     """docs/sanity_report.md from the report JSON."""
     checks = all_checks(report)
@@ -356,16 +363,21 @@ def render_report(report: dict) -> str:
         check_ = h["pred_check"]
         lines += [
             f"Prediksi rilisan HiSup dievaluasi ulang dengan pipeline ini (`{h['metrics_file']}`, "
-            f"dibuat {h['created']}, commit `{h['git']}`), lalu dibandingkan dengan {h['source']['tables']} di paper "
-            f"({h['source']['paper'].strip()}; hlm. {h['source']['page']}). Pemeriksaan longgar: {check_['results']} "
-            f"prediksi, {check_['dropped']} dibuang, {check_['too_few_points']} ring dua titik (ikut AP sebagai mask "
-            f"kosong, dikeluarkan dari PoLiS/MTA). C-IoU dan IoU paper mengikuti aturan `cIoU.py` (citra yang punya "
-            "prediksi), jadi dibandingkan dengan `CIoU_p2p` dan `IoU_p2p`.",
+            f"dibuat {h['created']}, commit `{h['git']}`). Pemeriksaan longgar: {check_['results']} prediksi, "
+            f"{check_['dropped']} dibuang, {check_['too_few_points']} ring dua titik (ikut AP sebagai mask kosong, "
+            "dikeluarkan dari PoLiS/MTA). C-IoU dan IoU paper mengikuti aturan `cIoU.py` (citra yang punya prediksi), "
+            "jadi dibandingkan dengan `CIoU_p2p` dan `IoU_p2p`. Angka pipeline ini ditulis dengan satu desimal lebih "
+            "banyak daripada paper.",
+            "",
+            f"Angka paper (`configs/paper_numbers.yaml`): {h['source']['paper'].strip()}; {h['source']['tables']}; "
+            f"hlm. {h['source']['page']}.",
             "",
             "| Metrik | Paper | Pipeline ini | Selisih |",
             "|---|---|---|---|",
         ]
-        lines += [f"| {r['metric']} | {_fmt(r['paper'])} | {r['ours']:.2f} | {r['delta']:+.2f} |" for r in h["rows"]]
+        for r in h["rows"]:
+            d = _printed_decimals(r["paper"]) + 1
+            lines.append(f"| {r['metric']} | {_fmt(r['paper'])} | {r['ours']:.{d}f} | {r['delta']:+.{d}f} |")
         other = ", ".join(f"{k} {v:.2f}" for k, v in h["other"].items())
         lines += [
             "",

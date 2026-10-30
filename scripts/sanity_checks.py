@@ -1,6 +1,8 @@
-"""Sanity checks of the evaluation pipeline on real data (docs/EVALUATION.md §6.1, §6.2, §6.6; densepoly.eval.sanity).
+"""Sanity checks of the evaluation pipeline on real data (docs/EVALUATION.md §6.1, §6.2, §6.4, §6.6;
+densepoly.eval.sanity).
 
-    python scripts/sanity_checks.py --workers 12          # ±30–40 min on this laptop
+    python scripts/sanity_checks.py --workers 12          # 26–48 min on this laptop
+    python scripts/sanity_checks.py --render-only         # render docs/sanity_report.md again from the saved JSON
 
 Writes outputs/metrics/sanity_report.json and renders docs/sanity_report.md from it. The evaluations behind it are
 ordinary run_eval outputs: experiments sanity_gt (GT as predictions), sanity_gt_noempty (without the empty masks),
@@ -20,7 +22,7 @@ from pathlib import Path
 
 from densepoly import paths
 from densepoly.eval import sanity
-from densepoly.utils.io import write_json
+from densepoly.utils.io import read_json, write_json
 from densepoly.utils.provenance import git_revision, timestamp
 
 CASES = (("crowdai", "val_clean", None), ("crowdai", "test", None), ("whu", "test", None), ("whu", "test", "p2p"))
@@ -48,17 +50,9 @@ def log(message: str) -> None:
     print(f"[{time.strftime('%H:%M:%S')}] {message}", flush=True)
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
-    parser.add_argument("--case", nargs="+", help="cases of §6.1 to run, e.g. crowdai/val_clean whu/test/p2p")
-    parser.add_argument("--n-rep", type=int, default=1000, help="bootstrap replicates of §6.6")
-    parser.add_argument("--n-naive", type=int, default=200, help="replicates of the naive COCOeval comparison")
-    parser.add_argument("--report-md", type=Path, default=paths.REPO_ROOT / "docs" / "sanity_report.md")
-    args = parser.parse_args(argv)
+def run_checks(args) -> dict:
     names = {"/".join(part for part in case if part): case for case in CASES}
     cases = [names[name] for name in args.case] if args.case else list(CASES)
-
     report = {"created": timestamp(), "git": git_revision(), "environment": sanity.environment()}
     report["gt_as_prediction"] = []
     for dataset, split, variant in cases:
@@ -72,8 +66,24 @@ def main(argv: list[str] | None = None) -> None:
     report["bootstrap_ap"] = sanity.bootstrap_ap(n_rep=args.n_rep, n_naive=args.n_naive, workers=args.workers)
     log("6.4 HiSup reproduction (from its saved evaluation)")
     report["hisup_reproduction"] = sanity.hisup_reproduction()
+    return report
 
-    write_json(paths.out_root() / "metrics" / "sanity_report.json", report)
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
+    parser.add_argument("--case", nargs="+", help="cases of §6.1 to run, e.g. crowdai/val_clean whu/test/p2p")
+    parser.add_argument("--n-rep", type=int, default=1000, help="bootstrap replicates of §6.6")
+    parser.add_argument("--n-naive", type=int, default=200, help="replicates of the naive COCOeval comparison")
+    parser.add_argument("--report-md", type=Path, default=paths.REPO_ROOT / "docs" / "sanity_report.md")
+    parser.add_argument("--render-only", action="store_true", help="render the saved JSON again; run no check")
+    args = parser.parse_args(argv)
+    report_json = paths.out_root() / "metrics" / "sanity_report.json"
+    if args.render_only:
+        report = read_json(report_json)
+    else:
+        report = run_checks(args)
+        write_json(report_json, report)
     args.report_md.write_text(sanity.render_report(report), encoding="utf-8", newline="\n")
     checks = sanity.all_checks(report)
     tests_failed = sum(not t["passed"] for t in report["edge_case_tests"])
