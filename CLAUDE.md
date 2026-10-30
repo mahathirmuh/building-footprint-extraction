@@ -188,6 +188,7 @@ pip install -e ".[dev]"                     # + ".[eval]" untuk boundary-iou-api
 pytest -q                                   # wajib lolos sebelum bilang "selesai"
 python scripts/dedup_crowdai.py --data crowdai        # path dibaca dari DENSEPOLY_DATA; output ke splits/
 python scripts/make_density.py --data crowdai --split test
+python scripts/prepare_gt.py --data crowdai           # GT per split untuk evaluasi → outputs/gt/ (WHU: + _p2p)
 python scripts/precompute_priors.py --data crowdai --split train_dedup
 python scripts/train.py --data crowdai --exp full_p2 --seed 0 [--resume]
 python scripts/predict.py --data crowdai --exp full_p2 --seed 0 --split test

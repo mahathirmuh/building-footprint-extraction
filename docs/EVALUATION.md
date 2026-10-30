@@ -11,8 +11,16 @@
 - `image_id` dan `category_id` diambil dari file GT (cek nilainya; konversi WHU Pix2Poly memakai `category_id = 100`).
 - Koordinat di kerangka tile asli (padding sudah dibuang), satu cincin luar per instance, minimal 3 titik unik,
   konvensi titik penutup sama dengan GT.
-- File GT subset per split dibuat sekali: `outputs/gt/<dataset>/<split>.json`. Isinya semua citra split, termasuk yang
-  tanpa bangunan.
+- File GT subset per split dibuat sekali dengan `scripts/prepare_gt.py`: `outputs/gt/<dataset>/<split>.json` (WHU juga
+  `<split>_p2p.json`). Isinya semua citra split, termasuk yang tanpa bangunan, dengan aturan `densepoly.eval.coco_io`:
+  - id anotasi digeser +1 bila file sumbernya mulai dari 0 (§2.2);
+  - sampel negatif WHU dibuang, citranya tetap;
+  - anotasi lain dibiarkan apa adanya.
+
+  Field `info` mencatat sumber, offset id, dan jumlah setiap kasus khusus.
+- Prediksi diperiksa `coco_io.check_predictions`: secara ketat untuk output kita (setiap pelanggaran aturan di atas
+  adalah error), dan longgar untuk prediksi rilisan. Pada mode longgar, hanya ring dengan < 3 titik berbeda yang
+  dibuang; masalah lain dihitung dan prediksinya dievaluasi apa adanya.
 
 ## 2. Metrik
 
@@ -84,8 +92,10 @@ Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28
   `segmentation` dianggap RLE dan `maskUtils.area` gagal. Dengan `bbox`, `area` deteksi = luas bbox (bukan luas
   poligon), sehingga pengelompokan AP_S/M/L untuk deteksi memakai luas bbox. Poligon dengan tepat 4 koordinat dibaca
   `frPyObjects` sebagai bbox lalu crash, dan ring berluas nol mendapat IoU 0 dengan dirinya sendiri.
-- **GT val CrowdAI** punya 3.644 anotasi ber-`area` 0, padahal ring yang luasnya nol hanya 3.488. Jadi 156 bangunan
-  nyata selalu masuk kelompok AP_S (COCOeval memakai field `area` GT). AP total tidak terpengaruh.
+- **GT val CrowdAI** punya 3.644 anotasi ber-`area` 0. Himpunannya persis sama dengan anotasi yang mask
+  pycocotools-nya kosong: 3.488 ring berluas nol, sisanya ring setipis ≤ 1 px² (dicek 30 Okt 2026 dari file
+  `scripts/prepare_gt.py`). Jadi field `area` konsisten dengan mask, dan tidak ada bangunan nyata yang salah masuk
+  kelompok AP_S.
 - **Anotasi negatif WHU** (`segmentation: []`): `mask.frPyObjects([], h, w)` pycocotools melempar `IndexError`
   (dicek 28 Okt 2026). Di kode vendor (30 Okt 2026): `cIoU.py` menganggapnya mask kosong (N_GT bertambah 0),
   `polis.py` menimpanya menjadi `[[]]` lalu tidak pernah memasangkannya, dan `angle_eval.py` tidak membuat poligon
@@ -170,11 +180,13 @@ Ubah GT menjadi file prediksi (skor 1). Harus menghasilkan: AP = 100 (±0,1); AP
 (semua citra 0), sehingga pembungkus mengembalikan `None` dengan `PoLiS_valid_images = 0`, bukan error;
 `merge_rate` dan `split_rate` = 0 kecuali di tempat poligon GT saling tumpang tindih (laporkan jumlahnya).
 
-**Ring GT berluas nol** (CrowdAI: 0,64% anotasi train, 0,68% val; `docs/DATA.md` §2.1) mendapat IoU 0 bahkan dengan
-dirinya sendiri di pycocotools, jadi tidak bisa dicocokkan oleh metode apa pun. GT **tidak diubah** (protokol resmi,
-sama dengan evaluasi HiSup; diputuskan 30 Okt 2026). Karena itu uji ini dijalankan dua kali:
-- tanpa ring berluas nol (di GT maupun prediksi): semua target di atas berlaku, termasuk AP = 100 (±0,1);
-- dengan GT apa adanya: jumlah GT yang tidak ter-match harus sama dengan jumlah ring berluas nol, dan semua GT lain
+**GT bermask kosong** di CrowdAI mendapat IoU 0 bahkan dengan dirinya sendiri di pycocotools, jadi tidak bisa
+dicocokkan oleh metode apa pun. Yang termasuk: ring berluas nol, ditambah ring setipis ≤ 2 px² yang tidak menutup satu
+piksel pun (`coco_io.empty_mask_ids`). Jumlahnya: test 181 (0,72% anotasi), `val_clean` 17, val penuh 3.644 (0,71%);
+WHU 0. GT **tidak diubah** (protokol resmi, sama dengan evaluasi HiSup; diputuskan 30 Okt 2026). Karena itu uji ini
+dijalankan dua kali:
+- tanpa GT bermask kosong (di GT maupun prediksi): semua target di atas berlaku, termasuk AP = 100 (±0,1);
+- dengan GT apa adanya: jumlah GT yang tidak ter-match harus sama dengan jumlah GT bermask kosong, dan semua GT lain
   ter-match dengan IoU 1. Selisih AP dari 100 dilaporkan.
 
 Tes sintetis:

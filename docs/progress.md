@@ -490,8 +490,9 @@ Pemeriksaan sesudah run (skrip sekali jalan, di luar repo):
   patch train / val / test (GT utama). Patch tanpa anotasi sama sekali di test: 246 (GT utama) dan 227 (`p2p`). GT
   WHU test tidak punya ring ≤ 4 koordinat atau berluas nol.
 - GT val CrowdAI: id anotasi juga mulai dari 0; satu kategori (100); satu ring per anotasi; tidak ada ring yang
-  membuat pycocotools atau shapely 2 gagal. Ada 3.644 anotasi ber-`area` 0, padahal ring berluas nol 3.488, jadi 156
-  bangunan nyata selalu masuk kelompok AP_S.
+  membuat pycocotools atau shapely 2 gagal. Ada 3.644 anotasi ber-`area` 0, dan himpunannya persis sama dengan
+  anotasi bermask kosong (3.488 ring berluas nol, sisanya ring setipis ≤ 1 px²). Dikoreksi setelah langkah 2;
+  semula ditulis bahwa 156 di antaranya bangunan nyata.
 
 **Langkah 1 — vendoring skrip metrik Pix2Poly (30 Okt 2026)** (`pytest -q` → 279 tes lolos):
 - `third_party/pix2poly/{polis,angle_eval,cIoU}.py`: salinan persis (commit `4e4c003`, sha256 di
@@ -528,3 +529,38 @@ Pemeriksaan sesudah run (skrip sekali jalan, di luar repo):
   `accumulate` kita sendiri dari `evalImgs` (memang diperlukan untuk bootstrap §4), jadi fungsi itu tidak dipakai.
 - AP_boundary memakai IoU := min(IoU mask, IoU batas), dengan lebar batas 2% diagonal citra (8 px untuk 300², 6 px
   untuk 224²).
+
+**Langkah 2 — GT per split dan pemeriksa prediksi (30 Okt 2026)** (`pytest -q` → 313 tes lolos):
+- `src/densepoly/eval/coco_io.py`:
+  - GT per split: semua citra split dipertahankan; id anotasi +1 bila file sumbernya mulai dari 0; sampel negatif
+    WHU dibuang (citranya tetap); selebihnya apa adanya. Field `info` mencatat sumber, offset, dan jumlah kasus
+    khusus.
+  - `check_predictions`: ketat untuk output kita, longgar untuk prediksi rilisan (hanya ring dengan < 3 titik
+    berbeda yang dibuang).
+  - Helper: `to_result` (format prediksi kita, ring tertutup), `gt_as_predictions`, `empty_mask_ids`, dan
+    `load_results`, yang aman untuk daftar prediksi kosong (`loadRes` pycocotools crash di kasus itu).
+- `scripts/prepare_gt.py` → `outputs/gt/<ds>/<split>[_p2p].json` (CrowdAI 64 s, WHU 29 s).
+- `tests/test_coco_io.py` (34 tes), antara lain:
+  - bukti bug id 0 di COCOeval: AP GT-sebagai-prediksi ≤ 0,5 dengan id asli, dan 1,0 setelah id digeser;
+  - AP 100 hanya tercapai setelah GT bermask kosong dikeluarkan;
+  - setiap pelanggaran aturan prediksi adalah error di mode ketat dan hanya dihitung di mode longgar.
+
+GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
+
+| Dataset / split | Citra | Tanpa anotasi | Anotasi | Sampel negatif dibuang | GT bermask kosong |
+|---|---|---|---|---|---|
+| CrowdAI `val_tune` | 2.928 | 0 | 24.972 | 0 | 170 |
+| CrowdAI `val_tune_sub` | 1.000 | 0 | 8.499 | 0 | 55 |
+| CrowdAI `val_select` | 1.928 | 0 | 16.473 | 0 | 115 |
+| CrowdAI `test` | 2.928 | 0 | 25.145 | 0 | 181 |
+| CrowdAI `val_clean` | 212 | 0 | 1.786 | 0 | 17 |
+| CrowdAI `val_full` | 60.317 | 0 | 515.364 | 0 | 3.644 |
+| WHU `val_tune` | 13.761 | 3.886 / 3.873 | 40.888 / 40.685 | 3.765 / 3.753 | 0 |
+| WHU `val_tune_sub` | 1.017 | 233 / 232 | 3.170 / 3.160 | 227 / 226 | 0 |
+| WHU `val_select` | 12.744 | 3.653 / 3.641 | 37.718 / 37.525 | 3.538 / 3.527 | 0 |
+| WHU `test` | 35.487 | 6.399 / 6.360 | 140.689 / 139.962 | 6.153 / 6.133 | 0 |
+
+- Semua file sumber (CrowdAI train dan val, WHU) memberi id anotasi mulai dari 0, jadi offset +1 berlaku di semua
+  split. Semua ring GT tertutup, jadi prediksi kita juga ditulis tertutup.
+- Di CrowdAI, himpunan anotasi ber-`area` 0 sama persis dengan GT bermask kosong di setiap split (test: 174 ring
+  berluas nol + 7 ring setipis ≤ 2 px²).
