@@ -32,17 +32,14 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff", "nbstripout", "nbconvert"]
-# boundary-iou-api is distributed as "boundary_iou"; pinned to a commit for reproducibility. Installing it this way
-# only installs boundary_iou/__init__.py (its setup.py lists no subpackages); see docs/progress.md, Phase 3.
-eval = [
-    "boundary_iou @ git+https://github.com/bowenc0221/boundary-iou-api.git@37d25586a677b043ed585f10e5c42d4e80176ea9",
-]
 # Ultralytics is AGPL-3.0: optional, only for the FULL+Y experiment (docs/DATA.md §7).
 yolo = ["ultralytics"]
 
 [tool.setuptools.packages.find]
-where = ["src", "third_party"]  # third_party/: only pix2poly_metrics is a package (the verbatim copies are not)
-include = ["densepoly*", "pix2poly_metrics*"]
+# third_party/: the vendored packages pix2poly_metrics and boundary_iou (a verbatim subset of boundary-iou-api, whose
+# git install only installs its __init__.py); the verbatim Pix2Poly copies in third_party/pix2poly are not a package.
+where = ["src", "third_party"]
+include = ["densepoly*", "pix2poly_metrics*", "boundary_iou*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
