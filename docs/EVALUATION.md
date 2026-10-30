@@ -260,9 +260,12 @@ Tes sintetis:
 ### 6.3 Oracle post-processing (Fase 4, di `val_tune_sub`)
 - (a) **Bolak-balik:** poligon GT → raster → `mask_to_exterior` → raster: IoU rata-rata ≥ 0,99. Metode di
   `docs/METHOD.md` §6.1 memberi 1,000 pada uji awal.
-- (b) **Mask instance GT** → `polygonize(raw | mar | theta dengan θ GT)` → semua metrik. Ini batas atas tahap poligon.
-- (c) **Peta 3 kelas GT** dijadikan probabilitas sempurna → marker → watershed → poligon. Bila AP < 95, kemungkinan ada
-  bug di marker/watershed.
+- (b) **Mask instance GT** → kontur marching squares persis, dan `polygonize(raw | mar | theta dengan θ GT)` → semua
+  metrik. Ini batas atas tahap poligon.
+- (c) **Peta 3 kelas GT** dijadikan probabilitas sempurna → marker → watershed → kontur persis. Bila AP < 95,
+  kemungkinan ada bug di marker/watershed. Kontur persis dipakai karena DP ε = 1 di mode `raw` sendiri sudah memotong
+  AP ±4,7 poin di CrowdAI (pratinjau 30 Okt 2026), sehingga patokan 95 tidak bisa dipakai untuk `raw`; varian `raw`
+  tetap dilaporkan. (Diubah 30 Okt 2026 dengan persetujuan; semula poligon tanpa mode yang ditetapkan.)
 
 ### 6.4 Reproduksi HiSup (Fase 3)
 File prediksi rilisan HiSup di **val penuh** (`val_full`) dievaluasi dengan pipeline kita. AP harus berada dalam ±0,3

@@ -1,14 +1,14 @@
-"""Sanity checks of the evaluation pipeline on real data (docs/EVALUATION.md §6.1, §6.2, §6.4, §6.6;
-densepoly.eval.sanity).
+"""Sanity checks of the evaluation pipeline on real data (docs/EVALUATION.md §6.1-§6.4, §6.6; densepoly.eval.sanity).
 
-    python scripts/sanity_checks.py --workers 12          # 26–48 min on this laptop
-    python scripts/sanity_checks.py --render-only         # render docs/sanity_report.md again from the saved JSON
+    python scripts/sanity_checks.py --workers 12               # every section, 26–48 min on this laptop
+    python scripts/sanity_checks.py --section 6.3 --workers 12 # one section; the others keep their saved results
+    python scripts/sanity_checks.py --render-only              # render docs/sanity_report.md again from the saved JSON
 
 Writes outputs/metrics/sanity_report.json and renders docs/sanity_report.md from it. The evaluations behind it are
-ordinary run_eval outputs: experiments sanity_gt (GT as predictions), sanity_gt_noempty (without the empty masks),
-sanity_repeat (§6.2, evaluated twice) and sanity_perturbed (§6.6), all with run ref. §6.4 reads the saved
-evaluation of HiSup's release (scripts/evaluate.py --exp hisup_release --split val_full --released, ±1 h), which
-this script does not rerun.
+ordinary run_eval outputs with run ref: sanity_gt (GT as predictions), sanity_gt_noempty (without the empty masks),
+sanity_repeat (§6.2, evaluated twice), oracle_raw, oracle_mar, oracle_theta and oracle_watershed (§6.3, on
+crowdai/val_tune_sub) and sanity_perturbed (§6.6). §6.4 reads the saved evaluation of HiSup's release
+(scripts/evaluate.py --exp hisup_release --split val_full --released, ±1 h), which this script does not rerun.
 """
 
 from __future__ import annotations
@@ -25,6 +25,7 @@ from densepoly.eval import sanity
 from densepoly.utils.io import read_json, write_json
 from densepoly.utils.provenance import git_revision, timestamp
 
+SECTIONS = ("6.1", "6.2", "6.3", "6.4", "6.6")
 CASES = (("crowdai", "val_clean", None), ("crowdai", "test", None), ("whu", "test", None), ("whu", "test", "p2p"))
 EDGE_CASE_TESTS = (  # §6.2 on synthetic data
     "tests/test_pixel.py::test_edge_cases_of_docs_evaluation_6_2",
@@ -50,22 +51,28 @@ def log(message: str) -> None:
     print(f"[{time.strftime('%H:%M:%S')}] {message}", flush=True)
 
 
-def run_checks(args) -> dict:
-    names = {"/".join(part for part in case if part): case for case in CASES}
-    cases = [names[name] for name in args.case] if args.case else list(CASES)
-    report = {"created": timestamp(), "git": git_revision(), "environment": sanity.environment()}
-    report["gt_as_prediction"] = []
-    for dataset, split, variant in cases:
-        log(f"6.1 {dataset}/{split} {variant or ''}")
-        report["gt_as_prediction"].append(sanity.gt_as_prediction(dataset, split, variant, args.workers))
-    log("6.2 unit tests")
-    report["edge_case_tests"] = edge_case_tests()
-    log("6.2 evaluating twice")
-    report["determinism"] = sanity.determinism(workers=args.workers)
-    log("6.6 bootstrap AP")
-    report["bootstrap_ap"] = sanity.bootstrap_ap(n_rep=args.n_rep, n_naive=args.n_naive, workers=args.workers)
-    log("6.4 HiSup reproduction (from its saved evaluation)")
-    report["hisup_reproduction"] = sanity.hisup_reproduction()
+def run_checks(args, sections: set[str], report: dict) -> dict:
+    """Run the given sections into report: a new one, or the saved one when only some sections are rerun."""
+    if "6.1" in sections:
+        names = {"/".join(part for part in case if part): case for case in CASES}
+        report["gt_as_prediction"] = []
+        for dataset, split, variant in [names[name] for name in args.case] if args.case else CASES:
+            log(f"6.1 {dataset}/{split} {variant or ''}")
+            report["gt_as_prediction"].append(sanity.gt_as_prediction(dataset, split, variant, args.workers))
+    if "6.2" in sections:
+        log("6.2 unit tests")
+        report["edge_case_tests"] = edge_case_tests()
+        log("6.2 evaluating twice")
+        report["determinism"] = sanity.determinism(workers=args.workers)
+    if "6.3" in sections:
+        log("6.3 oracle post-processing")
+        report["oracle_postproc"] = sanity.oracle_postproc(workers=args.workers)
+    if "6.6" in sections:
+        log("6.6 bootstrap AP")
+        report["bootstrap_ap"] = sanity.bootstrap_ap(n_rep=args.n_rep, n_naive=args.n_naive, workers=args.workers)
+    if "6.4" in sections:
+        log("6.4 HiSup reproduction (from its saved evaluation)")
+        report["hisup_reproduction"] = sanity.hisup_reproduction()
     return report
 
 
@@ -77,12 +84,19 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--n-naive", type=int, default=200, help="replicates of the naive COCOeval comparison")
     parser.add_argument("--report-md", type=Path, default=paths.REPO_ROOT / "docs" / "sanity_report.md")
     parser.add_argument("--render-only", action="store_true", help="render the saved JSON again; run no check")
+    parser.add_argument("--section", nargs="+", choices=SECTIONS, help="rerun these sections of the saved report")
     args = parser.parse_args(argv)
     report_json = paths.out_root() / "metrics" / "sanity_report.json"
     if args.render_only:
         report = read_json(report_json)
+    elif args.section:
+        report = run_checks(args, set(args.section), read_json(report_json))
+        run = {"sections": sorted(args.section), "created": timestamp(), "git": git_revision()}
+        report["partial_runs"] = [*report.get("partial_runs", []), run]
+        write_json(report_json, report)
     else:
-        report = run_checks(args)
+        report = {"created": timestamp(), "git": git_revision(), "environment": sanity.environment()}
+        report = run_checks(args, set(SECTIONS), report)
         write_json(report_json, report)
     args.report_md.write_text(sanity.render_report(report), encoding="utf-8", newline="\n")
     checks = sanity.all_checks(report)

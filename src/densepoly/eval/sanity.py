@@ -16,6 +16,7 @@ import importlib.metadata
 import io
 import platform
 from collections import defaultdict
+from dataclasses import replace
 
 import numpy as np
 import shapely
@@ -24,10 +25,19 @@ from pycocotools import mask as mask_utils
 from pycocotools.cocoeval import COCOeval
 
 from densepoly import paths
+from densepoly.config import load_config
 from densepoly.eval import coco_io, instance, run_eval, stats
+from densepoly.postproc import oracle
+from densepoly.postproc.polygonize import PolygonParams
 from densepoly.utils.io import read_json, write_json
 
 COVER = instance.COVER_THRESHOLD
+ROUND_TRIP_MIN = 0.99  # §6.3 (a): mean IoU of the round trip
+WATERSHED_AP_MIN = 0.95  # §6.3 (c): below it, the markers or the watershed likely have a bug
+ORACLE_KEYS = ("AP", "AP50", "AP75", "AP_boundary", "CIoU", "N_ratio", "PoLiS_paired", "MTA_inst", "recall_inst50",
+               "merge_rate", "split_rate", "vertex_F1", "n_pred", "n_gt", "n_fallback")  # fmt: skip
+ORACLE_PARAMS = ("tau", "marker_min_px", "instance_min_px", "raw_eps_px", "rect_iou", "dp_k", "snap_deg",
+                 "oblique_min_px", "edge_min_px")  # fmt: skip
 PACKAGES = ("numpy", "pandas", "pyarrow", "scipy", "shapely", "pycocotools", "opencv-python-headless", "multiprocess")
 AP_TOLERANCE = 0.3  # §6.4: AP points between our evaluation of HiSup's release and its paper
 # §6.4 rows: (key of configs/paper_numbers.yaml, our value in the paper's unit). HiSup's C-IoU and IoU come from
@@ -184,6 +194,62 @@ def determinism(dataset: str = "crowdai", split: str = "val_clean", workers: int
     return {"case": case, "checks": [check("6.2", case, "evaluasi dua kali identik", same, "identik", same)]}
 
 
+def oracle_postproc(dataset: str = "crowdai", split: str = "val_tune_sub", workers: int = 1) -> dict:
+    """§6.3: (a) the round trip of every GT annotation; (b) the GT instance map polygonised as the exact contour and in
+    modes raw, mar and theta; (c) perfect three-class probabilities of the GT through markers and watershed, as the
+    exact contour (the check: no polygon stage in between) and raw (shown). Parameters are the defaults of
+    configs/base.yaml, read through the config of B4 (three classes, polygons raw). Predictions and metrics are written
+    as runs oracle_<exact|raw|mar|theta|watershed|watershed_raw>/ref."""
+    case = _case_name(dataset, split, None)
+    gt = coco_io.load_gt(dataset, split)
+    cfg = load_config(dataset, "b4")
+    p, raw = cfg.postproc, PolygonParams.from_config(cfg.postproc)
+    exact = replace(raw, raw_eps_px=0.0)  # the marching-squares contour itself
+    contact, tau, marker_min, min_area = (
+        int(cfg.labels.contact_radius_px), float(p.tau), int(p.marker_min_px), int(p.instance_min_px)
+    )  # fmt: skip
+    builders = {
+        "oracle_exact": lambda: oracle.instance_predictions(gt, exact),
+        "oracle_raw": lambda: oracle.instance_predictions(gt, raw),
+        "oracle_mar": lambda: oracle.instance_predictions(gt, replace(raw, mode="mar")),
+        "oracle_theta": lambda: oracle.instance_predictions(gt, replace(raw, mode="theta")),
+        "oracle_watershed": lambda: oracle.watershed_predictions(gt, exact, contact, tau, marker_min, min_area),
+        "oracle_watershed_raw": lambda: oracle.watershed_predictions(gt, raw, contact, tau, marker_min, min_area),
+    }
+    runs, seconds = {}, {}
+    for exp, build in builders.items():
+        results = build()
+        pred_file = paths.pred_file(dataset, exp, "ref", split)
+        write_json(pred_file, results, indent=None)
+        record = run_eval.evaluate(dataset, split, exp, "ref", results, workers=workers, pred_file=pred_file)
+        runs[exp] = {key: record["overall"].get(key) for key in ORACLE_KEYS}
+        seconds[exp] = record["seconds"]
+    ious = oracle.round_trip_ious(gt)
+    watershed_ap = runs["oracle_watershed"]["AP"]
+    checks = [
+        check("6.3", case, "(a) IoU bolak-balik rata-rata", float(ious.mean()), f"≥ {ROUND_TRIP_MIN}",
+              ious.mean() >= ROUND_TRIP_MIN),
+        check("6.3", case, "(c) AP marker + watershed dari probabilitas sempurna (kontur persis)", watershed_ap,
+              f"≥ {WATERSHED_AP_MIN}", watershed_ap >= WATERSHED_AP_MIN),
+    ]  # fmt: skip
+    return {
+        "case": case,
+        "images": len(gt["images"]),
+        "annotations": len(gt["annotations"]),
+        "round_trip": {
+            "annotations": int(ious.size),
+            "mean": float(ious.mean()),
+            "min": float(ious.min()),
+            "below_1": int((ious < 1).sum()),
+            "below_0_99": int((ious < 0.99).sum()),
+        },
+        "params": {"contact_radius_px": contact, **{key: p[key] for key in ORACLE_PARAMS}},
+        "runs": runs,
+        "seconds": seconds,
+        "checks": checks,
+    }
+
+
 def bootstrap_ap(
     dataset: str = "crowdai",
     split: str = "val_clean",
@@ -294,8 +360,7 @@ def hisup_reproduction() -> dict | None:
 
 def all_checks(report: dict) -> list[dict]:
     parts = [*report["gt_as_prediction"], report["determinism"], report["bootstrap_ap"]]
-    if report.get("hisup_reproduction"):
-        parts.append(report["hisup_reproduction"])
+    parts += [report[key] for key in ("oracle_postproc", "hisup_reproduction") if report.get(key)]
     return [c for part in parts for c in part["checks"]]
 
 
@@ -317,6 +382,52 @@ def _printed_decimals(value) -> int:
     return len(text.split(".")[1]) if "." in text else 0
 
 
+ORACLE_COLUMNS = (("AP", "AP"), ("AP50", "AP50"), ("AP75", "AP75"), ("AP_boundary", "AP_boundary"), ("CIoU", "C-IoU"),
+                  ("PoLiS_paired", "PoLiS_paired"), ("MTA_inst", "MTA_inst (°)"), ("recall_inst50", "recall@0,5"),
+                  ("merge_rate", "merge"), ("n_fallback", "fallback"))  # fmt: skip
+ORACLE_ROWS = {
+    "oracle_exact": "(b) mask GT → kontur persis",
+    "oracle_raw": "(b) mask GT → `raw`",
+    "oracle_mar": "(b) mask GT → `mar`",
+    "oracle_theta": "(b) mask GT → `theta` (θ poligon GT)",
+    "oracle_watershed": "(c) 3 kelas GT → watershed → kontur persis",
+    "oracle_watershed_raw": "(c) 3 kelas GT → watershed → `raw`",
+}
+
+
+def _partial_run_line(run: dict) -> str:
+    sections = ", ".join(f"§{s}" for s in run["sections"])
+    return f"- Dijalankan ulang tersendiri: {sections} pada {run['created']}, commit `{run['git']}`."
+
+
+def _oracle_lines(o: dict | None) -> list[str]:
+    if o is None:
+        return ["Belum ada: `scripts/sanity_checks.py --section 6.3` belum dijalankan."]
+    t = o["round_trip"]
+    params = ", ".join(f"{k} {v}" for k, v in o["params"].items())
+    lines = [
+        f"Di {o['case']} ({o['images']} citra, {o['annotations']} anotasi GT), semua prediksi berskor 1.",
+        "",
+        f"(a) Bolak-balik poligon GT → raster → kontur marching squares → raster: {t['annotations']} anotasi bermask "
+        f"tidak kosong, IoU rata-rata {_fmt(t['mean'])}, terkecil {_fmt(t['min'])}; {t['below_1']} di bawah 1, "
+        f"{t['below_0_99']} di bawah 0,99.",
+        "",
+        "(b) Peta instance GT (label training) dijadikan poligon: kontur marching squares persis (batas atas tahap "
+        "poligon) dan ketiga mode. (c) Peta 3 kelas GT dijadikan probabilitas sempurna → marker → watershed → kontur "
+        "persis, sehingga yang diuji hanya tahap instance; varian `raw` ditampilkan sebagai informasi, karena DP-nya "
+        f"sendiri sudah menurunkan AP (bandingkan dua baris `raw`). Parameter: {params}.",
+        "",
+        "| Run | " + " | ".join(label for _, label in ORACLE_COLUMNS) + " |",
+        "|---|" + "---|" * len(ORACLE_COLUMNS),
+    ]
+    for exp, label in ORACLE_ROWS.items():
+        lines.append(f"| {label} | " + " | ".join(_fmt(o["runs"][exp][key]) for key, _ in ORACLE_COLUMNS) + " |")
+    lines += ["", "| Uji | Nilai | Target | Hasil |", "|---|---|---|---|"]
+    lines += [f"| {c['name']} | {_fmt(c['value'])} | {c['target']} | {'lolos' if c['passed'] else '**gagal**'} |"
+              for c in o["checks"]]  # fmt: skip
+    return lines
+
+
 def render_report(report: dict) -> str:
     """docs/sanity_report.md from the report JSON."""
     checks = all_checks(report)
@@ -330,6 +441,7 @@ def render_report(report: dict) -> str:
         f"- Dibuat: {report['created']}, commit `{report['git']}`.",
         f"- Mesin: {report['environment']['platform']}, prosesor {report['environment']['processor']}.",
         "- Versi: " + ", ".join(f"{k} {v}" for k, v in report["environment"]["versions"].items()) + ".",
+        *map(_partial_run_line, report.get("partial_runs", [])),
         f"- **Hasil: {len(checks) - len(failed)} dari {len(checks)} uji lolos.**",
         "",
         "## §6.1 GT sebagai prediksi",
@@ -355,6 +467,7 @@ def render_report(report: dict) -> str:
     lines += [f"- `{t['test']}`: {'lolos' if t['passed'] else '**gagal**'}" for t in report["edge_case_tests"]]
     lines += [""] + [f"- {c['case']}: {c['name']}: {'lolos' if c['passed'] else '**gagal**'}"
                      for c in report["determinism"]["checks"]]  # fmt: skip
+    lines += ["", "## §6.3 Oracle post-processing", ""] + _oracle_lines(report.get("oracle_postproc"))
     h = report.get("hisup_reproduction")
     lines += ["", "## §6.4 Reproduksi HiSup", ""]
     if h is None:

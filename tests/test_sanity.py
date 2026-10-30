@@ -86,6 +86,23 @@ def test_report_renders_every_check():
     assert "Belum ada: evaluasi `hisup_release`" in text  # §6.4 before HiSup's release is evaluated
 
 
+def test_oracle_postproc_on_the_toy_scene(tmp_path, monkeypatch):
+    """§6.3 end to end on squares and one turned rectangle: the round trip is exact and the watershed oracle finds
+    every house; the four oracle runs are written and rendered."""
+    from tests.fixtures.eval_scene import HOUSES
+
+    monkeypatch.setenv("DENSEPOLY_OUT", str(tmp_path / "outputs"))
+    write_json(paths.gt_file("crowdai", "val_tune_sub"), make_gt(HOUSES))
+    part = sanity.oracle_postproc()
+    assert all(c["passed"] for c in part["checks"]), part["checks"]
+    assert part["round_trip"]["below_1"] == 0 and part["runs"]["oracle_watershed"]["recall_inst50"] == 1.0
+    assert all(paths.metrics_file("crowdai", exp, "ref", "val_tune_sub").exists() for exp in sanity.ORACLE_ROWS)
+    assert part["runs"]["oracle_exact"]["AP"] >= part["runs"]["oracle_raw"]["AP"]
+    text = sanity.render_report({**bare_report(), "oracle_postproc": part})
+    assert "| (c) 3 kelas GT → watershed → kontur persis |" in text and "**Hasil: 2 dari 2 uji lolos.**" in text
+    assert "Belum ada: `scripts/sanity_checks.py --section 6.3`" in sanity.render_report(bare_report())
+
+
 def bare_report(hisup: dict | None = None) -> dict:
     """A report whose only part with checks is §6.4."""
     return {"created": "now", "git": "abc", "environment": sanity.environment(), "gt_as_prediction": [],
