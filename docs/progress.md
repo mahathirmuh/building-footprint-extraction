@@ -854,3 +854,58 @@ berlaku.
   - Puncak memori proses utama 3,28 GB (working set) / 4,07 GB (private). Hasil 36 titik grid disimpan bersamaan di
     memori.
   - Penyebab pastinya belum diukur.
+
+**Temuan langkah 6d — MTA vendor memberi NaN (30 Okt 2026), diperbaiki dengan pembungkus 5 (disetujui):**
+- Evaluasi pertama B0 di `test` berhenti di pemeriksaan pooling `run_eval`: MTA hasil pooling kita 41,04, sedangkan
+  skrip vendor memberi NaN.
+- Penyebabnya 3 dari 39.820 nilai MTA (3 citra). Ketiganya prediksi kecil (luas 10–14 px²) yang semua tepi
+  tersisanya sejajar persis dengan kontur GT. Pembulatan memberi cosinus 1 + 2,2·10⁻¹⁶, sehingga `arccos`-nya NaN,
+  bukan 0°. Satu NaN sudah cukup membuat `np.mean` vendor NaN untuk seluruh split, sedangkan jumlah per citra milik
+  kita (pandas) melewatinya.
+- Perbaikan (pembungkus 5, EVALUATION §2.3): cosinus dipotong ke 1 sebelum `arccos`. Nilai berhingga tidak berubah.
+  Tes sintetis membandingkan dengan salinan asli: belah ketupat kecil di dalam belah ketupat GT 45° memberi NaN di
+  kode asli dan 0 di versi pembungkus, sedangkan nilai lain identik.
+- Dampak pada angka yang sudah ada:
+  - HiSup `val_clean` dievaluasi ulang: 211 angkanya identik.
+  - HiSup `val_full`: MTA vendor-nya berhingga, jadi tidak berubah. Ke-44 pasangan tanpa nilai `MTA_inst` dihitung
+    ulang dengan pembungkus 5 (skrip di luar repo, 90 s). Semuanya tetap tanpa nilai, karena semua tepinya
+    tersaring, bukan NaN. Jadi MTA_inst 31,93° tidak berubah, dan evaluasi ulang 70 menit tidak diperlukan.
+  - B0 `val_tune_sub` tidak terdampak, karena MTA vendor-nya berhingga dan `n_pairs_without_mta` = 0.
+  - §6.1 laporan kewarasan dihitung sebelum perbaikan. MTA_inst-nya hanya bisa turun atau tetap, karena pasangan yang
+    dulu NaN kini bernilai 0. Ujinya berbentuk batas atas, jadi tetap lolos.
+- Catatan pooling: sebelum perbaikan, MTA pooling kita (41,04) juga keliru. Jumlah per citra yang NaN dilewati
+  pandas, tetapi banyaknya nilai citra itu tetap masuk penyebut. Setelah perbaikan, nilainya 41,12 dan sama dengan
+  vendor.
+
+**Langkah 6d — B0 di `test` (30 Okt 2026), dengan setelan beku `configs/postproc/crowdai/b0.yaml`:**
+- Prediksi:
+  - 2.928 tile, 180.937 poligon (61,8 per tile; GT 8,6 per tile), dan 39.793 fallback (22,0%);
+  - waktu dinding 102,8 s dengan 12 worker, dari MBI cache.
+- Waktu per citra dari RGB (50 citra, 1 proses): median 0,491 s (rata-rata 0,513 s). Dari jumlah itu, 0,390 s untuk
+  MBI. MBI yang dihitung ulang sama dengan cache di 50 dari 50 citra.
+- Evaluasi: 6,1 menit dengan 12 worker, pemeriksaan ketat, tidak ada prediksi yang dibuang. File metrik mencatat git
+  `c4bfe3b-dirty`, hanya karena `progress.md` belum di-commit; kodenya bersih.
+- PoLiS dan MTA di tabel adalah versi vendor. AP dan AP_boundary dalam poin persen.
+
+| Subset | Tile | GT | Prediksi | AP | AP_boundary | IoU | C-IoU | PoLiS | MTA (°) | PoLiS_paired | MTA_inst (°) | recall@0,5 | split |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| semua | 2.928 | 25.145 | 180.937 | 0,076 | 0,047 | 22,49 | 6,93 | 3,525 | 41,12 | 2,775 | 34,66 | 13,2% | 49,2% |
+| jarang | 1.158 | 3.904 | 49.605 | 0,045 | 0,027 | 16,06 | 4,47 | 3,482 | 39,48 | 2,826 | 33,06 | 12,2% | 52,4% |
+| sedang | 909 | 8.278 | 61.976 | 0,089 | 0,044 | 23,73 | 7,45 | 3,535 | 41,52 | 2,773 | 33,57 | 12,8% | 50,7% |
+| padat | 857 | 12.959 | 69.276 | 0,118 | 0,073 | 27,18 | 9,72 | 3,540 | 41,69 | 2,763 | 35,73 | 13,8% | 47,2% |
+| bersentuhan | 146 | 1.847 | 10.450 | 0,579 | 0,547 | 24,20 | 8,34 | 3,066 | 41,61 | 2,517 | 36,89 | 12,6% | 44,2% |
+| tidak bersentuhan | 2.778 | 23.294 | 170.407 | 0,071 | 0,041 | 22,39 | 6,86 | 3,558 | 41,08 | 2,795 | 34,49 | 13,3% | 49,6% |
+
+- 4 tile kosong (tanpa GT) tidak punya baris AP.
+- Merge hampir nol (0,016% total; 0,22% di bersentuhan), dan satu pasangan tidak punya nilai MTA_inst.
+- Hasilnya konsisten dengan diagnosis langkah 6b: B0 memecah atap menjadi kepingan MBI kecil (split 49%), dan hanya
+  13% rumah yang ditemukan.
+- AP B0 di bawah 0,6 poin di semua subset, jadi selisih antar-strata tidak bermakna. Fungsi B0 adalah batas bawah
+  klasik, bukan pembanding per strata.
+- Pembanding dari `val_tune_sub` (1.000 citra, evaluasi penuh setelah tuning):
+  - AP 0,086 dan AP_boundary 0,049;
+  - IoU 22,03 dan C-IoU 6,72;
+  - PoLiS 3,673, MTA 40,83°, PoLiS_paired 2,837, MTA_inst 34,88°;
+  - 60.559 prediksi, 13.191 fallback (21,8%).
+
+  Angka `test` dekat dengan ini, jadi tidak ada tanda tuning berlebih.
