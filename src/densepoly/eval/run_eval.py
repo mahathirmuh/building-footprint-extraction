@@ -110,6 +110,12 @@ class _ChunkedPool:
 def vendor_metrics(gt_path: Path, gt: dict, results: list[dict], workers: int = 1) -> dict:
     """Per-image values and pooled numbers of the vendored CIoU_p2p (cIoU.py), PoLiS (polis.py) and MTA
     (angle_eval.py), each on its own COCO objects."""
+    multi_ring = sum(1 for r in results if len(r["segmentation"]) > 1)
+    if multi_ring:
+        raise ValueError(
+            f"{multi_ring} predictions have several rings: the vendored cIoU.py reads one ring per prediction "
+            "(its prediction mask is reshaped to (H, W)), so these predictions cannot be evaluated as they are"
+        )
     if results:
         with tempfile.TemporaryDirectory() as tmp:
             predictions = Path(tmp) / "predictions.json"
@@ -117,7 +123,7 @@ def vendor_metrics(gt_path: Path, gt: dict, results: list[dict], workers: int = 
             with _quiet():
                 ciou = cIoU.compute_IoU_cIoU(str(predictions), str(gt_path), progress=False)
     else:  # cIoU.py only iterates images with predictions
-        ciou = {"ciou": None, "n_ratio": None, "n_images": 0, "per_image": {}}
+        ciou = {"iou": None, "ciou": None, "n_ratio": None, "n_images": 0, "per_image": {}}
 
     coco_gt = coco_io.coco_from_dict(gt)
     polis_eval = polis.PolisEval(coco_gt, coco_io.load_results(coco_gt, results))
@@ -136,6 +142,7 @@ def vendor_metrics(gt_path: Path, gt: dict, results: list[dict], workers: int = 
     values = [v for img in contour.img_ids for v in mta[img]]
     return {
         "ciou_per_image": {img: v["ciou"] for img, v in ciou["per_image"].items()},
+        "IoU_p2p": ciou["iou"],
         "CIoU_p2p": ciou["ciou"],
         "N_ratio_p2p": ciou["n_ratio"],
         "polis_per_image": dict(polis_eval.per_image),
@@ -152,14 +159,15 @@ def _mean(values) -> float | None:
 
 
 def pooled_vendor(rows: pd.DataFrame) -> dict:
-    """CIoU_p2p, N_ratio_p2p, PoLiS and MTA of a set of per-image rows, with the pooling rules of the vendored
-    scripts: C-IoU and N-ratio over images with predictions, PoLiS over images whose value is not 0, MTA over all
-    values."""
+    """IoU_p2p, CIoU_p2p, N_ratio_p2p, PoLiS and MTA of a set of per-image rows, with the pooling rules of the
+    vendored scripts: IoU, C-IoU and N-ratio over images with predictions (cIoU.py; its IoU is the "IoU" HiSup
+    reports), PoLiS over images whose value is not 0, MTA over all values."""
     with_pred = rows[rows["n_pred"] > 0]
     has_gt_vertices = with_pred[with_pred["n_vertices_gt"] > 0]
     polis_valid = rows.loc[rows["polis_image"] != 0, "polis_image"]
     mta_count = int(rows["mta_count"].sum())
     return {
+        "IoU_p2p": _mean(with_pred["iou"].to_numpy()),
         "CIoU_p2p": _mean(with_pred["ciou_p2p"].to_numpy()),
         "N_ratio_p2p": _mean((has_gt_vertices["n_vertices"] / has_gt_vertices["n_vertices_gt"]).to_numpy()),
         "PoLiS": _mean(polis_valid.to_numpy()),
@@ -171,7 +179,7 @@ def pooled_vendor(rows: pd.DataFrame) -> dict:
 
 def _check_pooling(vendor: dict, pooled: dict) -> None:
     """The pooling of per-image values must reproduce the vendored scripts' own numbers on all images."""
-    for key in ("CIoU_p2p", "N_ratio_p2p", "PoLiS", "MTA", "PoLiS_valid_images", "MTA_values"):
+    for key in ("IoU_p2p", "CIoU_p2p", "N_ratio_p2p", "PoLiS", "MTA", "PoLiS_valid_images", "MTA_values"):
         a, b = vendor[key], pooled[key]
         if (a is None) != (b is None) or (a is not None and not math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12)):
             raise RuntimeError(f"pooled {key} = {b} differs from the vendored script ({a})")

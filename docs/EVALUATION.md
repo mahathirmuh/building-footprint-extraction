@@ -32,6 +32,7 @@
 | AP_boundary | instance | AP dengan IoU := min(IoU mask, Boundary IoU) (dilation ratio 0,02) | `evaluate()` dari COCOeval `boundary` boundary-iou-api (`third_party/boundary_iou/`), lalu `accumulate` kita (§4) |
 | IoU, F1 | piksel | gabungan semua poligon vs gabungan GT; utama ΣI/ΣU seluruh split; juga rata-rata per citra | `eval/pixel.py` |
 | Boundary IoU | piksel | Boundary IoU mask gabungan (Cheng dkk. 2021: IoU pita batas selebar 2% diagonal citra), rata-rata per citra | `eval/pixel.py` dengan `mask_to_boundary` boundary-iou-api (paket itu tidak punya fungsi `boundary_iou` terpisah) |
+| `IoU_p2p` | per citra | IoU mask gabungan, rata-rata atas citra yang punya prediksi (aturan `cIoU.py`; inilah "IoU" di paper HiSup) | vendor `cIoU.py` |
 | `CIoU` (utama) | per citra | §2.2; **semua** citra split | `eval/pixel.py` (memakai fungsi vendor) |
 | `CIoU_p2p` | per citra | §2.2; aturan Pix2Poly: hanya citra yang punya prediksi | vendor `cIoU.py` |
 | N-ratio | per citra | rata-rata N / N_GT pada citra dengan GT (dua varian, mengikuti C-IoU) | vendor `cIoU.py` |
@@ -56,7 +57,9 @@ Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28
   `mask_gti` tidak. Pada citra yang punya prediksi tetapi tanpa anotasi GT, IoU-nya dihitung terhadap mask GT citra
   sebelumnya (atau `UnboundLocalError` bila itu citra pertama). C-IoU citra itu tetap ≈ 0, karena N_GT = 0 membuat
   faktor verteks ≈ 1e-9/N. Fungsinya juga hanya mencetak, tidak me-return nilai. (Dikoreksi 30 Okt 2026 saat
-  vendoring: semula ditulis bahwa `N_GT` juga tidak di-reset.)
+  vendoring: semula ditulis bahwa `N_GT` juga tidak di-reset.) Jalur prediksinya hanya membaca **satu ring per
+  prediksi** (mask di-reshape ke (H, W)); prediksi dengan beberapa ring membuatnya crash, jadi `run_eval` menolaknya
+  lebih dulu dengan pesan yang jelas. Prediksi kita dan prediksi HiSup selalu satu ring.
   - `CIoU_p2p` = aturan di atas dengan `mask_gti` di-reset per citra. Reset ini hanya mengubah IoU citra berprediksi
     tanpa GT; C-IoU-nya tetap ≈ 0 (selisih < 1e-9, diuji di `tests/test_pix2poly_metrics.py`). Di WHU (opsi R) ada
     patch yang tidak punya anotasi GT sama sekali (test: 227 patch di GT `p2p`, 246 di GT utama; patch dengan > 5
@@ -203,8 +206,8 @@ Implementasi (`eval/run_eval.py`, `scripts/evaluate.py`; 30 Okt 2026):
 - Field tambahan:
   - di tingkat atas: `variant`, `gt_file`, `pred_file`, `pred_check` (mode ketat/longgar dan jumlah tiap masalah),
     `coco_stats` (12 angka COCO untuk segm dan boundary), dan `seconds`;
-  - di `overall` dan tiap strata: `N_ratio_p2p`, `MTA_values`, `n_images_with_pred`, `n_gt`, `n_pairs`, dan
-    `n_pairs_without_mta`.
+  - di `overall` dan tiap strata: `IoU_p2p`, `N_ratio_p2p`, `MTA_values`, `n_images_with_pred`, `n_gt`, `n_pairs`,
+    dan `n_pairs_without_mta`.
 - `per_stratum` memuat strata utama (`jarang`, `sedang`, `padat`, `kosong`) dan indeks sekunder (`bersentuhan`,
   `tidak_bersentuhan`).
 - Satuan: AP, IoU, C-IoU, dan semua rate berupa pecahan [0, 1]; PoLiS dalam piksel; MTA dan galat θ dalam derajat.
@@ -219,7 +222,9 @@ Implementasi (`eval/run_eval.py`, `scripts/evaluate.py`; 30 Okt 2026):
 ## 6. Uji kewarasan (wajib lolos sebelum angka apa pun dilaporkan)
 
 ### 6.1 GT sebagai prediksi (Fase 3)
-Ubah GT menjadi file prediksi (skor 1). Harus menghasilkan: AP = 100 (±0,1); AP_boundary = 100; `CIoU` = `CIoU_p2p`
+Ubah GT menjadi file prediksi (skor 1; ring pertama saja, sesuai format prediksi. Di kedua dataset ring lain adalah
+lubang di dalam ring pertama, dan pycocotools menggabungkan ring secara union, jadi mask-nya sama). Harus
+menghasilkan: AP = 100 (±0,1); AP_boundary = 100; `CIoU` = `CIoU_p2p`
 = 1; `PoLiS_paired` = 0; `MTA_inst` ≈ 0 dan `MTA` ≤ 0,5° (GT di-buffer 1e-4); `PoLiS` vendor tidak terdefinisi
 (semua citra 0), sehingga pembungkus mengembalikan `None` dengan `PoLiS_valid_images = 0`, bukan error;
 `merge_rate` dan `split_rate` = 0 kecuali di tempat poligon GT saling tumpang tindih (laporkan jumlahnya).

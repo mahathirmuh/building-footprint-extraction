@@ -275,15 +275,20 @@ def restrict_to_images(results: list[dict], image_ids) -> list[dict]:
 
 
 def gt_as_predictions(gt: dict) -> list[dict]:
-    """Every GT annotation as a result with score 1, its own rings and their bbox (docs/EVALUATION.md §6.1)."""
+    """Every GT annotation as a result with score 1, its first ring and that ring's bbox (docs/EVALUATION.md §6.1).
+
+    Results have one ring, as in our prediction format; the vendored cIoU.py cannot read more. In both datasets the
+    other rings of a GT annotation are holes inside the first one, and pycocotools merges rings by union, so the mask
+    and every metric stay the same (checked on the WHU test GT, 30 Oct 2026)."""
     results = []
     for ann in gt["annotations"]:
-        points = np.concatenate([np.reshape(ring, (-1, 2)) for ring in ann["segmentation"]]).astype(float)
+        ring = ann["segmentation"][0]
+        points = np.reshape(ring, (-1, 2)).astype(float)
         results.append(
             {
                 "image_id": ann["image_id"],
                 "category_id": ann["category_id"],
-                "segmentation": copy.deepcopy(ann["segmentation"]),
+                "segmentation": [list(ring)],
                 "score": 1.0,
                 "bbox": ring_bbox(points),
                 "theta_deg": None,

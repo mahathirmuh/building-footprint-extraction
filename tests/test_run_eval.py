@@ -133,6 +133,14 @@ def test_no_prediction_at_all(env):
     assert (o["CIoU_p2p"], o["PoLiS"], o["MTA"], o["PoLiS_paired"]) == (None, None, None, None)
 
 
+def test_multi_ring_predictions_stop_with_a_clear_error(env):
+    gt, splits = env
+    results = predictions()
+    results[0]["segmentation"].append(results[0]["segmentation"][0])
+    with pytest.raises(ValueError, match="several rings"):
+        run_eval.evaluate("crowdai", "test", "rings", "ref", results, released=True, splits_dir=splits)
+
+
 def test_vendor_mta_with_a_pool_matches_the_serial_run(env):
     gt, _ = env
     results = coco_io.check_predictions(predictions(), gt)[0]

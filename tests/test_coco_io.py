@@ -124,6 +124,7 @@ def test_gt_as_predictions_copy_the_rings():
     assert len(predictions) == len(subset["annotations"])
     assert all(p["score"] == 1.0 for p in predictions)
     assert predictions[0]["bbox"] == [5.0, 5.0, 10.0, 10.0]
+    assert len(subset["annotations"][1]["segmentation"]) == 2 and len(predictions[1]["segmentation"]) == 1  # hole
     predictions[1]["segmentation"][0][0] = -1.0
     assert subset["annotations"][1]["segmentation"][0][0] == 30.0
 
