@@ -5,7 +5,7 @@
 | Data | Sumber | Catatan |
 |---|---|---|
 | CrowdAI Mapping Challenge | https://www.aicrowd.com/challenges/mapping-challenge/dataset_files | perlu akun AIcrowd. Sejak revisi 2024 bernama `train-v1.0-DEPRECATED.tar.gz` dan `val-v1.0-DEPRECATED.tar.gz` (v1.0, versi yang dipakai paper pembanding). Ada juga `mapping-challenge-v2.0.tar.gz`, tidak dipakai (opsi A, 28 Okt 2026; lihat `docs/progress.md` Fase 1) |
-| Prediksi HiSup untuk val CrowdAI | Google Drive di README HiSup (bagian *Evaluation*) | file JSON format COCO |
+| Prediksi HiSup untuk val CrowdAI | Google Drive di README HiSup (bagian *Evaluation*) | file JSON format COCO. Diunduh 30 Okt 2026: `crowdai_test_hrnet48.json` (260.741.993 byte, sha256 `15d29adf072c050f07f39fa2408558ffcf36ba989f3297ce5a28e4a8fe5e8d72`), 506.978 poligon satu ring dengan `bbox` dan skor ≥ 0,5, pada 60.165 dari 60.317 citra val (ke-212 citra `val_clean` termasuk) |
 | WHU Building (aerial) | http://gpcv.whu.edu.cn/data/building_dataset.html | lihat §3 untuk versi yang diunduh |
 | Checkpoint Pix2Poly (opsional) | Google Drive / MEGA di README Pix2Poly | untuk memastikan protokol WHU |
 | SpaceNet 6 Rotterdam (opsional) | AWS Open Data (SpaceNet) | CC BY-SA 4.0 |
