@@ -489,3 +489,42 @@ Pemeriksaan sesudah run (skrip sekali jalan, di luar repo):
 - GT WHU (opsi R): id anotasi mulai dari 0. Anotasi negatif (`segmentation` kosong) ada di 10.366 / 3.765 / 6.153
   patch train / val / test (GT utama). Patch tanpa anotasi sama sekali di test: 246 (GT utama) dan 227 (`p2p`). GT
   WHU test tidak punya ring ≤ 4 koordinat atau berluas nol.
+- GT val CrowdAI: id anotasi juga mulai dari 0; satu kategori (100); satu ring per anotasi; tidak ada ring yang
+  membuat pycocotools atau shapely 2 gagal. Ada 3.644 anotasi ber-`area` 0, padahal ring berluas nol 3.488, jadi 156
+  bangunan nyata selalu masuk kelompok AP_S.
+
+**Langkah 1 — vendoring skrip metrik Pix2Poly (30 Okt 2026)** (`pytest -q` → 279 tes lolos):
+- `third_party/pix2poly/{polis,angle_eval,cIoU}.py`: salinan persis (commit `4e4c003`, sha256 di
+  `third_party/README.md`). `third_party/pix2poly_metrics/`: versi pembungkus, diimpor sebagai `pix2poly_metrics`
+  (`third_party/` jadi akar paket kedua di `pyproject.toml`). Setiap perubahan ditandai `[wrapper N]` di kode dan
+  dijelaskan di header file.
+- `tests/test_pix2poly_metrics.py` (14 tes): di kasus yang tidak terkena perubahan, versi pembungkus memberi angka
+  **identik** dengan aslinya (C-IoU, PoLiS, MTA). Kasus yang terkena perubahan berperilaku sesuai catatan, dan uji
+  sintetis §6.1 untuk fungsi vendor (PoLiS persegi geser = 0,4·d; MTA rotasi ≥ α − 0,5°) lolos.
+- Paket baru di dependensi inti: `multiprocess` 0.70.19 (diimpor `angle_eval.py`) dan `pyarrow` 26.0.0 (parquet).
+
+**Temuan saat vendoring** (dokumen terkait sudah dikoreksi):
+- `cIoU.py`: `N_GT` **sudah** di-reset per citra; yang basi hanya `mask_gti`. Jadi reset hanya mengubah IoU citra
+  berprediksi tanpa GT, sedangkan C-IoU-nya ≈ 0 di kedua versi (EVALUATION §2.2 semula menulis keduanya tidak
+  di-reset). `cIoU.py` juga menangani anotasi negatif WHU sebagai mask kosong.
+- `polis.py` menimpa `segmentation` GT yang kosong di objek COCO-nya, jadi setiap metrik vendor memakai objek sendiri.
+- `angle_eval.py` crash di shapely 2.2.0 / GEOS 3.14.1 untuk citra ber-GT kosong yang punya prediksi (misalnya
+  sampel negatif WHU). Pembungkus 4 mengembalikan hasil kosong untuk citra itu, sesuai maksud filter presisinya.
+- MTA didominasi artefak di sudut poligon: persegi panjang yang diputar 1° memberi 9,65°, dan yang diputar 30° memberi
+  60°. Poligon identik memberi 0,0027°. Ini perlu diingat saat menafsirkan N1.
+- `loadRes` pycocotools hanya menerima prediksi poligon yang punya `bbox`, dan memakai luas bbox sebagai `area`
+  deteksi.
+- Asal kode metrik: `angle_eval.py` dari Frame Field Learning (BSD-3-Clause), `cIoU.py` dari PolyWorld (lisensi
+  BlackShark.ai: hanya riset akademik, tanpa sublisensi), `polis.py` dari `spgriffin/polis` (repo tidak ditemukan,
+  lisensi tidak diketahui).
+
+**boundary-iou-api (commit `37d2558`), menunggu keputusan:**
+- Lisensinya BSD-2-Clause (`license.txt`), jadi boleh dipasang maupun disalin dengan pemberitahuan lisensinya.
+- `pip install git+…`, yaitu cara pertama di README-nya dan cara yang dipakai extra `[eval]` kita, hanya memasang
+  `boundary_iou/__init__.py`, karena `setup.py`-nya tidak mendaftarkan subpaket. Paket yang terpasang rusak, jadi
+  sudah dicopot lagi. `setup.py` juga menarik `cityscapesscripts`, `fvcore`, dan `panopticapi` dari cabang `master`
+  (tidak terkunci), padahal modul COCO yang kita pakai tidak mengimpor satu pun dari ketiganya.
+- `COCOeval.accumulate()`-nya memakai `np.float`, yang dihapus sejak numpy 1.24. AP akan dihitung dengan
+  `accumulate` kita sendiri dari `evalImgs` (memang diperlukan untuk bootstrap §4), jadi fungsi itu tidak dipakai.
+- AP_boundary memakai IoU := min(IoU mask, IoU batas), dengan lebar batas 2% diagonal citra (8 px untuk 300², 6 px
+  untuk 224²).

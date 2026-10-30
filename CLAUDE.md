@@ -136,8 +136,10 @@ Path data selalu dari variabel lingkungan `DENSEPOLY_DATA` (default `./data`), o
 
 - Python ≥ 3.10 (ikuti versi Colab). Paket inti: `torch`, `segmentation-models-pytorch==0.6.*`, `timm`,
   `opencv-python-headless>=4.10,<5`, `scikit-image`, `scipy`, `shapely>=2`, `pycocotools`, `imagehash`,
-  `omegaconf`, `numpy`, `pandas`, `matplotlib`, `tqdm`, `pytest`.
-- Evaluasi: `boundary-iou-api` (install dari GitHub `bowenc0221/boundary-iou-api`), `multiprocess`.
+  `omegaconf`, `numpy`, `pandas`, `matplotlib`, `tqdm`, `pytest`, `multiprocess` (diimpor skrip metrik vendor),
+  `pyarrow` (tabel parquet metrik).
+- Evaluasi: `boundary-iou-api` (BSD-2-Clause). `pip install` dari GitHub hanya memasang `boundary_iou/__init__.py`,
+  jadi cara memasangnya sedang diputuskan (`docs/progress.md` Fase 3).
 - Opsional FULL+Y: `ultralytics` (lisensi **AGPL-3.0**; hanya untuk eksperimen, jangan dicampur ke paket inti).
 - Training penuh di GPU Colab (`docs/COLAB.md`). Pekerjaan CPU berat (hash ±0,6 jam-inti, prior ±14 jam-inti, evaluasi
   val penuh, tuning post-processing) dijalankan di laptop multi-core bila datanya ada di sana, atau di sesi CPU Colab
@@ -218,11 +220,16 @@ python scripts/tables.py && python scripts/figures.py
   jadi instance sendiri; semua pelabelan sisi prediksi memakai konektivitas 4 (`docs/METHOD.md` §6.2).
 - **Perilaku skrip metrik** (detail di `docs/EVALUATION.md` §2.2):
   - `HiSup/hisup/utils/metrics/cIoU.py` rusak (`mask_gti` tak terdefinisi, `img['weight']`), jadi jangan dipakai.
-  - C-IoU Pix2Poly hanya menghitung citra yang **punya prediksi** (`loadRes` membuang citra tanpa prediksi), tidak
-    me-reset `mask_gti`/`N_GT` (basi pada citra berprediksi tanpa GT), dan tidak me-return nilai.
+  - C-IoU Pix2Poly hanya menghitung citra yang **punya prediksi**, tidak me-reset `mask_gti` (IoU basi pada citra
+    berprediksi tanpa GT; C-IoU-nya tetap ≈ 0 karena `N_GT` di-reset), dan tidak me-return nilai.
   - PoLiS Pix2Poly mencocokkan via IoU **bounding box** > 0,5, melewati citra bernilai 0, dan membagi dengan n+1.
+    `polis.py` menimpa `segmentation` GT yang kosong di tempat, jadi setiap metrik vendor memakai objek COCO sendiri.
   - MTA menggabungkan semua poligon per citra (`unary_union`), sehingga dinding antar-rumah bersentuhan hilang.
-  - `angle_eval.py` mengimpor `descartes` hanya untuk plot; impor itu dihapus.
+    Nilainya didominasi artefak sudut (rotasi 1° → 9,65°). Di GEOS 3.14 skrip aslinya crash pada citra ber-GT kosong
+    yang punya prediksi; pembungkus 4 mengembalikan hasil kosong untuk citra itu.
+  - `angle_eval.py` mengimpor `descartes` hanya untuk plot; impor itu dipindah ke dalam fungsi plot.
+  - `loadRes` pycocotools butuh `bbox` di setiap hasil poligon (tanpa itu `segmentation` dianggap RLE), dan `area`
+    deteksi = luas bbox (memengaruhi AP_S/M/L).
   - `COCOeval.evaluate()` membuang `imgIds` duplikat, jadi bootstrap AP harus memakai `evalImgs` yang di-cache.
 - **WHU:**
   - GT `p2p` (cara Pix2Poly: connected component dari label raster) menyatukan bangunan yang bersentuhan. GT utama

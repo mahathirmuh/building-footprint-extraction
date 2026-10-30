@@ -42,16 +42,18 @@
 
 Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28 Okt 2026:
 - **C-IoU (`cIoU.py`)**: per citra, `IoU(mask gabungan prediksi, mask gabungan GT) × (1 − abs(N − N_GT)/(N + N_GT))`,
-  dengan N = jumlah verteks ring pertama tiap poligon. Citra yang diiterasi berasal dari objek hasil `loadRes`, dan
-  `loadRes` membuang citra tanpa prediksi. Jadi **citra tanpa prediksi tidak ikut dihitung**: metode yang diam di citra
-  sulit tidak dihukum. Selain itu `mask_gti`/`N_GT` tidak di-reset, sehingga pada citra yang punya prediksi tetapi tanpa
-  anotasi GT nilainya basi (atau `UnboundLocalError` bila itu citra pertama). Fungsinya juga hanya mencetak, tidak
-  me-return nilai.
-  - `CIoU_p2p` = aturan di atas dengan `mask_gti`/`N_GT` di-reset per citra. Di WHU (opsi R) ada patch yang tidak
-    punya anotasi GT sama sekali (test: 227 patch di GT `p2p`, 246 di GT utama; patch dengan > 5 piksel bangunan yang
-    semua poligonnya terbuang filter, `docs/DATA.md` §3.2), jadi reset bisa sedikit mengubah angka dibanding skrip
-    asli. (Koreksi 28 Okt 2026: semula
-    ditulis bahwa setiap patch WHU punya minimal satu anotasi.)
+  dengan N = jumlah verteks ring pertama tiap poligon (titik penutup ikut terhitung bila diulang). Citra yang diiterasi
+  adalah `getImgIds(catIds)` dari objek hasil `loadRes`, yaitu hanya citra yang punya prediksi. Jadi **citra tanpa
+  prediksi tidak ikut dihitung**: metode yang diam di citra sulit tidak dihukum. `N_GT` di-reset per citra, tetapi
+  `mask_gti` tidak. Pada citra yang punya prediksi tetapi tanpa anotasi GT, IoU-nya dihitung terhadap mask GT citra
+  sebelumnya (atau `UnboundLocalError` bila itu citra pertama). C-IoU citra itu tetap ≈ 0, karena N_GT = 0 membuat
+  faktor verteks ≈ 1e-9/N. Fungsinya juga hanya mencetak, tidak me-return nilai. (Dikoreksi 30 Okt 2026 saat
+  vendoring: semula ditulis bahwa `N_GT` juga tidak di-reset.)
+  - `CIoU_p2p` = aturan di atas dengan `mask_gti` di-reset per citra. Reset ini hanya mengubah IoU citra berprediksi
+    tanpa GT; C-IoU-nya tetap ≈ 0 (selisih < 1e-9, diuji di `tests/test_pix2poly_metrics.py`). Di WHU (opsi R) ada
+    patch yang tidak punya anotasi GT sama sekali (test: 227 patch di GT `p2p`, 246 di GT utama; patch dengan > 5
+    piksel bangunan yang semua poligonnya terbuang filter, `docs/DATA.md` §3.2). (Koreksi 28 Okt 2026: semula ditulis
+    bahwa setiap patch WHU punya minimal satu anotasi.)
   - `CIoU` (utama) = rumus yang sama atas **semua** citra split: tanpa prediksi dan GT tidak kosong → 0; keduanya
     kosong → 1.
 - **PoLiS (`polis.py`)**: pencocokan memakai IoU **bounding box** (bukan mask) > 0,5; tiap GT mengambil prediksi
@@ -60,17 +62,35 @@ Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28
   dipakai. Kalau semua citra bernilai 0 (misalnya GT dipakai sebagai prediksi), kode asli membagi dengan nol.
   `compare_polys` menjumlahkan jarak n verteks tetapi membagi dengan 2·(n+1), karena titik penutup ikut dihitung di
   penyebut. Akibatnya nilainya n/(n+1) kali definisi Avbelj dkk. Ini konsisten untuk semua metode, jadi tetap dipakai
-  demi kesebandingan dengan angka paper.
+  demi kesebandingan dengan angka paper. `evaluateImg` menimpa `segmentation` GT yang kosong menjadi `[[]]` di objek
+  COCO yang dipakainya, jadi objek COCO itu tidak boleh dipakai bersama metrik lain.
 - **MTA (`angle_eval.py`)**: per citra, semua poligon GT digabung (`unary_union`, lalu `buffer(1e-4)`), begitu juga
   semua poligon prediksi. Kontur prediksi disampel tiap 2 px, diproyeksikan ke kontur GT, lalu sudut tangen maksimum
   dihitung per poligon (hasil gabungan) dan dikumpulkan dari semua citra. Akibatnya, **dinding antar-rumah yang
   bersentuhan hilang** dari GT maupun prediksi, padahal di situlah N1 diklaim. Karena itu klaim N1 memakai `MTA_inst`.
+  Fakta tambahan dari menjalankan kode vendor (30 Okt 2026):
+  - Nilainya **tidak sebanding** dengan galat sudut sebenarnya. Persegi panjang 40 × 16 px yang diputar 1°, 5°, 10°,
+    20°, dan 30° terhadap pusatnya memberi 9,65°, 20,4°, 11,3°, 20,0°, dan 60,0°, karena maksimum per poligon
+    didominasi proyeksi di sekitar sudut. Poligon identik memberi 0,0027°, bukan 0, karena GT di-buffer 1e-4.
+  - Di shapely 2.2.0 / GEOS 3.14.1, citra yang GT-nya kosong tetapi punya prediksi membuat skrip asli crash
+    (`GEOSException` saat interseksi dengan `GEOMETRYCOLLECTION (POLYGON EMPTY)`). Maksud kodenya (presisi 0, jadi
+    semua prediksi tersaring) dipertahankan oleh perubahan pembungkus 4.
 - **COCOeval**: `evaluate()` menjalankan `p.imgIds = list(np.unique(p.imgIds))`, sehingga duplikat `imgIds`
   dibuang. Ini memengaruhi bootstrap (§4). Selain itu `evaluateImg` menyimpan id GT pasangan di `dtm`, dan
   `accumulate` membaca `dtm` = 0 sebagai tidak ter-match. Akibatnya, deteksi yang cocok dengan GT ber-`id` 0 dihitung
-  positif palsu (dicek di `cocoeval.py` pycocotools 2.0.11). Id anotasi WHU hasil konversi Pix2Poly mulai dari 0.
+  positif palsu (dicek di `cocoeval.py` pycocotools 2.0.11). Id anotasi WHU hasil konversi Pix2Poly mulai dari 0,
+  begitu juga GT val CrowdAI (515.364 anotasi; dicek 30 Okt 2026).
+- **`loadRes`** menyimpan poligon prediksi apa adanya hanya bila setiap hasil punya `bbox`. Tanpa `bbox`,
+  `segmentation` dianggap RLE dan `maskUtils.area` gagal. Dengan `bbox`, `area` deteksi = luas bbox (bukan luas
+  poligon), sehingga pengelompokan AP_S/M/L untuk deteksi memakai luas bbox. Poligon dengan tepat 4 koordinat dibaca
+  `frPyObjects` sebagai bbox lalu crash, dan ring berluas nol mendapat IoU 0 dengan dirinya sendiri.
+- **GT val CrowdAI** punya 3.644 anotasi ber-`area` 0, padahal ring yang luasnya nol hanya 3.488. Jadi 156 bangunan
+  nyata selalu masuk kelompok AP_S (COCOeval memakai field `area` GT). AP total tidak terpengaruh.
 - **Anotasi negatif WHU** (`segmentation: []`): `mask.frPyObjects([], h, w)` pycocotools melempar `IndexError`
-  (dicek 28 Okt 2026). Cara skrip metrik Pix2Poly menanganinya dicek saat vendoring di Fase 3.
+  (dicek 28 Okt 2026). Di kode vendor (30 Okt 2026): `cIoU.py` menganggapnya mask kosong (N_GT bertambah 0),
+  `polis.py` menimpanya menjadi `[[]]` lalu tidak pernah memasangkannya, dan `angle_eval.py` tidak membuat poligon
+  darinya. Jadi membuang anotasi negatif (citranya tetap) memberi angka yang sama untuk ketiga metrik vendor, dan wajib
+  untuk pycocotools.
 
 ### 2.3 Aturan vendor
 - Salin `polis.py`, `angle_eval.py`, `cIoU.py` dari `Pix2Poly/eval/hisup_eval_utils/metrics/` (MIT) ke
@@ -79,7 +99,10 @@ Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28
 - **Boleh** (perubahan pembungkus yang tidak mengubah matematika metrik): me-return nilai; mengeluarkan nilai per
   citra (untuk PoLiS: rata-rata citra dan status valid; untuk MTA: jumlah dan banyaknya nilai per citra); menerima
   subset `imgIds`; menangani pembagian nol dengan mengembalikan `None` plus jumlah citra valid; menghapus impor
-  `descartes`; me-reset `mask_gti` dan `N_GT` per citra.
+  `descartes`; me-reset `mask_gti` per citra (`N_GT` sudah di-reset di kode asli). Ditambahkan saat vendoring
+  (30 Okt 2026), dengan alasan di header tiap file: melewati teks progres `cIoU.py` yang menghitung ulang empat
+  rata-rata setiap citra (kuadratik); mengganti debugger `ipdb` dengan `raise`; dan di MTA, mengembalikan hasil kosong
+  untuk citra yang GT-nya kosong (setara maksud kode asli, yang crash di GEOS 3.14).
 - **Tidak boleh:** mengubah pencocokan, ambang, sampling kontur, buffer, atau cara pooling.
 - Setiap perubahan dicatat di header file dan di `docs/progress.md`. Tes regresi: pada file contoh, versi vendor
   dan versi asli memberi angka identik untuk semua kasus yang tidak terkena perubahan.
@@ -157,7 +180,8 @@ sama dengan evaluasi HiSup; diputuskan 30 Okt 2026). Karena itu uji ini dijalank
 Tes sintetis:
 - Persegi sejajar sumbu yang digeser d px searah x → `PoLiS` = `PoLiS_paired` = 0,4·d. Dua verteks di tiap sisi
   berjarak d, sehingga totalnya 4d; dibagi 2·5 karena titik penutup ikut di penyebut (§2.2). Definisi asli memberi d/2.
-- Poligon identik → `MTA_inst` = 0. Diputar α ∈ {5°, 10°, 20°} terhadap pusatnya → `MTA_inst` ≥ α − 0,5°.
+- Poligon identik → `MTA_inst` ≈ 0 (< 0,01°; GT di-buffer 1e-4). Diputar α ∈ {5°, 10°, 20°} terhadap pusatnya →
+  `MTA_inst` ≥ α − 0,5°.
 
 ### 6.2 Kasus tepi (Fase 3)
 - Citra tanpa prediksi: `CIoU` = 0 bila GT tidak kosong, 1 bila keduanya kosong; `CIoU_p2p` melewatinya.
