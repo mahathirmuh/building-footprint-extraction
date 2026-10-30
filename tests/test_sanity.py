@@ -81,3 +81,29 @@ def test_report_renders_every_check():
         and "**gagal**" in text
         and "| (i) AP | 1 | 1 ± 0,001 | lolos |" in text
     )
+    assert "Belum ada: evaluasi `hisup_release`" in text  # §6.4 before HiSup's release is evaluated
+
+
+def fake_hisup_record(ap: float) -> dict:
+    overall = {"AP": ap, "AP50": 0.926, "AP75": 0.85, "AP_boundary": 0.66, "PoLiS": 0.73, "CIoU_p2p": 0.89,
+               "IoU_p2p": 0.94, "CIoU": 0.88, "IoU": 0.93, "MTA": 30.0}  # fmt: skip
+    return {"overall": overall, "coco_stats": {"segm": {"AR100": 0.81}}, "created": "now", "git": "abc",
+            "pred_check": {"results": 10, "dropped": 0, "too_few_points": 1}, "seconds": {}}  # fmt: skip
+
+
+@pytest.mark.parametrize(("ap", "passed"), [(0.792, True), (0.797, True), (0.790, False), (0.7975, False)])
+def test_hisup_reproduction_checks_ap_within_0_3_points(tmp_path, monkeypatch, ap, passed):
+    monkeypatch.setenv("DENSEPOLY_OUT", str(tmp_path / "outputs"))
+    assert sanity.hisup_reproduction() is None
+    write_json(paths.metrics_file("crowdai", "hisup_release", "ref", "val_full"), fake_hisup_record(ap))
+    part = sanity.hisup_reproduction()
+    rows = {r["metric"]: r for r in part["rows"]}
+    assert rows["AP"]["paper"] == 79.4 and rows["AP"]["ours"] == pytest.approx(100 * ap)
+    assert rows["AR"]["ours"] == pytest.approx(81.0) and rows["PoLiS"]["ours"] == pytest.approx(0.73)
+    assert part["checks"][0]["passed"] is passed
+    report = {"created": "now", "git": "abc", "environment": sanity.environment(), "gt_as_prediction": [],
+              "edge_case_tests": [], "determinism": {"checks": []}, "hisup_reproduction": part,
+              "bootstrap_ap": {"case": "c", "point_AP": 0.5, "n_rep": 1, "ci95": [0, 1], "sd": 0, "n_naive": 1,
+                               "naive_unique_fraction_mean": 0.6, "naive_ci95": [0, 1],
+                               "proper_ci95_first_n_naive": [0, 1], "width_ratio": 1.0, "checks": []}}  # fmt: skip
+    assert f"| AP | 79.4 | {100 * ap:.2f} |" in sanity.render_report(report)

@@ -4,7 +4,9 @@
 
 Writes outputs/metrics/sanity_report.json and renders docs/sanity_report.md from it. The evaluations behind it are
 ordinary run_eval outputs: experiments sanity_gt (GT as predictions), sanity_gt_noempty (without the empty masks),
-sanity_repeat (§6.2, evaluated twice) and sanity_perturbed (§6.6), all with run ref.
+sanity_repeat (§6.2, evaluated twice) and sanity_perturbed (§6.6), all with run ref. §6.4 reads the saved
+evaluation of HiSup's release (scripts/evaluate.py --exp hisup_release --split val_full --released, ±1 h), which
+this script does not rerun.
 """
 
 from __future__ import annotations
@@ -68,11 +70,12 @@ def main(argv: list[str] | None = None) -> None:
     report["determinism"] = sanity.determinism(workers=args.workers)
     log("6.6 bootstrap AP")
     report["bootstrap_ap"] = sanity.bootstrap_ap(n_rep=args.n_rep, n_naive=args.n_naive, workers=args.workers)
+    log("6.4 HiSup reproduction (from its saved evaluation)")
+    report["hisup_reproduction"] = sanity.hisup_reproduction()
 
     write_json(paths.out_root() / "metrics" / "sanity_report.json", report)
     args.report_md.write_text(sanity.render_report(report), encoding="utf-8", newline="\n")
-    checks = [c for part in (*report["gt_as_prediction"], report["determinism"], report["bootstrap_ap"])
-              for c in part["checks"]]  # fmt: skip
+    checks = sanity.all_checks(report)
     tests_failed = sum(not t["passed"] for t in report["edge_case_tests"])
     log(f"done: {sum(c['passed'] for c in checks)}/{len(checks)} checks passed, {tests_failed} unit test(s) failed")
 

@@ -18,6 +18,7 @@ from collections import defaultdict
 
 import numpy as np
 import shapely
+from omegaconf import OmegaConf
 from pycocotools import mask as mask_utils
 from pycocotools.cocoeval import COCOeval
 
@@ -27,6 +28,19 @@ from densepoly.utils.io import read_json, write_json
 
 COVER = instance.COVER_THRESHOLD
 PACKAGES = ("numpy", "pandas", "pyarrow", "scipy", "shapely", "pycocotools", "opencv-python-headless", "multiprocess")
+AP_TOLERANCE = 0.3  # §6.4: AP points between our evaluation of HiSup's release and its paper
+# §6.4 rows: (key of configs/paper_numbers.yaml, our value in the paper's unit). HiSup's C-IoU and IoU come from
+# cIoU.py, which averages over images with predictions, hence CIoU_p2p and IoU_p2p.
+HISUP_ROWS = (
+    ("AP", lambda r: 100 * r["overall"]["AP"]),
+    ("AP50", lambda r: 100 * r["overall"]["AP50"]),
+    ("AP75", lambda r: 100 * r["overall"]["AP75"]),
+    ("AR", lambda r: 100 * r["coco_stats"]["segm"]["AR100"]),
+    ("AP_boundary", lambda r: 100 * r["overall"]["AP_boundary"]),
+    ("PoLiS", lambda r: r["overall"]["PoLiS"]),
+    ("CIoU", lambda r: 100 * r["overall"]["CIoU_p2p"]),
+    ("IoU", lambda r: 100 * r["overall"]["IoU_p2p"]),
+)
 
 
 def environment() -> dict:
@@ -230,6 +244,60 @@ def bootstrap_ap(
     }
 
 
+def load_paper_numbers() -> dict:
+    return OmegaConf.to_container(OmegaConf.load(paths.configs_dir() / "paper_numbers.yaml"))
+
+
+def hisup_reproduction() -> dict | None:
+    """§6.4: our evaluation of HiSup's released val predictions (scripts/evaluate.py, exp hisup_release, val_full)
+    against the numbers of its paper; None until that evaluation exists."""
+    file = paths.metrics_file("crowdai", "hisup_release", "ref", "val_full")
+    if not file.exists():
+        return None
+    record = read_json(file)
+    paper = load_paper_numbers()["hisup"]["crowdai_val"]
+    rows = []
+    for key, ours in HISUP_ROWS:
+        value = ours(record)
+        rows.append(
+            {"metric": key, "paper": paper["values"][key], "ours": value, "delta": value - paper["values"][key]}
+        )
+    ap = rows[0]
+    case = "crowdai/val_full"
+    return {
+        "case": case,
+        "metrics_file": file.relative_to(paths.out_root()).as_posix(),
+        "created": record["created"],
+        "git": record["git"],
+        "source": paper["source"],
+        "rows": rows,
+        "other": {
+            "CIoU (semua citra)": 100 * record["overall"]["CIoU"],
+            "IoU (ΣI/ΣU)": 100 * record["overall"]["IoU"],
+            "MTA (°)": record["overall"]["MTA"],
+        },
+        "pred_check": record["pred_check"],
+        "seconds": record["seconds"],
+        "checks": [
+            check(
+                "6.4",
+                case,
+                "AP HiSup: rilisan dievaluasi ulang vs paper",
+                ap["ours"],
+                f"{ap['paper']} ± {AP_TOLERANCE}",
+                abs(ap["delta"]) <= AP_TOLERANCE,
+            ),
+        ],  # fmt: skip
+    }
+
+
+def all_checks(report: dict) -> list[dict]:
+    parts = [*report["gt_as_prediction"], report["determinism"], report["bootstrap_ap"]]
+    if report.get("hisup_reproduction"):
+        parts.append(report["hisup_reproduction"])
+    return [c for part in parts for c in part["checks"]]
+
+
 def _fmt(value) -> str:
     if value is None:
         return "None"
@@ -244,8 +312,7 @@ def _fmt(value) -> str:
 
 def render_report(report: dict) -> str:
     """docs/sanity_report.md from the report JSON."""
-    checks = [c for part in (*report["gt_as_prediction"], report["determinism"], report["bootstrap_ap"]) for c in
-              part["checks"]]  # fmt: skip
+    checks = all_checks(report)
     failed = [c for c in checks if not c["passed"]]
     lines = [
         "# Laporan uji kewarasan pipeline evaluasi",
@@ -281,6 +348,34 @@ def render_report(report: dict) -> str:
     lines += [f"- `{t['test']}`: {'lolos' if t['passed'] else '**gagal**'}" for t in report["edge_case_tests"]]
     lines += [""] + [f"- {c['case']}: {c['name']}: {'lolos' if c['passed'] else '**gagal**'}"
                      for c in report["determinism"]["checks"]]  # fmt: skip
+    h = report.get("hisup_reproduction")
+    lines += ["", "## §6.4 Reproduksi HiSup", ""]
+    if h is None:
+        lines.append("Belum ada: evaluasi `hisup_release` di `crowdai/val_full` belum dijalankan.")
+    else:
+        check_ = h["pred_check"]
+        lines += [
+            f"Prediksi rilisan HiSup dievaluasi ulang dengan pipeline ini (`{h['metrics_file']}`, "
+            f"dibuat {h['created']}, commit `{h['git']}`), lalu dibandingkan dengan {h['source']['tables']} di paper "
+            f"({h['source']['paper'].strip()}; hlm. {h['source']['page']}). Pemeriksaan longgar: {check_['results']} "
+            f"prediksi, {check_['dropped']} dibuang, {check_['too_few_points']} ring dua titik (ikut AP sebagai mask "
+            f"kosong, dikeluarkan dari PoLiS/MTA). C-IoU dan IoU paper mengikuti aturan `cIoU.py` (citra yang punya "
+            "prediksi), jadi dibandingkan dengan `CIoU_p2p` dan `IoU_p2p`.",
+            "",
+            "| Metrik | Paper | Pipeline ini | Selisih |",
+            "|---|---|---|---|",
+        ]
+        lines += [f"| {r['metric']} | {_fmt(r['paper'])} | {r['ours']:.2f} | {r['delta']:+.2f} |" for r in h["rows"]]
+        other = ", ".join(f"{k} {v:.2f}" for k, v in h["other"].items())
+        lines += [
+            "",
+            f"Varian lain dari pipeline ini: {other}.",
+            "",
+            "| Uji | Nilai | Target | Hasil |",
+            "|---|---|---|---|",
+        ]
+        lines += [f"| {c['name']} | {_fmt(c['value'])} | {c['target']} | {'lolos' if c['passed'] else '**gagal**'} |"
+                  for c in h["checks"]]  # fmt: skip
     b = report["bootstrap_ap"]
     lines += [
         "",
