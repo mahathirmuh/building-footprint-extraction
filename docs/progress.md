@@ -834,3 +834,23 @@ berlaku.
   - 18% rumah ditemukan dengan IoU ≥ 0,5.
 - Pemeriksaan visual: MBI hanya menangkap sisi atap yang terkena matahari dan melewatkan atap datar yang gelap. Kepingan
   kecil muncul di pinggir atap. Jadi B0 memang lemah, bukan bug.
+
+**Keputusan tambahan (30 Okt 2026, disetujui): oracle §6.3 (c) memakai kontur persis, tidak lagi mode `raw`
+(keputusan 3d diubah).**
+- Pada pratinjau, DP ε = 1 sendiri sudah menurunkan AP mask GT dari 98,09 (kontur persis) menjadi 93,41 (`raw`).
+  Patokan "AP ≥ 95" EVALUATION §6.3 karena itu tidak bisa dipakai untuk `raw`, sebaik apa pun watershed-nya.
+- Varian `raw` tetap dilaporkan, dan baris kontur persis ditambahkan di (b) (EVALUATION §6.3 dikoreksi).
+- Angka resmi §6.3 berasal dari `scripts/sanity_checks.py --section 6.3`; angka pratinjau tidak dipakai.
+
+**Langkah 6c — tuning B0 di `val_tune_sub` (30 Okt 2026), dibekukan ke `configs/postproc/crowdai/b0.yaml`:**
+- Setelan terpilih: `t_min` 0,15, ρ 0,85, k 0,06, δ 20.
+- AP hampir sama di seluruh grid. Tahap 1 (empat `t_min`): AP 0,088–0,090 poin. Tahap 2 (36 titik): AP 0,078–0,086
+  poin. Pilihan ρ 0,85 jatuh pada aturan seri: AP-nya dalam 0,2 poin dari yang terbaik (0,0861 lawan 0,0862), dan
+  PoLiS_paired-nya terkecil (2,84).
+- Commit di file beku tercatat `028dd2b-dirty`, hanya karena `progress.md` belum di-commit; kodenya bersih.
+- Waktu dengan 12 worker: tahap 1 208 s, tahap 2 6.484 s, total 111,5 menit. Ini jauh di atas proyeksi ±29 menit dari
+  sampel 100 citra.
+  - Selama run ada pekerjaan berat lain di laptop yang sama (±7 inti), dan RAM kosong hanya ±3,6 GB.
+  - Puncak memori proses utama 3,28 GB (working set) / 4,07 GB (private). Hasil 36 titik grid disimpan bersamaan di
+    memori.
+  - Penyebab pastinya belum diukur.
