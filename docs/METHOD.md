@@ -282,6 +282,16 @@ Regularisasi untuk instance `i` dengan mask `M_i`, kontur `P` (§6.1), luas `A`,
 tile tanpa bangunan → opening (disk 2) → buang objek < 30 px → isi lubang → distance transform → marker h-maxima
 (h = 2) → `watershed(−dist, marker, mask)` → `polygonize(mar)` → skor 1.
 
+Rincian B0 (diperjelas 30 Okt 2026):
+- **Marker h-maxima** adalah maksimum regional dari transformasi h-maxima, yaitu rekonstruksi dilasi `dist − h` di
+  bawah `dist` (*extended maxima*, Soille). Hasilnya satu marker per kubah jarak yang lebih tinggi dari h.
+  Keluaran `skimage.morphology.h_maxima` tidak dipakai, karena fungsi itu hanya menyisakan piksel paling atas tiap
+  kubah. Di sepanjang punggung jarak rumah memanjang, jarak naik-turun sepersekian piksel, sehingga punggung itu pecah
+  menjadi beberapa marker. Pada uji sintetis, rumah 40 × 12 px yang miring 80° mendapat 5 marker.
+- Foreground, objek, marker, dan instance terhubung-4, seperti sisi model. Lubang adalah komponen latar terhubung-8
+  (dual dari foreground terhubung-4) yang tidak menyentuh tepi tile.
+- Komponen foreground tanpa marker tetap menjadi instance sendiri, seperti §6.2 langkah 5.
+
 **FULL+Y** (opsional): YOLOv8n-OBB memberi kotak miring dengan confidence ≥ `c_y` (disetel di `val_tune_sub`).
 Penggabungan dilakukan **setelah** langkah 3 §6.2 (marker sudah dipotong ke `F` dan disaring `m_min`), supaya seed YOLO
 (disk radius 2 = 13 px) tidak terbuang oleh filter `m_min` yang grid-nya sampai 16 px.

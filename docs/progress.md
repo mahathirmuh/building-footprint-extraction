@@ -799,3 +799,18 @@ EXPERIMENTS §4, yang menyebut `A_min` sebagai satu-satunya parameter model bine
 - Klarifikasi (b) diterapkan: poligon yang rusak setelah klip atau pembulatan langsung diganti kontur, tanpa mencoba
   DP dulu, karena DP bisa rusak oleh pembulatan yang sama. Penggantian ini dihitung sebagai fallback (METHOD §7
   langkah 4).
+
+**Langkah 6a — B0 (30 Okt 2026):** `classical/b0.py` (METHOD §8). Tes sintetis (11):
+- ambang Otsu dengan batas bawah `t_min`, termasuk tile tanpa bangunan dan tile konstan;
+- opening, buang bintik, dan isi lubang;
+- rumah memanjang di sudut 0°, 10°, 45°, dan 80° masing-masing satu instance;
+- dua lingkaran yang bertumpuk terpisah di lehernya;
+- tiga rumah terpisah menjadi tiga instance;
+- dari RGB adegan sintetis (MBI, lalu B0), ≥ 70% rumah terisolasi ditemukan dengan IoU ≥ 0,5 di tiga nilai `t_min`.
+
+**Temuan langkah 6a (marker h-maxima):** versi pertama memakai `skimage.morphology.h_maxima` dan memecah 3 rumah
+menjadi 8 instance. Fungsi itu hanya menyisakan piksel paling atas tiap kubah jarak. Di punggung rumah memanjang, jarak
+naik-turun sepersekian piksel (6,083 lawan 6,0), sehingga rumah 40 × 12 px yang miring 80° mendapat 5 marker, berapa
+pun nilai h-nya. Marker sekarang dihitung dengan definisi buku teks, yaitu maksimum regional rekonstruksi dilasi
+`dist − h` di bawah `dist` (*extended maxima*), dan dicatat di METHOD §8. Konektivitas 4 dari klarifikasi (a) tetap
+berlaku.
