@@ -93,6 +93,10 @@ Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28
   - Di shapely 2.2.0 / GEOS 3.14.1, citra yang GT-nya kosong tetapi punya prediksi membuat skrip asli crash
     (`GEOSException` saat interseksi dengan `GEOMETRYCOLLECTION (POLYGON EMPTY)`). Maksud kodenya (presisi 0, jadi
     semua prediksi tersaring) dipertahankan oleh perubahan pembungkus 4.
+  - Bila semua tepi yang tersisa sejajar persis dengan proyeksinya, pembulatan bisa memberi cosinus 1 + 2,2·10⁻¹⁶.
+    `arccos`-nya NaN, bukan 0, dan satu NaN membuat rata-rata MTA seluruh split menjadi NaN. Ini ditemukan
+    30 Okt 2026 pada B0 di `crowdai/test`: 3 dari 39.820 nilai, semuanya prediksi kecil (10–14 px²). Pemeriksaan
+    pooling di `run_eval` menangkapnya. Diperbaiki oleh perubahan pembungkus 5 (§2.3).
 - **COCOeval**: `evaluate()` menjalankan `p.imgIds = list(np.unique(p.imgIds))`, sehingga duplikat `imgIds`
   dibuang. Ini memengaruhi bootstrap (§4). Selain itu `evaluateImg` menyimpan id GT pasangan di `dtm`, dan
   `accumulate` membaca `dtm` = 0 sebagai tidak ter-match. Akibatnya, deteksi yang cocok dengan GT ber-`id` 0 dihitung
@@ -122,7 +126,10 @@ Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28
   `descartes`; me-reset `mask_gti` per citra (`N_GT` sudah di-reset di kode asli). Ditambahkan saat vendoring
   (30 Okt 2026), dengan alasan di header tiap file: melewati teks progres `cIoU.py` yang menghitung ulang empat
   rata-rata setiap citra (kuadratik); mengganti debugger `ipdb` dengan `raise`; dan di MTA, mengembalikan hasil kosong
-  untuk citra yang GT-nya kosong (setara maksud kode asli, yang crash di GEOS 3.14).
+  untuk citra yang GT-nya kosong (setara maksud kode asli, yang crash di GEOS 3.14). Ditambahkan 30 Okt 2026 dengan
+  persetujuan (pembungkus 5): di MTA, cosinus dipotong ke 1 sebelum `arccos`. Ini hanya mengubah nilai yang di kode
+  asli NaN (menjadi 0°); semua nilai berhingga tetap identik, dan itu diuji. Akibatnya, pasangan `MTA_inst` yang
+  dulu tidak memberi nilai karena NaN kini ikut dihitung dengan nilai 0.
 - **Tidak boleh:** mengubah pencocokan, ambang, sampling kontur, buffer, atau cara pooling.
 - Setiap perubahan dicatat di header file dan di `docs/progress.md`. Tes regresi: pada file contoh, versi vendor
   dan versi asli memberi angka identik untuk semua kasus yang tidak terkena perubahan.

@@ -1,8 +1,9 @@
 """Vendored Pix2Poly metrics (third_party/pix2poly_metrics) against the verbatim copies (third_party/pix2poly).
 
 docs/EVALUATION.md §2.3: on every case the wrapper changes do not touch, both versions give identical numbers; the
-touched cases (mask_gti reset, PoLiS without a valid image) behave as documented. Also the synthetic checks of §6.1
-that concern the vendored functions themselves (PoLiS of a shifted square, MTA of a rotated polygon).
+touched cases (mask_gti reset, PoLiS without a valid image, MTA of a cosine rounded above 1) behave as documented.
+Also the synthetic checks of §6.1 that concern the vendored functions themselves (PoLiS of a shifted square, MTA of a
+rotated polygon).
 """
 
 import importlib.util
@@ -209,6 +210,22 @@ def test_mta_skips_an_image_without_gt_polygons(scene):
     without = angle_eval.ContourEval(*load(*scene(drop=(8,)))).evaluate_per_image()
     assert len(with_prediction[8]) == 0
     assert all(np.array_equal(with_prediction[i], without[i]) for i in without)
+
+
+def test_mta_of_exactly_parallel_edges_is_zero_where_the_original_gives_nan(monkeypatch):
+    """Wrapper change 5: small diamonds inside a 45° diamond keep only edges parallel to the GT contour (the others
+    project onto one point); their cosine can round to 1 + 2.2e-16, where the original returns NaN instead of 0."""
+    verbatim = original("angle_eval", monkeypatch)
+    gt = {"segmentation": [ring([(50, 10), (90, 50), (50, 90), (10, 50)])]}
+    pairs = []
+    for cx in np.arange(30, 40, 0.5):
+        dt = {"segmentation": [ring([(cx, 48.5), (cx + 1.5, 50), (cx, 51.5), (cx - 1.5, 50)])]}
+        with np.errstate(invalid="ignore"):
+            (expected,) = verbatim.compute_contour_metrics(([gt], [dt]))
+        (wrapped,) = angle_eval.compute_contour_metrics(([gt], [dt]))
+        pairs.append((expected, wrapped))
+    assert any(np.isnan(expected) for expected, _ in pairs)
+    assert all(wrapped == (0.0 if np.isnan(expected) else expected) for expected, wrapped in pairs)
 
 
 def test_subsets_keep_the_values_of_their_images(scene):

@@ -10,6 +10,10 @@
 #   4. An image whose fixed GT is empty (no GT polygon, e.g. a WHU negative sample) gives no value, returned before
 #      the precision filter. That filter drops every prediction there anyway (precision 0), but intersecting with
 #      GEOMETRYCOLLECTION (POLYGON EMPTY) raises GEOSException under shapely 2.2.0 / GEOS 3.14.1.
+#   5. compute_contour_measure(): the smallest cosine is clipped to 1 before arccos. When every kept edge is exactly
+#      parallel to its projection, rounding can give 1 + 2.2e-16, and arccos returns NaN instead of 0; one NaN makes
+#      the mean of evaluate() NaN for the whole split (B0 on crowdai/test: 3 of 39,820 values). Cosines ≤ 1, and so
+#      every finite value, are unchanged.
 """
 This is the code from https://github.com/Lydorn/Polygonization-by-Frame-Field-Learning.
 @misc{girard2020polygonal,
@@ -238,7 +242,7 @@ def compute_contour_measure(pred_polygon, gt_contours, sampling_spacing, max_str
             plt.show()
     if len(contour_measures):
         min_scalar_product = min(contour_measures)
-        measure = np.arccos(min_scalar_product)
+        measure = np.arccos(min(min_scalar_product, 1.0))  # [wrapper 5] was: np.arccos(min_scalar_product)
         return measure
     else:
         return None

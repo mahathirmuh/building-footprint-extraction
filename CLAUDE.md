@@ -230,7 +230,8 @@ python scripts/tables.py && python scripts/figures.py
     `polis.py` menimpa `segmentation` GT yang kosong di tempat, jadi setiap metrik vendor memakai objek COCO sendiri.
   - MTA menggabungkan semua poligon per citra (`unary_union`), sehingga dinding antar-rumah bersentuhan hilang.
     Nilainya didominasi artefak sudut (rotasi 1° → 9,65°). Di GEOS 3.14 skrip aslinya crash pada citra ber-GT kosong
-    yang punya prediksi; pembungkus 4 mengembalikan hasil kosong untuk citra itu.
+    yang punya prediksi; pembungkus 4 mengembalikan hasil kosong untuk citra itu. Cosinus yang terbulatkan sedikit di
+    atas 1 (semua tepi sejajar persis) membuat skrip asli memberi NaN; pembungkus 5 memotongnya ke 1.
   - `angle_eval.py` mengimpor `descartes` hanya untuk plot; impor itu dipindah ke dalam fungsi plot.
   - `loadRes` pycocotools butuh `bbox` di setiap hasil poligon (tanpa itu `segmentation` dianggap RLE), dan `area`
     deteksi = luas bbox (memengaruhi AP_S/M/L).
