@@ -54,8 +54,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   disetujui (29 Okt 2026): split dan strata kepadatan CrowdAI dan WHU (opsi R, `docs/DATA.md` §3.2) dibekukan.
   Fase 2 selesai dan disetujui (30 Okt 2026): label diturunkan saat training; prior dibekukan dan di-cache untuk
   semua split. Fase 3 selesai dan disetujui (30 Okt 2026): pipeline evaluasi lolos uji kewarasan (53 dari 53) dan
-  mereproduksi angka HiSup di val penuh (AP 79,43; dilaporkan di paper 79,4). Berikutnya Fase 4 (post-processing dan
-  B0). Belum ada model.
+  mereproduksi angka HiSup di val penuh (AP 79,43; dilaporkan di paper 79,4). Fase 4 (post-processing dan B0)
+  berjalan. Belum ada model.
 
 ## Cara bekerja di proyek ini
 

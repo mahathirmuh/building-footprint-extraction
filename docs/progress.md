@@ -717,3 +717,25 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
 - Perubahan aturan longgar di langkah 7 disampaikan bersama laporan penutupan, dan tidak ada keberatan.
 
 **Fase 3 disetujui dan ditutup 30 Okt 2026.** Berikutnya Fase 4 (post-processing dan baseline klasik B0).
+
+## Fase 4 — Post-processing dan baseline klasik B0 (sedang berjalan)
+
+**Keputusan (30 Okt 2026, disetujui bersama rencana Fase 4):**
+1. Parameter post-processing:
+   - nilai default (`docs/METHOD.md` §10) masuk ke bagian `postproc` di `configs/base.yaml`;
+   - hasil tuning disimpan di `configs/postproc/<dataset>/<exp>.yaml` sebagai lapisan config keempat;
+   - grid tuning ada di `configs/postproc/grid.yaml`.
+
+   Bagian `postproc` semula hanya berisi `instance` dan `polygon`.
+2. B0 membaca MBI dari cache prior Fase 2, yaitu nilai yang sudah diskalakan ke [0, 1] (§2.4). Waktu proses B0 diukur
+   dari RGB, termasuk menghitung MBI, pada sampel tile.
+3. Klarifikasi spesifikasi (bukan perubahan definisi):
+   - a. Di B0, komponen foreground tanpa marker h-maxima tetap jadi instance sendiri, seperti §6.2 langkah 5.
+     Pelabelan komponen B0 memakai konektivitas 4.
+   - b. Setelah klip dan pembulatan 2 desimal, poligon dicek ulang. Kalau tidak valid, poligon masuk rantai fallback
+     §7.3.
+   - c. Oracle §6.3 (b) mode `theta` memakai θ dari poligon GT.
+   - d. Oracle §6.3 (c) memakai mode `raw`, supaya yang diuji hanya marker dan watershed.
+4. Tuning memakai evaluasi ringan, yaitu AP dan PoLiS_paired (`docs/EXPERIMENTS.md` §4). Kombinasi terpilih lalu
+   dievaluasi penuh.
+5. Fase 4 hanya untuk CrowdAI. Default WHU (METHOD §10) dibuat di Fase 8.
