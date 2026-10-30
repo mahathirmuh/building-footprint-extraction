@@ -2,10 +2,10 @@
 
 Dibuat otomatis oleh `scripts/sanity_checks.py` dari `outputs/metrics/sanity_report.json`; jangan diedit tangan. Uji dan targetnya: `docs/EVALUATION.md` §6.
 
-- Dibuat: 2026-10-30T12:07:51+08:00, commit `1ddd931a0ddce033bfe365c473b93786df69965a`.
+- Dibuat: 2026-10-30T14:13:47+08:00, commit `3c65809fc85a99516100f977c0aa1a4b01e7e7cf`.
 - Mesin: Windows-11-10.0.26200-SP0, prosesor Intel64 Family 6 Model 170 Stepping 4, GenuineIntel.
 - Versi: python 3.12.0, geos 3.14.1, numpy 2.5.4, pandas 3.1.0, pyarrow 26.0.0, scipy 1.18.1, shapely 2.2.0, pycocotools 2.0.11, opencv-python-headless 4.14.0.94, multiprocess 0.70.19.
-- **Hasil: 52 dari 52 uji lolos.**
+- **Hasil: 53 dari 53 uji lolos.**
 
 ## §6.1 GT sebagai prediksi
 
@@ -13,7 +13,7 @@ Dibuat otomatis oleh `scripts/sanity_checks.py` dari `outputs/metrics/sanity_rep
 
 ### crowdai/val_clean
 
-212 citra, 1786 anotasi GT, 17 GT bermask kosong. Pemeriksaan prediksi (ii): 16 ring < 3 titik dibuang.
+212 citra, 1786 anotasi GT, 17 GT bermask kosong. Pemeriksaan prediksi (ii): 16 ring dengan < 3 titik berbeda (mask kosong bagi pycocotools, tidak dipakai PoLiS/MTA), 0 ring tak terbaca dibuang.
 
 | Uji | Nilai | Target | Hasil |
 |---|---|---|---|
@@ -32,7 +32,7 @@ Dibuat otomatis oleh `scripts/sanity_checks.py` dari `outputs/metrics/sanity_rep
 
 ### crowdai/test
 
-2928 citra, 25145 anotasi GT, 181 GT bermask kosong. Pemeriksaan prediksi (ii): 159 ring < 3 titik dibuang.
+2928 citra, 25145 anotasi GT, 181 GT bermask kosong. Pemeriksaan prediksi (ii): 159 ring dengan < 3 titik berbeda (mask kosong bagi pycocotools, tidak dipakai PoLiS/MTA), 0 ring tak terbaca dibuang.
 
 | Uji | Nilai | Target | Hasil |
 |---|---|---|---|
@@ -51,7 +51,7 @@ Dibuat otomatis oleh `scripts/sanity_checks.py` dari `outputs/metrics/sanity_rep
 
 ### whu/test
 
-35487 citra, 140689 anotasi GT, 0 GT bermask kosong. Pemeriksaan prediksi (ii): 0 ring < 3 titik dibuang.
+35487 citra, 140689 anotasi GT, 0 GT bermask kosong. Pemeriksaan prediksi (ii): 0 ring dengan < 3 titik berbeda (mask kosong bagi pycocotools, tidak dipakai PoLiS/MTA), 0 ring tak terbaca dibuang.
 
 | Uji | Nilai | Target | Hasil |
 |---|---|---|---|
@@ -70,7 +70,7 @@ Dibuat otomatis oleh `scripts/sanity_checks.py` dari `outputs/metrics/sanity_rep
 
 ### whu/test (p2p)
 
-35487 citra, 139962 anotasi GT, 0 GT bermask kosong. Pemeriksaan prediksi (ii): 0 ring < 3 titik dibuang.
+35487 citra, 139962 anotasi GT, 0 GT bermask kosong. Pemeriksaan prediksi (ii): 0 ring dengan < 3 titik berbeda (mask kosong bagi pycocotools, tidak dipakai PoLiS/MTA), 0 ring tak terbaca dibuang.
 
 | Uji | Nilai | Target | Hasil |
 |---|---|---|---|
@@ -99,6 +99,29 @@ Tes unit (data sintetis) yang dijalankan skrip ini:
 - `tests/test_run_eval.py::test_evaluating_twice_gives_identical_numbers`: lolos
 
 - crowdai/val_clean: evaluasi dua kali identik: lolos
+
+## §6.4 Reproduksi HiSup
+
+Prediksi rilisan HiSup dievaluasi ulang dengan pipeline ini (`metrics/crowdai/hisup_release/ref/val_full.json`, dibuat 2026-10-30T14:10:17+08:00, commit `3c65809fc85a99516100f977c0aa1a4b01e7e7cf`). Pemeriksaan longgar: 506978 prediksi, 0 dibuang, 2890 ring dua titik (ikut AP sebagai mask kosong, dikeluarkan dari PoLiS/MTA). C-IoU dan IoU paper mengikuti aturan `cIoU.py` (citra yang punya prediksi), jadi dibandingkan dengan `CIoU_p2p` dan `IoU_p2p`. Angka pipeline ini ditulis dengan satu desimal lebih banyak daripada paper.
+
+Angka paper (`configs/paper_numbers.yaml`): Xu, Xu, Xue & Xia, "Accurate Polygonal Mapping of Buildings in Satellite Imagery" (HiSup), arXiv:2208.00609v1, 1 Aug 2022; Table 1 (MS-COCO metrics) and Table 2 (AP_boundary, PoLiS, C-IoU, IoU); hlm. 9 (page of the arXiv PDF).
+
+| Metrik | Paper | Pipeline ini | Selisih |
+|---|---|---|---|
+| AP | 79.4 | 79.43 | +0.03 |
+| AP50 | 92.7 | 92.68 | -0.02 |
+| AP75 | 85.3 | 85.31 | +0.01 |
+| AR | 81.5 | 81.55 | +0.05 |
+| AP_boundary | 66.5 | 66.51 | +0.01 |
+| PoLiS | 0.726 | 0.7261 | +0.0001 |
+| CIoU | 89.6 | 89.67 | +0.07 |
+| IoU | 94.3 | 94.28 | -0.02 |
+
+Varian lain dari pipeline ini: CIoU (semua citra) 89.45, IoU (ΣI/ΣU) 95.20, MTA (°) 31.94.
+
+| Uji | Nilai | Target | Hasil |
+|---|---|---|---|
+| AP HiSup: rilisan dievaluasi ulang vs paper | 79.432 | 79.4 ± 0.3 | lolos |
 
 ## §6.6 Bootstrap AP
 

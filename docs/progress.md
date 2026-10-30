@@ -537,7 +537,7 @@ Pemeriksaan sesudah run (skrip sekali jalan, di luar repo):
     WHU dibuang (citranya tetap); selebihnya apa adanya. Field `info` mencatat sumber, offset, dan jumlah kasus
     khusus.
   - `check_predictions`: ketat untuk output kita, longgar untuk prediksi rilisan (hanya ring dengan < 3 titik
-    berbeda yang dibuang).
+    berbeda yang dibuang; aturan longgar diubah di langkah 7).
   - Helper: `to_result` (format prediksi kita, ring tertutup), `gt_as_predictions`, `empty_mask_ids`, dan
     `load_results`, yang aman untuk daftar prediksi kosong (`loadRes` pycocotools crash di kasus itu).
 - `scripts/prepare_gt.py` → `outputs/gt/<ds>/<split>[_p2p].json` (CrowdAI 64 s, WHU 29 s).
@@ -641,3 +641,70 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
   berlubang. GT-sebagai-prediksi kini memakai ring pertama saja (mask terbukti identik), dan prediksi dengan banyak ring
   ditolak `run_eval` dengan pesan jelas. Ditambahkan juga `IoU_p2p`, IoU yang dilaporkan HiSup.
 - Waktu dengan 12 worker: CrowdAI `val_clean` 1 menit, `test` 4 menit, WHU test ±9,5 menit per GT; total 26 menit.
+
+**Langkah 7 — reproduksi HiSup (§6.4) dan HiSup di `val_clean` (30 Okt 2026)** (`pytest -q` → 408 tes lolos):
+- Aturan longgar diubah sebelum evaluasi (commit `2726f61`, `docs/EVALUATION.md` §1):
+  - 0,57% rilisan HiSup adalah ring dua titik seperti `[a, b, a]`. Bagi pycocotools ring ini mask kosong, jadi di
+    evaluasi HiSup sendiri ring itu ikut AP sebagai positif palsu.
+  - Aturan lama membuangnya. Itu berarti protokol yang berbeda, dan AP bisa naik.
+  - Sekarang hanya ring ≤ 4 angka yang dibuang. Ring dua titik tetap ikut AP, AP_boundary, IoU, dan C-IoU, dan
+    hanya dikeluarkan dari `polis.py` dan `angle_eval.py`.
+- `sanity.hisup_reproduction` (commit `3c65809`) membaca hasil evaluasi `val_full` dan membandingkannya dengan
+  `configs/paper_numbers.yaml` (arXiv:2208.00609v1, Tabel 1–2, hlm. 9). Ujinya: |ΔAP| ≤ 0,3.
+- `crowdai/val_full`: 60.317 citra dan 506.978 prediksi. Tidak ada prediksi yang dibuang; ada 2.890 ring dua titik,
+  5.288 poligon tidak valid, dan 305 ring tertutup.
+
+| Metrik | Paper (dilaporkan di paper) | Pipeline ini | Selisih |
+|---|---|---|---|
+| AP | 79,4 | 79,43 | +0,03 |
+| AP50 | 92,7 | 92,68 | −0,02 |
+| AP75 | 85,3 | 85,31 | +0,01 |
+| AR (AR100) | 81,5 | 81,55 | +0,05 |
+| AP_boundary | 66,5 | 66,51 | +0,01 |
+| PoLiS | 0,726 | 0,726 | +0,000 |
+| C-IoU (`CIoU_p2p`) | 89,6 | 89,67 | +0,07 |
+| IoU (`IoU_p2p`) | 94,3 | 94,28 | −0,02 |
+
+- **Uji §6.4 lolos** (ΔAP = +0,03).
+  - Setelah dibulatkan ke presisi paper, 7 dari 8 angka sama persis. Hanya C-IoU yang berbeda: 89,67 dibulatkan
+    menjadi 89,7, sedangkan paper 89,6 (selisih minimal 0,02). Penyebabnya belum ditelusuri.
+  - AR50 dan AR75 paper (93,1 dan 86,7) tidak dibandingkan, karena ringkasan standar pycocotools yang kita pakai tidak
+    menghitungnya.
+  - Hasil ini sekaligus memvalidasi bagian pipeline yang kita tulis sendiri: AP_boundary dihitung dengan `accumulate`
+    kita (versi vendor rusak di numpy ≥ 1.24), PoLiS dengan `polis.py` pembungkus tanpa ring dua titik, serta IoU dan
+    C-IoU dengan `cIoU.py` pembungkus.
+- Varian lain di `val_full`: CIoU semua citra 89,45; IoU ΣI/ΣU 95,20; MTA 31,94°; PoLiS_paired 0,720; MTA_inst
+  31,93°; merge 1,5%; split 1,1%.
+- Waktu `val_full` dengan 12 worker: 70,6 menit, lebih lama dari proyeksi benchmark 4.000 citra (±56 menit).
+  - Per tahap: pemeriksaan 60 s, AP 129 s, AP_boundary 468 s, piksel 79 s, instance 341 s, vendor 3.066 s, ringkasan
+    56 s.
+  - Puncak memori proses utama 5,72 GB (working set) / 6,54 GB (private), ditambah ±0,95 GB per worker MTA.
+  - Selama tahap MTA, RAM laptop tersisa ±0,3 GB (aplikasi lain memakai ±25 GB), jadi sebagian memori dipindah ke
+    pagefile. Ini kemungkinan penyebab run lebih lama; belum dibuktikan.
+  - Cache `evalImgs` `val_full` tidak disimpan, karena besar dan tidak ada bootstrap yang direncanakan di sana.
+- `crowdai/val_clean`: 212 tile, 1.786 GT, 1.774 prediksi (9 ring dua titik); selesai dalam 23 s. Semua tile punya
+  prediksi, jadi `CIoU` = `CIoU_p2p`. PoLiS dan MTA di tabel adalah versi vendor.
+
+| Subset | Tile | GT | AP | AP_boundary | C-IoU | PoLiS | MTA (°) | merge | split |
+|---|---|---|---|---|---|---|---|---|---|
+| semua | 212 | 1.786 | 65,60 | 43,97 | 81,25 | 1,364 | 34,54 | 1,5% | 1,6% |
+| jarang | 91 | 303 | 65,59 | 41,53 | 77,37 | 1,592 | 34,33 | 0,7% | 2,3% |
+| sedang | 60 | 554 | 69,99 | 45,89 | 84,67 | 1,245 | 35,15 | 1,3% | 2,2% |
+| padat | 61 | 929 | 63,39 | 45,17 | 83,66 | 1,152 | 34,22 | 1,8% | 1,0% |
+| bersentuhan | 10 | 144 | 64,22 | 48,78 | 84,81 | 1,126 | 36,24 | 4,2% | 2,8% |
+| tidak bersentuhan | 202 | 1.642 | 65,79 | 43,73 | 81,07 | 1,376 | 34,39 | 1,2% | 1,5% |
+
+- AP HiSup di `val_clean` 13,8 poin di bawah `val_full`.
+  - Arahnya sesuai dugaan kebocoran, karena `val_full` berisi duplikat data latih HiSup.
+  - Besarnya tidak bisa seluruhnya dikaitkan ke kebocoran, karena `val_clean` juga kumpulan tile yang berbeda (wakil
+    klaster tanpa duplikat).
+  - Dengan 212 tile (61 padat, 10 bersentuhan), angka per strata punya ketidakpastian besar. Selang kepercayaan
+    bootstrap dihitung saat perbandingan dengan model kita.
+- Uji kewarasan dijalankan ulang pada commit `3c65809` (aturan longgar baru, ditambah §6.4): **53 dari 53 uji lolos**,
+  dan 0 tes unit gagal.
+  - Angka §6.1, §6.2, dan §6.6 tidak berubah. Yang berubah hanya keterangan pemeriksaan prediksi: ring dua titik di GT
+    (16 di `val_clean`, 159 di `test`) kini ikut AP sebagai mask kosong, tidak lagi dibuang.
+  - Waktunya 48 menit, sedangkan run pertama 26 menit. Selama kasus CrowdAI `test` dan WHU, RAM hampir penuh dan
+    laptop memakai baterai.
+  - Tabel §6.4 kemudian dirender ulang dari JSON yang sama dengan opsi baru `--render-only`, supaya PoLiS ditulis
+    0,7261, bukan 0,73. Aturannya: satu desimal lebih banyak daripada paper.
