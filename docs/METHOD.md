@@ -269,7 +269,10 @@ Regularisasi untuk instance `i` dengan mask `M_i`, kontur `P` (§6.1), luas `A`,
 3. **Validitas dan fallback.** Hasil diterima bila poligon valid (`is_valid`), luas > 0, dan
    `IoU(hasil, kontur §6.1) ≥ 0,7`. Jika gagal: coba hasil DP saja, lalu kontur mentah (`make_valid`, ambil
    poligon terbesar). Catat jumlah fallback per run.
-4. **Klip** ke `box(0, 0, W, H)` (kotak yang diputar bisa keluar tile), lalu koordinat dibulatkan 2 desimal.
+4. **Klip** ke `box(0, 0, W, H)` (kotak yang diputar bisa keluar tile), lalu koordinat dibulatkan 2 desimal. Hasilnya
+   dicek ulang: harus valid, berluas > 0, dan punya ≥ 3 titik unik. Bila gagal (misalnya bagian tipis yang jadi
+   memotong dirinya sendiri), poligon diganti kontur §6.1 dan dihitung sebagai fallback. Koordinat kontur kelipatan
+   0,5, jadi tidak berubah oleh pembulatan; hasil DP tidak punya jaminan itu. (Diperjelas 30 Okt 2026.)
 5. **Format.** Hanya cincin luar, minimal 3 titik unik, konvensi titik penutup mengikuti GT (cek di Fase 1).
 
 ## 8. Baseline klasik B0 dan varian FULL+Y

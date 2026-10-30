@@ -782,3 +782,20 @@ piksel menurut jarak ke marker, sehingga 1–2 piksel tangga raster bisa masuk k
 **Klarifikasi `A_min` (METHOD §6.2 langkah 6 dan §6.3):** `A_min` dibuang dari setiap instance, bukan hanya dari
 bagian hasil pemecahan. Kalimat lama hanya menyebut bagian pecahan. Tafsiran ini mengikuti grid §10 dan
 EXPERIMENTS §4, yang menyebut `A_min` sebagai satu-satunya parameter model biner.
+
+**Langkah 4 — poligonisasi (30 Okt 2026):**
+- Yang dibuat:
+  - `postproc/polygonize.py`: mode `raw`/`mar`/`theta`, θ dari head (§6.4), lalu klip, pembulatan 2 desimal, dan cek
+    ulang;
+  - default parameter post-processing di `configs/base.yaml` (keputusan 1);
+  - field `fallback` di format prediksi, yang dijumlahkan menjadi `n_fallback`.
+- Tes (9):
+  - poligon dari 3 adegan sintetis lolos pemeriksa ketat Fase 3 di ketiga mode, dengan IoU ≥ 0,85 terhadap rumahnya;
+  - rumah miring menjadi kotak 4 verteks di mode `mar`;
+  - kotak yang keluar tile diklip;
+  - θ head adalah rata-rata sirkular berbobot, benar melewati batas 0°/90°, dan κ = 0 untuk arah yang saling
+    meniadakan;
+  - poligon yang rusak oleh pembulatan ditolak.
+- Klarifikasi (b) diterapkan: poligon yang rusak setelah klip atau pembulatan langsung diganti kontur, tanpa mencoba
+  DP dulu, karena DP bisa rusak oleh pembulatan yang sama. Penggantian ini dihitung sebagai fallback (METHOD §7
+  langkah 4).

@@ -7,7 +7,9 @@
   tanpa seed (B0, `oracle_*`, `hisup_release`).
 - Isi file prediksi: list COCO results, satu objek per instance:
   `{"image_id": int, "category_id": int, "segmentation": [[x1, y1, x2, y2, ...]], "score": float, "bbox": [x, y, w, h],
-  "theta_deg": float | null, "kappa": float | null}`. Field tambahan diabaikan pycocotools tetapi dipakai diagnostik θ.
+  "theta_deg": float | null, "kappa": float | null, "fallback": bool}`. Field tambahan diabaikan pycocotools tetapi
+  dipakai diagnostik θ; `fallback` menandai poligon hasil fallback `docs/METHOD.md` §7.3 dan dijumlahkan menjadi
+  `n_fallback` (§5).
 - `image_id` dan `category_id` diambil dari file GT (cek nilainya; konversi WHU Pix2Poly memakai `category_id = 100`).
 - Koordinat di kerangka tile asli (padding sudah dibuang), satu cincin luar per instance, minimal 3 titik unik,
   konvensi titik penutup sama dengan GT.

@@ -196,9 +196,11 @@ def to_result(
     theta_deg: float | None = None,
     kappa: float | None = None,
     closed: bool = True,
+    fallback: bool = False,
 ) -> dict:
     """Our prediction format (docs/EVALUATION.md §1) for one polygon: points (N ≥ 3, 2) as (x, y) in the original
-    tile frame, without the closing vertex, which is appended when closed (the GT convention of both datasets)."""
+    tile frame, without the closing vertex, which is appended when closed (the GT convention of both datasets).
+    fallback: the polygon is a fallback of docs/METHOD.md §7.3, counted as n_fallback by the evaluation."""
     pts = np.asarray(points, float)
     if pts.ndim != 2 or pts.shape[1] != 2 or len(pts) < 3:
         raise ValueError("a polygon needs at least 3 (x, y) points")
@@ -211,6 +213,7 @@ def to_result(
         "bbox": ring_bbox(pts),
         "theta_deg": None if theta_deg is None else float(theta_deg),
         "kappa": None if kappa is None else float(kappa),
+        "fallback": bool(fallback),
     }
 
 

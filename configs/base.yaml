@@ -62,6 +62,22 @@ augment:                      # geometric: RGB + priors + instance map; photomet
   photometric_limit: 0.1      # brightness/contrast ±0.1
   p_photometric: 0.5
 
-postproc:                     # identity only; tuned values are frozen in configs/postproc/<dataset>/<exp>.yaml
+postproc:                     # docs/METHOD.md §6-§8, CrowdAI defaults of §10; a frozen tuning in
+                              # configs/postproc/<dataset>/<exp>.yaml overrides them (docs/EXPERIMENTS.md §4)
   instance: ???               # classical | cc | watershed | watershed_yolo
   polygon: ???                # raw | mar | theta
+  tau: 0.4                    # τ: markers where P_b − P_k > τ
+  marker_min_px: 8            # m_min: smaller marker components are dropped
+  instance_min_px: 10         # A_min: smaller instances are dropped
+  raw_eps_px: 1.0             # Douglas-Peucker ε of mode raw
+  rect_iou: 0.90              # ρ: the moment box is kept when its IoU with the contour is at least this
+  dp_k: 0.04                  # k: ε = k·√A on the snap path
+  snap_deg: 15.0              # δ: edges within δ of the θ axes are snapped to them
+  oblique_min_px: 6.0         # ℓ_O = max(oblique_min_px, 4ε): shorter oblique edges are snapped too
+  edge_min_px: 2.0            # ℓ_min = max(edge_min_px, 2ε): shorter edges are dropped while > 4 remain
+  yolo_conf: 0.25             # c_y: confidence of the YOLO boxes used as seeds (FULL+Y)
+  b0:                         # classical baseline (docs/METHOD.md §8)
+    t_min: 0.15               # lower bound of the per-tile Otsu threshold on the MBI scaled to [0, 1]
+    open_radius_px: 2         # binary opening with a disk of this radius
+    min_object_px: 30         # smaller foreground objects are removed before the watershed
+    h_maxima: 2.0             # h of the h-maxima markers on the distance transform
