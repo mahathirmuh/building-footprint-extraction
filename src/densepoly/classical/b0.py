@@ -1,8 +1,8 @@
 """Classical baseline B0, without deep learning (docs/METHOD.md §8).
 
 MBI scaled to [0, 1] → threshold max(Otsu per tile, t_min) → opening with a disk → objects under min_object_px removed
-→ holes filled → distance transform → h-maxima markers → watershed(−distance, markers, foreground) → polygons in mode mar
-with score 1 (B0 has no probability, so its AP is a single precision-recall point).
+→ holes filled → distance transform → h-maxima markers → watershed(−distance, markers, foreground) → polygons in
+mode mar with score 1 (B0 has no probability, so its AP is a single precision-recall point).
 
 - Otsu always splits a tile in two classes, even a tile without buildings: hence the lower bound t_min, tuned on
   val_tune_sub.
