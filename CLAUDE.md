@@ -52,7 +52,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 
 - Fase 0 selesai (kerangka repo, config, paths, fixture sintetis; lihat `docs/progress.md`). Fase 1 selesai dan
   disetujui (29 Okt 2026): split dan strata kepadatan CrowdAI dan WHU (opsi R, `docs/DATA.md` §3.2) dibekukan.
-  Fase 2 (label dan prior) berjalan. Belum ada model.
+  Fase 2 selesai dan disetujui (30 Okt 2026): label diturunkan saat training; prior dibekukan dan di-cache untuk
+  semua split. Fase 3 (pipeline evaluasi) berikutnya. Belum ada model.
 
 ## Cara bekerja di proyek ini
 

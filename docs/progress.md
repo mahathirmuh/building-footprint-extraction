@@ -341,7 +341,28 @@ CrowdAI disetujui dan dibekukan.
 
 **Fase 1 disetujui dan ditutup 29 Okt 2026.** Berikutnya Fase 2 (label dan prior morfologi).
 
-## Fase 2 — Label dan prior morfologi (sedang berjalan)
+## Fase 2 — Label dan prior morfologi (selesai dan disetujui 30 Oktober 2026)
+
+**Ringkasan** (rincian di bawah; `pytest -q` → 265 tes lolos):
+
+- **Label:** kelas (latar / bangunan / kontak), θ (sin 4θ, cos 4θ) dari `minAreaRect`, dan bobot tepi, semuanya
+  diturunkan dari peta instance **sesudah** augmentasi geometri. Label dihitung saat training, tidak di-cache.
+- **Statistik label:** kontak hanya ±0,01% piksel bangunan (4,5% tile/patch punya kontak); θ-valid ≥ 99,99%.
+- **Prior:** MBI (*white top-hat by reconstruction*, 4 arah × 8 skala) dan peta celah (*black top-hat* 4 arah, mode
+  `contrast`), dibekukan 29 Okt 2026.
+- **Cache prior:** lengkap untuk semua split dan sudah diperiksa ulang. CrowdAI 29.495 citra dalam 1,64 jam, WHU 4.267
+  tile dalam 3,94 jam (12 worker).
+- **Keputusan selama Fase 2:** mode celah `contrast` dengan L_g 9 (WHU 13); skala MBI WHU dibulatkan ke bilangan
+  ganjil; radius kontak r dan bobot kelas kontak ditunda ke Fase 5.
+- **Temuan untuk fase berikut:**
+  - Kontak sangat langka, jadi r dan bobot kelas kontak (Fase 5) perlu diputuskan dengan hati-hati.
+  - Poligon GT utama WHU menyusut ±0,5 px per sisi (konvensi kontur Pix2Poly). Ini perlu diperhitungkan di uji
+    bolak-balik Fase 3.
+  - MBI juga menyala di jalan dan kolam, dan peta celah juga menangkap bayangan. Ini bahan pembahasan N3.
+  - Model P1/P2 harus menghitung prior untuk setiap citra baru saat inferensi. Usulan (belum diputuskan): biaya
+    prior per citra diukur dengan 1 thread dan dimasukkan ke tabel efisiensi (Fase 8).
+  - *Sleep* yang dipicu dari luar proses tidak bisa dicegah skrip. Pekerjaan CPU panjang berikutnya perlu laptop yang
+    tetap menyala, dan pengukur waktunya perlu diperiksa.
 
 **Dibuat** (diuji di data sintetis; `pytest -q` → 265 tes lolos):
 
@@ -442,3 +463,11 @@ Pemeriksaan sesudah run (skrip sekali jalan, di luar repo):
   byte dengan cache.
 - Sampel 200 unit per split: piksel jenuh (255) di `train_dedup` 0,69% / 0,55% (CrowdAI, MBI / celah) dan
   0,56% / 0,49% (WHU), dekat 0,5% yang diharapkan dari q = persentil 99,5.
+
+**Status kriteria "Selesai jika" Fase 2 (30 Okt 2026): terpenuhi.**
+- Tes lolos (265).
+- Gambar QA (`outputs/figures/qa/{crowdai,whu}_{labels,gap_mode}.png`) sudah diperiksa dan disetujui.
+- Cache prior lengkap untuk semua split, beserta waktu prosesnya (`splits/<ds>_prior_cache.json`).
+- Fraksi piksel kontak dan fraksi piksel ber-θ valid per dataset dilaporkan (tabel statistik label di atas).
+
+**Fase 2 disetujui dan ditutup 30 Okt 2026.** Berikutnya Fase 3 (pipeline evaluasi).
