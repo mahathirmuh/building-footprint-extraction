@@ -565,3 +565,26 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
   split. Semua ring GT tertutup, jadi prediksi kita juga ditulis tertutup.
 - Di CrowdAI, himpunan anotasi ber-`area` 0 sama persis dengan GT bermask kosong di setiap split (test: 174 ring
   berluas nol + 7 ring setipis ≤ 2 px²).
+
+**Langkah 3 — metrik piksel dan instance (30 Okt 2026)** (`pytest -q` → 348 tes lolos):
+- boundary-iou-api di-vendor (opsi a, lihat di atas); `tests/test_third_party.py` mengunci sha256 semua salinan persis.
+- `eval/pixel.py`: mask gabungan per citra → IoU (ΣI/ΣU dan rata-rata per citra), F1, Boundary IoU (pita
+  `mask_to_boundary`), dan `CIoU` utama di semua citra. Tes membuktikan nilai C-IoU per citra **identik** dengan
+  `cIoU.py` vendor pada citra yang punya prediksi.
+- `eval/instance.py`: pencocokan satu-satu ala COCO (IoU mask ≥ 0,5, tanpa batas 100 deteksi), lalu per pasangan
+  PoLiS, MTA pasangan itu saja, galat θ, dan kecocokan verteks; per GT recall, merge, dan split. Bisa paralel
+  (spawn pool); tes membuktikan hasilnya sama dengan versi serial.
+- `eval/vertex.py` (Hungarian, ≤ 2 px) dan `eval/orientation.py` (θ_GT dengan aturan label; `points_theta` kini ada
+  di `labels/orientation.py`).
+
+**Pratinjau GT-sebagai-prediksi di data asli** (skrip sementara di luar repo; angka resmi §6.1 menyusul di langkah 6):
+- CrowdAI `val_clean` dan `test`, serta WHU test: IoU, F1, dan Boundary IoU = 1; PoLiS_paired = 0; Vertex F1 = 1;
+  MTA_inst ≈ 0,003°. Tidak ada crash.
+- GT tak ter-match = GT bermask kosong, persis (17, 181, dan 0), sesuai §6.1 (ii).
+- C-IoU CrowdAI 0,997–0,998, karena ring GT dengan < 3 titik berbeda dibuang saat dipakai sebagai prediksi (159 di
+  test). Ini alasan §6.1 (i) mengeluarkan GT bermask kosong dari GT **dan** prediksi.
+- CrowdAI test: 20 GT terhitung merge dan 20 split, diduga karena poligon GT saling tumpang tindih. Jumlah pastinya
+  dihitung di langkah 6.
+- GT CrowdAI sendiri punya poligon tidak valid (memotong dirinya sendiri; 442 di test) dan ring terbuka (306). Ini
+  sifat GT resmi, tercatat oleh pemeriksa longgar.
+- Waktu dengan 12 worker untuk instance: CrowdAI test 8 s (piksel) + 25 s (instance); WHU test 28 s + 107 s.

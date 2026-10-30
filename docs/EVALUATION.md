@@ -122,6 +122,18 @@ Seperti COCO: urutkan prediksi menurut skor; tiap prediksi dipasangkan dengan GT
 tertinggi, asalkan IoU ≥ 0,5. Untuk membandingkan dua metode A dan B, metrik berpasangan dihitung hanya pada GT yang
 ter-match di **kedua** metode, sehingga keduanya diukur pada bangunan yang sama.
 
+Rincian implementasi (`eval/instance.py`, 30 Okt 2026):
+- Berbeda dari COCOeval (maxDets 100), tidak ada batas jumlah prediksi per citra.
+- IoU yang sama persis dimenangkan GT yang lebih dulu.
+- GT bermask kosong hanya mengurangi recall. Prediksi bermask kosong (hanya mungkin lewat pemeriksaan longgar) tidak
+  ikut merge/split.
+- `MTA_inst` per pasangan = sudut terbesar dari `compute_contour_metrics` vendor yang dijalankan pada pasangan itu
+  saja. Bila vendor tidak memberi nilai (semua tepi tersaring), pasangan itu tidak ikut dirata-rata dan jumlahnya
+  dicatat.
+- Vertex F1 = 2·Σ verteks cocok / (Σ verteks GT + Σ verteks prediksi) atas semua pasangan, tanpa titik penutup.
+- Galat θ memakai `theta_deg` yang disimpan metode bersama poligonnya. Bila metode tidak menyimpannya (B4, HiSup),
+  nilainya `null`. θ_GT memakai aturan label (sisi panjang `minAreaRect`).
+
 ## 3. Evaluasi per strata
 
 - AP: `cocoEval.params.imgIds = ids_strata`.
