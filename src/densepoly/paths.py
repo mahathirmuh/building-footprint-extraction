@@ -79,7 +79,7 @@ def dataset_dir(dataset: str) -> Path:
 
 def source_folder(dataset: str, split: str) -> str:
     """Folder holding a split's images: CrowdAI download train/ or val/ (test is held out from train; val_clean and
-    val_full come from val); WHU protocol A conversion train/, val/ (val_tune and its parts) or test/."""
+    val_full come from val); WHU option R conversion train/, val/ (val_tune and its parts) or test/."""
     _check(dataset, split)
     if dataset == "crowdai":
         return "val" if split in CROWDAI_ONLY else "train"
@@ -90,11 +90,15 @@ def _layout_root(dataset: str) -> Path:
     return dataset_dir("whu") / "pix2poly_224" if dataset == "whu" else dataset_dir(dataset)
 
 
+def _check_variant(dataset: str, variant: str | None) -> None:
+    if variant is not None and variant not in GT_VARIANTS.get(dataset, ()):
+        raise ValueError(f"unknown ground truth variant {variant!r} for {dataset}")
+
+
 def annotation_file(dataset: str, split: str, variant: str | None = None) -> Path:
     """COCO ground truth that holds a split's images (docs/DATA.md §1); variant selects another ground truth of the
     same images (GT_VARIANTS)."""
-    if variant is not None and variant not in GT_VARIANTS.get(dataset, ()):
-        raise ValueError(f"unknown ground truth variant {variant!r} for {dataset}")
+    _check_variant(dataset, variant)
     name = "annotation.json" if variant is None else f"annotation_{variant}.json"
     return _layout_root(dataset) / source_folder(dataset, split) / name
 
@@ -149,7 +153,10 @@ def metrics_file(dataset: str, exp: str, run: str, split: str) -> Path:
     return out_root() / "metrics" / dataset / exp / run / f"{split}.json"
 
 
-def gt_file(dataset: str, split: str) -> Path:
-    """COCO ground truth restricted to one split (all of its images, including empty ones)."""
+def gt_file(dataset: str, split: str, variant: str | None = None) -> Path:
+    """COCO ground truth restricted to one split (all of its images, including empty ones), as evaluated
+    (densepoly.eval.coco_io); variant as in annotation_file."""
     _check(dataset, split)
-    return out_root() / "gt" / dataset / f"{split}.json"
+    _check_variant(dataset, variant)
+    name = split if variant is None else f"{split}_{variant}"
+    return out_root() / "gt" / dataset / f"{name}.json"

@@ -2,7 +2,7 @@
 
 Instance maps are painted by decreasing pixel area, so a small building drawn over a big one stays visible
 (docs/DATA.md §2.3); ``tests/fixtures/synthetic.py`` follows the same rule, and the tests check both against each other.
-The COCO helpers here do not depend on the dataset and are reused for the WHU protocol A ground truth.
+The COCO helpers here do not depend on the dataset and are reused for the WHU ground truths and for evaluation.
 """
 
 from __future__ import annotations
