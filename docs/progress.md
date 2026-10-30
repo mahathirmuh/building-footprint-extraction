@@ -739,3 +739,28 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
 4. Tuning memakai evaluasi ringan, yaitu AP dan PoLiS_paired (`docs/EXPERIMENTS.md` §4). Kombinasi terpilih lalu
    dievaluasi penuh.
 5. Fase 4 hanya untuk CrowdAI. Default WHU (METHOD §10) dibuat di Fase 8.
+
+**Langkah 1 — kontur marching squares (30 Okt 2026):** `postproc/contours.py` (`mask_to_exterior`).
+- Bolak-balik mask → poligon → raster pycocotools memberi mask yang identik per piksel pada 300 bentuk acak
+  terhubung-4. Sebagian bentuk memotong tepi tile.
+- Kotak 10 × 10 hanya kehilangan 4 × 1/8 px² di sudut-sudutnya.
+
+**Langkah 2 — regularisasi (30 Okt 2026):** `postproc/regularize.py`, logika di-port dari prototipe. Tes kriteria
+"Selesai jika" lolos:
+- Tanpa derau, di 8 sudut rotasi: kotak 70 × 40 jadi 4 verteks, L 6, T 8, dan dinding miring 5, semuanya dengan IoU
+  ≥ 0,95 terhadap poligon asli.
+- Dengan derau tepi (25% piksel gradien dibalik), kotak tetap 4 verteks, dan IoU rata-rata hasil ≥ kontur mentah
+  untuk keempat bentuk.
+- Fallback: hasil snap yang tidak valid diganti DP, lalu kontur. Input yang sengaja sulit (40 kotak acak, L/T
+  berderau, piksel tunggal, garis 1 px, semuanya juga dengan θ yang salah) selalu memberi poligon valid dengan IoU
+  ≥ 0,7 terhadap kontur.
+- Kotak kecil 12 × 9 diuji terpisah dengan θ yang benar: hasilnya 4 verteks, dan IoU-nya tidak lebih rendah dari
+  kontur rasternya. Patokan IoU ≥ 0,95 tidak dipakai, karena tepinya jatuh tepat di pusat piksel sehingga rasternya
+  sendiri hanya mencapai IoU ±0,89 terhadap poligon.
+
+**Temuan langkah 2 (uji sintetis, skrip diagnostik di luar repo):** θ minAreaRect pada raster kotak 12 × 9 meleset
+10° dan 5° pada sudut 10° dan 85°, karena θ_mar keluar 0°.
+- Akibatnya IoU mode `mar` hanya 0,85 dan 0,92, padahal dengan θ yang benar 0,97–0,98.
+- Pada kotak ≥ 20 × 14, galatnya ≤ 0,7°.
+- Ini batas θ minAreaRect untuk bangunan kecil. Batas yang sama berlaku untuk label θ (§3.3), dan ini bagian dari
+  alasan N1.
