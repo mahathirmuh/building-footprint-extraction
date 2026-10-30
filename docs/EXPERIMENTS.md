@@ -128,6 +128,7 @@ citra (CPU 1 thread). Catat nama GPU/CPU. Angka efisiensi pembanding dari paper 
 
 Aturan ini ditetapkan sebelum ada hasil apa pun. Kalau ingin mengubahnya, lakukan **sebelum Fase 3** (sebelum angka
 HiSup di data bersih dihitung), dengan alasan tertulis di `docs/progress.md`. Setelah itu tidak boleh diubah.
+Dikonfirmasi tanpa perubahan saat Fase 3 dimulai (30 Okt 2026), jadi sejak itu terkunci.
 
 1. **N1 didukung** bila di strata padat `crowdai/test`, FULL-P0 lebih baik dari B5 pada `PoLiS_paired` **dan**
    `MTA_inst` (keduanya dihitung pada GT yang ter-match oleh kedua metode), CI 95% bootstrap selisih berpasangan tidak

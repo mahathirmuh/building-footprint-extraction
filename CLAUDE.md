@@ -53,7 +53,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
 - Fase 0 selesai (kerangka repo, config, paths, fixture sintetis; lihat `docs/progress.md`). Fase 1 selesai dan
   disetujui (29 Okt 2026): split dan strata kepadatan CrowdAI dan WHU (opsi R, `docs/DATA.md` §3.2) dibekukan.
   Fase 2 selesai dan disetujui (30 Okt 2026): label diturunkan saat training; prior dibekukan dan di-cache untuk
-  semua split. Fase 3 (pipeline evaluasi) berikutnya. Belum ada model.
+  semua split. Fase 3 (pipeline evaluasi) berjalan. Belum ada model.
 
 ## Cara bekerja di proyek ini
 
@@ -262,7 +262,7 @@ python scripts/tables.py && python scripts/figures.py
   15, 31, 45, 61, 75, 91, 105, 121 px (SE garis harus ganjil). Radius kontak r dan bobot kelas kontak dibahas di
   Fase 5, karena kontak hanya ±0,01% piksel bangunan di kedua dataset (`docs/progress.md` Fase 2).
 - Kriteria keputusan di `docs/EXPERIMENTS.md` §8 (termasuk ambang "mendekati SOTA" ≤ 3 AP dan aturan pemilihan FULL
-  final) sudah dibekukan. Kalau mau diubah, ubah **sebelum Fase 3** dan tulis alasannya; setelah itu tidak boleh.
+  final) dibekukan, lalu dikonfirmasi tanpa perubahan saat Fase 3 dimulai (30 Okt 2026). Sejak itu terkunci.
 - Sitasi yang perlu dicek: Dahatonde dkk. (2024) [lengkapi]; Huang & Zhang (2011) halaman/DOI; halaman Pix2Poly
   (README repo menyebut WACV 2025 hlm. 8473–8482, slide menulis 8484–8493); paper deduplikasi Adimoolam dkk.
   (README repo: Oral CVPR 2026, arXiv 2304.02296).

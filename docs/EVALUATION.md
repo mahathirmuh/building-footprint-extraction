@@ -47,9 +47,10 @@ Dibaca dari kode Pix2Poly (`eval/hisup_eval_utils/metrics/`) dan pycocotools, 28
   sulit tidak dihukum. Selain itu `mask_gti`/`N_GT` tidak di-reset, sehingga pada citra yang punya prediksi tetapi tanpa
   anotasi GT nilainya basi (atau `UnboundLocalError` bila itu citra pertama). Fungsinya juga hanya mencetak, tidak
   me-return nilai.
-  - `CIoU_p2p` = aturan di atas dengan `mask_gti`/`N_GT` di-reset per citra. Di WHU protokol A ada patch yang tidak
-    punya anotasi GT sama sekali (patch dengan > 5 piksel bangunan yang semua poligonnya terbuang filter,
-    `docs/DATA.md` §3.2), jadi reset bisa sedikit mengubah angka dibanding skrip asli. (Koreksi 28 Okt 2026: semula
+  - `CIoU_p2p` = aturan di atas dengan `mask_gti`/`N_GT` di-reset per citra. Di WHU (opsi R) ada patch yang tidak
+    punya anotasi GT sama sekali (test: 227 patch di GT `p2p`, 246 di GT utama; patch dengan > 5 piksel bangunan yang
+    semua poligonnya terbuang filter, `docs/DATA.md` §3.2), jadi reset bisa sedikit mengubah angka dibanding skrip
+    asli. (Koreksi 28 Okt 2026: semula
     ditulis bahwa setiap patch WHU punya minimal satu anotasi.)
   - `CIoU` (utama) = rumus yang sama atas **semua** citra split: tanpa prediksi dan GT tidak kosong → 0; keduanya
     kosong → 1.
@@ -146,6 +147,13 @@ Ubah GT menjadi file prediksi (skor 1). Harus menghasilkan: AP = 100 (±0,1); AP
 (semua citra 0), sehingga pembungkus mengembalikan `None` dengan `PoLiS_valid_images = 0`, bukan error;
 `merge_rate` dan `split_rate` = 0 kecuali di tempat poligon GT saling tumpang tindih (laporkan jumlahnya).
 
+**Ring GT berluas nol** (CrowdAI: 0,64% anotasi train, 0,68% val; `docs/DATA.md` §2.1) mendapat IoU 0 bahkan dengan
+dirinya sendiri di pycocotools, jadi tidak bisa dicocokkan oleh metode apa pun. GT **tidak diubah** (protokol resmi,
+sama dengan evaluasi HiSup; diputuskan 30 Okt 2026). Karena itu uji ini dijalankan dua kali:
+- tanpa ring berluas nol (di GT maupun prediksi): semua target di atas berlaku, termasuk AP = 100 (±0,1);
+- dengan GT apa adanya: jumlah GT yang tidak ter-match harus sama dengan jumlah ring berluas nol, dan semua GT lain
+  ter-match dengan IoU 1. Selisih AP dari 100 dilaporkan.
+
 Tes sintetis:
 - Persegi sejajar sumbu yang digeser d px searah x → `PoLiS` = `PoLiS_paired` = 0,4·d. Dua verteks di tiap sisi
   berjarak d, sehingga totalnya 4d; dibagi 2·5 karena titik penutup ikut di penyebut (§2.2). Definisi asli memberi d/2.
@@ -168,7 +176,9 @@ Tes sintetis:
 File prediksi rilisan HiSup di **val penuh** (`val_full`) dievaluasi dengan pipeline kita. AP harus berada dalam ±0,3
 poin dari angka paper (79,4); AP_boundary dan PoLiS dibandingkan dengan tabel paper HiSup (salin dari PDF, cantumkan
 nomor tabel). Bila tidak cocok, periksa versi pycocotools, file anotasi yang dipakai (`annotation.json` vs
-`annotation-small.json`), dan pemakaian skor. Setelah lolos, jalankan di `crowdai/test`.
+`annotation-small.json`), dan pemakaian skor. Setelah lolos, jalankan di `crowdai/val_clean` (total + per strata).
+Prediksi HiSup hanya ada untuk val, dan `test` kita diambil dari train yang dipakai melatih HiSup. (Dikoreksi 30 Okt
+2026; semula `crowdai/test`, sisa dari sebelum opsi E.)
 
 ### 6.5 (Opsional) Reproduksi Pix2Poly di WHU (Fase 8)
 Bila checkpoint atau prediksi rilisan dipakai, `CIoU_p2p` test terhadap GT `p2p` harus mendekati 81,63. Test kita

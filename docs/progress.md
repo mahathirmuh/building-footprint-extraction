@@ -471,3 +471,21 @@ Pemeriksaan sesudah run (skrip sekali jalan, di luar repo):
 - Fraksi piksel kontak dan fraksi piksel ber-θ valid per dataset dilaporkan (tabel statistik label di atas).
 
 **Fase 2 disetujui dan ditutup 30 Okt 2026.** Berikutnya Fase 3 (pipeline evaluasi).
+
+## Fase 3 — Pipeline evaluasi (sedang berjalan)
+
+**Keputusan (30 Okt 2026, disetujui bersama rencana Fase 3):**
+1. Ring GT berluas nol **tidak diubah** (protokol resmi, sama dengan evaluasi HiSup). Uji §6.1 dijalankan dengan dan
+   tanpa ring itu (`docs/EVALUATION.md` §6.1 diperjelas).
+2. HiSup dijalankan di `crowdai/val_clean`, bukan `crowdai/test` (`docs/EVALUATION.md` §6.4 dikoreksi). Kalimat lama
+   adalah sisa dari sebelum opsi E: prediksi HiSup hanya ada untuk val, dan `test` kita diambil dari train yang dipakai
+   melatih HiSup.
+3. Kriteria `docs/EXPERIMENTS.md` §8 dikonfirmasi tanpa perubahan, jadi sejak Fase 3 dimulai terkunci.
+
+**Temuan saat menyiapkan rencana** (30 Okt 2026, pycocotools 2.0.11):
+- Ring berluas nol mendapat IoU 0 bahkan dengan dirinya sendiri, jadi tidak bisa dicocokkan oleh metode apa pun.
+- Poligon dengan tepat 4 koordinat dibaca `frPyObjects` sebagai bbox lalu crash (`TypeError`), jadi pemeriksa
+  prediksi harus menolaknya.
+- GT WHU (opsi R): id anotasi mulai dari 0. Anotasi negatif (`segmentation` kosong) ada di 10.366 / 3.765 / 6.153
+  patch train / val / test (GT utama). Patch tanpa anotasi sama sekali di test: 246 (GT utama) dan 227 (`p2p`). GT
+  WHU test tidak punya ring ≤ 4 koordinat atau berluas nol.
