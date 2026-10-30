@@ -15,13 +15,18 @@ import numpy as np
 from scipy import ndimage as ndi
 
 
-def pixel_theta(rows: np.ndarray, cols: np.ndarray) -> float:
-    """θ in [0, π/2) of a set of pixels, in image coordinates (x = column, y = row pointing down)."""
-    points = np.column_stack([cols, rows]).astype(np.float32)
-    box = cv2.boxPoints(cv2.minAreaRect(points))
+def points_theta(points: np.ndarray) -> float:
+    """θ in [0, π/2) of (N, 2) points (x, y) in image coordinates (y pointing down): the longer side of the
+    cv2.minAreaRect box. Also used for the θ of GT polygons in evaluation (densepoly.eval.orientation)."""
+    box = cv2.boxPoints(cv2.minAreaRect(np.asarray(points, np.float32)))
     side_a, side_b = box[1] - box[0], box[2] - box[1]
     ex, ey = side_a if np.hypot(*side_a) >= np.hypot(*side_b) else side_b
     return float(np.arctan2(ey, ex) % (np.pi / 2))
+
+
+def pixel_theta(rows: np.ndarray, cols: np.ndarray) -> float:
+    """θ in [0, π/2) of a set of pixels, in image coordinates (x = column, y = row pointing down)."""
+    return points_theta(np.column_stack([cols, rows]))
 
 
 def instance_pixels(instance_map: np.ndarray):
