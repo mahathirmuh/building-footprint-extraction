@@ -472,7 +472,7 @@ Pemeriksaan sesudah run (skrip sekali jalan, di luar repo):
 
 **Fase 2 disetujui dan ditutup 30 Okt 2026.** Berikutnya Fase 3 (pipeline evaluasi).
 
-## Fase 3 — Pipeline evaluasi (sedang berjalan)
+## Fase 3 — Pipeline evaluasi (selesai dan disetujui 30 Oktober 2026)
 
 **Keputusan (30 Okt 2026, disetujui bersama rencana Fase 3):**
 1. Ring GT berluas nol **tidak diubah** (protokol resmi, sama dengan evaluasi HiSup). Uji §6.1 dijalankan dengan dan
@@ -708,3 +708,12 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
     laptop memakai baterai.
   - Tabel §6.4 kemudian dirender ulang dari JSON yang sama dengan opsi baru `--render-only`, supaya PoLiS ditulis
     0,7261, bukan 0,73. Aturannya: satu desimal lebih banyak daripada paper.
+
+**Status kriteria "Selesai jika" Fase 3 (30 Okt 2026): terpenuhi.**
+- Uji kewarasan §6.1, §6.2, §6.4, dan §6.6 lolos: 53 dari 53 (`docs/sanity_report.md`). Tes lolos (408).
+- AP HiSup di val penuh 79,43, dalam ±0,3 dari angka paper (79,4).
+- Metrik HiSup di `crowdai/val_clean`, total dan per strata, tersedia di
+  `outputs/metrics/crowdai/hisup_release/ref/val_clean.json`.
+- Perubahan aturan longgar di langkah 7 disampaikan bersama laporan penutupan, dan tidak ada keberatan.
+
+**Fase 3 disetujui dan ditutup 30 Okt 2026.** Berikutnya Fase 4 (post-processing dan baseline klasik B0).
