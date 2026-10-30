@@ -605,3 +605,20 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
   - AP = AP_boundary = 0,989, karena GT bermask kosong tidak bisa cocok; PoLiS `null`; MTA 0,003°;
   - ekstrapolasi untuk val penuh: ±50–60 menit, dengan AP_boundary single-core dan metrik vendor sebagai bagian
     terlama.
+
+**Langkah 5 — bootstrap (30 Okt 2026)** (`pytest -q` → 388 tes lolos):
+- `eval/stats.py`:
+  - `load_run` membaca tabel dan cache sebuah run;
+  - `metric_values` menghitung metrik untuk setiap baris bobot resampel;
+  - `compare` memberi Δ per seed, rata-ratanya, dan CI 95%;
+  - `compare_strata` memberi Δpadat − Δjarang dengan bootstrap berstrata;
+  - `seed_summary` memberi rata-rata ± SD.
+- Tes (`tests/test_bootstrap.py`, 32 tes):
+  - bobot identitas mereproduksi nilai `run_eval`, baik total maupun per strata (AP identik persis);
+  - metode dibanding dirinya sendiri memberi Δ = 0 dengan CI [0, 0];
+  - GT mengalahkan prediksi adegan uji pada AP dengan CI di atas 0;
+  - metrik berpasangan membuang GT yang tidak ter-match oleh salah satu metode;
+  - selisih berstrata tepat pada kasus yang dirancang;
+  - replikasi dengan penyebut kosong dihitung, tetapi tidak dipakai untuk CI.
+- Waktu di CrowdAI test (diukur pada output uji asap langkah 4): 1.000 replikasi metrik rasio < 0,1 s; AP ±55 ms per
+  replikasi, sehingga satu perbandingan AP 3 seed × 2 metode makan ±5,5 menit (±2,5 menit di strata padat).

@@ -161,6 +161,15 @@ Rincian implementasi (`eval/instance.py`, 30 Okt 2026):
   - Metrik per citra dan berpasangan: rata-rata ulang dari nilai per citra/per pasangan yang tersimpan (§3).
 - **Δpadat − Δjarang:** bootstrap berstrata, yaitu citra disampel ulang di dalam tiap strata secara terpisah, lalu
   dihitung (Δ di padat) − (Δ di jarang).
+- Implementasi (`eval/stats.py`, 30 Okt 2026):
+  - Satu replikasi disimpan sebagai vektor "berapa kali tiap citra terambil". Matriks bobot yang sama dipakai untuk
+    semua metode, seed, dan metrik.
+  - Metrik rasio = Σ bobot · pembilang per citra / Σ bobot · penyebut per citra, diambil dari tabel `run_eval`. Metrik
+    berpasangan hanya memakai GT yang ter-match di kedua run (per pasangan seed).
+  - `compare` mengembalikan Δ per seed, rata-ratanya, CI 95% persentil, dan jumlah replikasi yang penyebutnya kosong.
+    `compare_strata` melakukan hal yang sama untuk Δpadat − Δjarang.
+  - Waktu di laptop ini, CrowdAI test: 1.000 replikasi metrik rasio < 0,1 s; AP ±55 ms per replikasi (±25 ms di
+    strata padat), sehingga satu perbandingan AP 3 seed × 2 metode makan ±5,5 menit.
 - Hanya perbandingan di `docs/EXPERIMENTS.md` §8 yang menjadi klaim. Perbandingan lain ditandai eksploratif.
 
 ## 5. Skema JSON metrik
