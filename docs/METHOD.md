@@ -218,11 +218,15 @@ dan `watershed` dengan konektivitas bawaannya, 1).
    beri label.
 4. `inst = watershed(−P_b, markers=M_label, mask=F)` (`skimage.segmentation.watershed`).
 5. Komponen `F` yang tidak terjangkau marker (`F & (inst == 0)`) → diberi label sebagai instance baru.
-6. Setiap instance harus terhubung-4. Bila tidak, pecah per komponen, lalu buang bagian < `A_min` px (default 10).
+6. Setiap instance harus terhubung-4. Bila tidak, pecah per komponen. Lalu buang setiap instance < `A_min` px
+   (default 10), termasuk instance yang tidak dipecah. `A_min` adalah luas minimum instance di semua model, sesuai
+   grid §10 dan `docs/EXPERIMENTS.md` §4, yang menyebut `A_min` sebagai satu-satunya parameter model biner.
+   (Diperjelas 30 Okt 2026; kalimat lama hanya menyebut bagian hasil pemecahan.)
 7. Skor instance = rata-rata `1 − P_bg` di piksel instance.
 
 ### 6.3 Model biner (B1–B3)
-Instance = komponen terhubung-4 dari `σ(logit) > 0,5`; skor = rata-rata probabilitas di instance.
+Instance = komponen terhubung-4 dari `σ(logit) > 0,5`, tanpa instance < `A_min` px; skor = rata-rata probabilitas di
+instance.
 
 ### 6.4 Orientasi instance dari head (FULL)
 Normalisasi dulu vektor tiap piksel: `u_p = (ŝ, ĉ)_p / ‖(ŝ, ĉ)_p‖`, karena keluaran tanh dua kanal bukan vektor

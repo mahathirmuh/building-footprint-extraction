@@ -764,3 +764,21 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
 - Pada kotak ≥ 20 × 14, galatnya ≤ 0,7°.
 - Ini batas θ minAreaRect untuk bangunan kecil. Batas yang sama berlaku untuk label θ (§3.3), dan ini bagian dari
   alasan N1.
+
+**Langkah 3 — marker, watershed, dan instance (30 Okt 2026):** `postproc/markers.py` dan `postproc/watershed.py`
+(METHOD §6.2–6.3). Tes sintetis (10):
+- marker dipotong ke F sebelum diberi label, sehingga marker di celah tidak menyatukan dua rumah;
+- marker < `m_min` dibuang, tetapi komponennya tetap jadi instance;
+- pita kontak memisahkan dua rumah berdempetan tepat di dindingnya;
+- komponen F tanpa marker tetap jadi instance;
+- instance dipecah di sentuhan diagonal;
+- skor = rata-rata per instance;
+- model biner memakai komponen terhubung-4;
+- probabilitas sempurna dari 5 adegan sintetis memberi kembali setiap rumah satu-satu dengan IoU ≥ 0,99.
+
+Yang terakhir tidak identik per piksel. Di pita kontak yang datar pada dinding bersama yang miring, watershed membagi
+piksel menurut jarak ke marker, sehingga 1–2 piksel tangga raster bisa masuk ke tetangga.
+
+**Klarifikasi `A_min` (METHOD §6.2 langkah 6 dan §6.3):** `A_min` dibuang dari setiap instance, bukan hanya dari
+bagian hasil pemecahan. Kalimat lama hanya menyebut bagian pecahan. Tafsiran ini mengikuti grid §10 dan
+EXPERIMENTS §4, yang menyebut `A_min` sebagai satu-satunya parameter model biner.
