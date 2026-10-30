@@ -909,3 +909,40 @@ berlaku.
   - 60.559 prediksi, 13.191 fallback (21,8%).
 
   Angka `test` dekat dengan ini, jadi tidak ada tanda tuning berlebih.
+
+**Langkah 6e — oracle §6.3, angka resmi (30 Okt 2026):** `scripts/sanity_checks.py --section 6.3 --workers 12` pada
+commit `550f81e`, 9,3 menit. Hasilnya di `docs/sanity_report.md` dan `outputs/metrics/crowdai/oracle_*/ref/`.
+Laporan kewarasan kini **55 dari 55 uji lolos**. Angkanya sama dengan pratinjau.
+- (a) Bolak-balik di `val_tune_sub`:
+  - 8.444 anotasi bermask tidak kosong, IoU rata-rata 0,997561 (patokan ≥ 0,99);
+  - 101 anotasi di bawah 1, dan semuanya terjelaskan (skrip di luar repo). 99 mask terdiri dari beberapa bagian
+    terhubung-4, sehingga hanya ring terbesar yang disimpan, sama seperti instance. 4 mask berlubang, padahal
+    poligon COCO tidak punya lubang. Dua anotasi masuk kedua kategori.
+  - IoU terkecil 0,295 berasal dari mask 298 px yang terpecah menjadi 5 bagian.
+- (b) dan (c), AP dalam poin persen:
+
+| Run | AP | AP_boundary | C-IoU | PoLiS_paired | MTA_inst (°) | recall@0,5 | fallback |
+|---|---|---|---|---|---|---|---|
+| (b) mask GT → kontur persis | 98,09 | 98,07 | 48,32 | 0,284 | 27,28 | 99,27% | 0 |
+| (b) mask GT → `raw` | 93,41 | 92,34 | 95,24 | 0,293 | 14,72 | 98,25% | 0 |
+| (b) mask GT → `mar` | 92,41 | 81,52 | 86,66 | 0,544 | 21,13 | 99,24% | 181 |
+| (b) mask GT → `theta` (θ poligon GT) | 92,80 | 82,31 | 86,94 | 0,532 | 20,32 | 99,24% | 166 |
+| (c) 3 kelas GT → watershed → kontur persis | 96,53 | 96,51 | 48,28 | 0,283 | 27,33 | 98,56% | 0 |
+| (c) 3 kelas GT → watershed → `raw` | 92,54 | 91,66 | 95,38 | 0,293 | 14,74 | 97,78% | 0 |
+
+- Uji (c) lolos: AP 96,53 (patokan ≥ 95). Marker dan watershed dari probabilitas sempurna kehilangan 1,56 poin AP
+  dibanding mask GT (98,09).
+- Catatan untuk fase berikutnya:
+  - Kontur persis punya C-IoU rendah (48,3), karena jumlah verteks tangga raster jauh di atas GT. MTA_inst-nya juga
+    paling tinggi (27,3°).
+  - Di oracle, `raw` memberi MTA_inst terendah (14,7°), lebih rendah dari `mar` (21,1°) dan `theta` (20,3°). Sebabnya
+    `raw` hanyalah GT yang disederhanakan. Ini batas atas tahap poligon, bukan uji N1: N1 diuji pada prediksi model
+    (B5 → B5′ → FULL-P0).
+  - θ dari poligon GT (`theta`) hanya sedikit di atas `mar`: AP +0,39, PoLiS_paired −0,013, dan fallback 166 lawan
+    181.
+
+**Status kriteria "Selesai jika" Fase 4 (30 Okt 2026): terpenuhi.**
+- Tes unit lolos: 472 tes, termasuk tes kriteria regularisasi (langkah 2) dan tes pembungkus 5.
+- Uji oracle §6.3 lolos: (a) 0,997561 ≥ 0,99 dan (c) 96,53 ≥ 95. Laporan kewarasan 55 dari 55.
+- Metrik B0 di `crowdai/test`, total dan per strata, tersedia di `outputs/metrics/crowdai/b0/ref/test.json`.
+  Waktu proses per citra dari RGB: median 0,491 s (langkah 6d).

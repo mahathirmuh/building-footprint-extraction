@@ -5,7 +5,8 @@ Dibuat otomatis oleh `scripts/sanity_checks.py` dari `outputs/metrics/sanity_rep
 - Dibuat: 2026-10-30T14:13:47+08:00, commit `3c65809fc85a99516100f977c0aa1a4b01e7e7cf`.
 - Mesin: Windows-11-10.0.26200-SP0, prosesor Intel64 Family 6 Model 170 Stepping 4, GenuineIntel.
 - Versi: python 3.12.0, geos 3.14.1, numpy 2.5.4, pandas 3.1.0, pyarrow 26.0.0, scipy 1.18.1, shapely 2.2.0, pycocotools 2.0.11, opencv-python-headless 4.14.0.94, multiprocess 0.70.19.
-- **Hasil: 53 dari 53 uji lolos.**
+- Dijalankan ulang tersendiri: §6.3 pada 2026-10-30T22:10:38+08:00, commit `550f81ee6679aec42f883d26de7dbebed9ed5e73`.
+- **Hasil: 55 dari 55 uji lolos.**
 
 ## §6.1 GT sebagai prediksi
 
@@ -99,6 +100,28 @@ Tes unit (data sintetis) yang dijalankan skrip ini:
 - `tests/test_run_eval.py::test_evaluating_twice_gives_identical_numbers`: lolos
 
 - crowdai/val_clean: evaluasi dua kali identik: lolos
+
+## §6.3 Oracle post-processing
+
+Di crowdai/val_tune_sub (1000 citra, 8499 anotasi GT), semua prediksi berskor 1.
+
+(a) Bolak-balik poligon GT → raster → kontur marching squares → raster: 8444 anotasi bermask tidak kosong, IoU rata-rata 0.997561, terkecil 0.295302; 101 di bawah 1, 86 di bawah 0,99.
+
+(b) Peta instance GT (label training) dijadikan poligon: kontur marching squares persis (batas atas tahap poligon) dan ketiga mode. (c) Peta 3 kelas GT dijadikan probabilitas sempurna → marker → watershed → kontur persis, sehingga yang diuji hanya tahap instance; varian `raw` ditampilkan sebagai informasi, karena DP-nya sendiri sudah menurunkan AP (bandingkan dua baris `raw`). Parameter: contact_radius_px 2, tau 0.4, marker_min_px 8, instance_min_px 10, raw_eps_px 1.0, rect_iou 0.9, dp_k 0.04, snap_deg 15.0, oblique_min_px 6.0, edge_min_px 2.0.
+
+| Run | AP | AP50 | AP75 | AP_boundary | C-IoU | PoLiS_paired | MTA_inst (°) | recall@0,5 | merge | fallback |
+|---|---|---|---|---|---|---|---|---|---|---|
+| (b) mask GT → kontur persis | 0.980878 | 0.98937 | 0.976566 | 0.980679 | 0.483181 | 0.283649 | 27.2833 | 0.992705 | 0.000705965 | 0 |
+| (b) mask GT → `raw` | 0.934114 | 0.971293 | 0.954238 | 0.923413 | 0.952363 | 0.293192 | 14.7207 | 0.982469 | 0.000705965 | 0 |
+| (b) mask GT → `mar` | 0.924113 | 0.989117 | 0.974052 | 0.815193 | 0.866551 | 0.544365 | 21.1317 | 0.992352 | 0.000705965 | 181 |
+| (b) mask GT → `theta` (θ poligon GT) | 0.928044 | 0.989117 | 0.973809 | 0.823059 | 0.869373 | 0.531586 | 20.3154 | 0.992352 | 0.000705965 | 166 |
+| (c) 3 kelas GT → watershed → kontur persis | 0.965314 | 0.970681 | 0.967889 | 0.965085 | 0.4828 | 0.282676 | 27.3283 | 0.985645 | 0.000941287 | 0 |
+| (c) 3 kelas GT → watershed → `raw` | 0.925372 | 0.954242 | 0.948462 | 0.916577 | 0.953817 | 0.292992 | 14.738 | 0.977762 | 0.000941287 | 0 |
+
+| Uji | Nilai | Target | Hasil |
+|---|---|---|---|
+| (a) IoU bolak-balik rata-rata | 0.997561 | ≥ 0.99 | lolos |
+| (c) AP marker + watershed dari probabilitas sempurna (kontur persis) | 0.965314 | ≥ 0.95 | lolos |
 
 ## §6.4 Reproduksi HiSup
 
