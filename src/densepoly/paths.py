@@ -148,9 +148,17 @@ def pred_file(dataset: str, exp: str, run: str, split: str) -> Path:
     return out_root() / "preds" / dataset / exp / run / f"{split}.json"
 
 
-def metrics_file(dataset: str, exp: str, run: str, split: str) -> Path:
+def metrics_file(dataset: str, exp: str, run: str, split: str, variant: str | None = None) -> Path:
+    """Metrics of one evaluation (docs/EVALUATION.md §5); variant: the GT variant evaluated against (gt_file)."""
+    return metrics_artifact(dataset, exp, run, split, "json", variant)
+
+
+def metrics_artifact(dataset: str, exp: str, run: str, split: str, suffix: str, variant: str | None = None) -> Path:
+    """A file next to metrics_file, e.g. suffix "per_image.parquet" for the tables of the bootstrap."""
     _check(dataset, split)
-    return out_root() / "metrics" / dataset / exp / run / f"{split}.json"
+    _check_variant(dataset, variant)
+    name = split if variant is None else f"{split}_{variant}"
+    return out_root() / "metrics" / dataset / exp / run / f"{name}.{suffix}"
 
 
 def gt_file(dataset: str, split: str, variant: str | None = None) -> Path:
