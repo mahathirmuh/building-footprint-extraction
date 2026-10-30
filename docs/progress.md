@@ -588,3 +588,20 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
 - GT CrowdAI sendiri punya poligon tidak valid (memotong dirinya sendiri; 442 di test) dan ring terbuka (306). Ini
   sifat GT resmi, tercatat oleh pemeriksa longgar.
 - Waktu dengan 12 worker untuk instance: CrowdAI test 8 s (piksel) + 25 s (instance); WHU test 28 s + 107 s.
+
+**Langkah 4 — `run_eval` dan `scripts/evaluate.py` (30 Okt 2026)** (`pytest -q` → 357 tes lolos):
+- `eval/run_eval.py` menjalankan, berurutan: pemeriksaan prediksi; AP (pycocotools) dan AP_boundary (boundary-iou-api
+  vendor, batas ditambahkan dengan fungsi single-core-nya); metrik piksel, instance, dan vendor. Hasilnya JSON §5,
+  tabel parquet per citra dan per pasangan, serta cache `evalImgs`.
+- `eval/stats.py` menjalankan `accumulate`/`summarize` asli pycocotools pada `evalImgs` yang diindeks ulang untuk daftar
+  citra apa pun. Tes membuktikan:
+  - hasilnya identik dengan COCOeval, baik di semua citra maupun di subset;
+  - citra ganda setara dengan salinannya, sesuai kebutuhan bootstrap;
+  - AP_boundary identik dengan `accumulate` vendor (`np.float` ditambal hanya di dalam tes).
+- Strata memakai indeks utama dan sekunder dari file kepadatan beku. Metrik vendor per strata adalah nilai per citra
+  yang di-pool ulang dengan aturan skripnya, dan di semua citra hasilnya diperiksa otomatis terhadap angka skrip vendor.
+- Uji asap di data asli (GT sebagai prediksi, mode longgar, folder output sementara):
+  - CrowdAI `val_clean` selesai dalam 22 s dan `test` dalam 153 s;
+  - AP = AP_boundary = 0,989, karena GT bermask kosong tidak bisa cocok; PoLiS `null`; MTA 0,003°;
+  - ekstrapolasi untuk val penuh: ±50–60 menit, dengan AP_boundary single-core dan metrik vendor sebagai bagian
+    terlama.

@@ -154,6 +154,10 @@ Rincian implementasi (`eval/instance.py`, 30 Okt 2026):
     resampling berubah menjadi subsampel ±63% tanpa pengembalian. Jalankan `evaluate()` **sekali**, lalu implementasikan
     ulang langkah `accumulate()` atas daftar indeks citra yang memuat duplikat, memakai `evalImgs` yang sudah di-cache.
     Tes: resampel identitas harus memberi AP yang sama persis dengan `stats[0]`.
+    Implementasi (`eval/stats.py`, 30 Okt 2026): `evalImgs` diindeks ulang untuk daftar citra itu, lalu `accumulate()`
+    dan `summarize()` asli pycocotools dijalankan tanpa diubah. Hasilnya identik dengan COCOeval pada semua citra
+    maupun subset, dan citra ganda setara dengan salinannya (diuji). AP_boundary memakai cara yang sama atas `evalImgs`
+    boundary-iou-api.
   - Metrik per citra dan berpasangan: rata-rata ulang dari nilai per citra/per pasangan yang tersimpan (§3).
 - **Δpadat − Δjarang:** bootstrap berstrata, yaitu citra disampel ulang di dalam tiap strata secara terpisah, lalu
   dihitung (Δ di padat) − (Δ di jarang).
@@ -183,6 +187,25 @@ Rincian implementasi (`eval/instance.py`, 30 Okt 2026):
 Simpan juga `per_image.parquet` (id, strata, IoU, C-IoU, flag punya prediksi, PoLiS citra + valid, MTA jumlah + banyak,
 n_pred, n_gt) dan `pairs.parquet` (id citra, id GT, id prediksi, IoU, PoLiS pasangan, MTA pasangan, galat θ) untuk
 bootstrap. Cache `evalImgs` COCOeval disimpan sebagai pickle di folder yang sama.
+
+Implementasi (`eval/run_eval.py`, `scripts/evaluate.py`; 30 Okt 2026):
+- Nama file: `<split>[_<variant>].json`. Di sebelahnya ada `<split>[_<variant>].per_image.parquet`, `.pairs.parquet`,
+  dan `.evalimgs.pkl` (cache AP dan AP_boundary; tidak dibuat untuk val penuh).
+- Field tambahan:
+  - di tingkat atas: `variant`, `gt_file`, `pred_file`, `pred_check` (mode ketat/longgar dan jumlah tiap masalah),
+    `coco_stats` (12 angka COCO untuk segm dan boundary), dan `seconds`;
+  - di `overall` dan tiap strata: `N_ratio_p2p`, `MTA_values`, `n_images_with_pred`, `n_gt`, `n_pairs`, dan
+    `n_pairs_without_mta`.
+- `per_stratum` memuat strata utama (`jarang`, `sedang`, `padat`, `kosong`) dan indeks sekunder (`bersentuhan`,
+  `tidak_bersentuhan`).
+- Satuan: AP, IoU, C-IoU, dan semua rate berupa pecahan [0, 1]; PoLiS dalam piksel; MTA dan galat θ dalam derajat.
+- Kolom `per_image.parquet`: `image_id`, `stratum`, `stratum_secondary`, `n_pred`, `n_gt`, `gt_px`, `pred_px`,
+  `inter_px`, `iou`, `ciou`, `ciou_p2p`, `n_vertices`, `n_vertices_gt`, `biou`, `polis_image` (0 = dilewati skrip
+  vendor), `mta_sum`, `mta_count`, `n_matched`, `n_merged`, `n_split`.
+- Kolom `pairs.parquet`: `image_id`, `gt_id`, `pred_index`, `score`, `iou`, `polis`, `mta`, `theta_err`,
+  `vertices_gt`, `vertices_pred`, `vertex_tp`.
+- Metrik vendor per strata = nilai per citra yang di-pool ulang dengan aturan skripnya. Di semua citra, hasil pooling
+  ulang itu diperiksa otomatis terhadap angka skrip vendor sendiri.
 
 ## 6. Uji kewarasan (wajib lolos sebelum angka apa pun dilaporkan)
 
