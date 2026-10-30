@@ -117,6 +117,15 @@ def test_gt_as_prediction_end_to_end(env):
     assert (o["recall_inst50"], o["merge_rate"], o["split_rate"]) == (1.0, 0.0, 0.0)
 
 
+def test_tuning_metrics_equal_those_of_the_full_evaluation(env):
+    gt, splits = env
+    results = predictions()
+    record = run_eval.evaluate("crowdai", "test", "toy", "ref", results, splits_dir=splits)
+    light = run_eval.tuning_metrics(gt, results)
+    assert light["AP"] == record["overall"]["AP"]
+    assert light["PoLiS_paired"] == pytest.approx(record["overall"]["PoLiS_paired"], abs=1e-12)
+
+
 def test_evaluating_twice_gives_identical_numbers(env):
     """§6.2: everything but provenance and timings is identical."""
     _, splits = env

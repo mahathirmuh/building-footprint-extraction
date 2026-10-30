@@ -265,6 +265,15 @@ def summarize_empty(image_ids: list[int], table: pd.DataFrame) -> dict:
     }
 
 
+def tuning_metrics(gt: dict, results: list[dict]) -> dict:
+    """AP and PoLiS_paired, the two numbers the post-processing tuning chooses with (docs/EXPERIMENTS.md §4), from the
+    code of evaluate() but without the other metrics and in one process: the tuning runs grid points in parallel."""
+    kept, _ = coco_io.check_predictions(results, gt, strict=True)
+    ap = stats.coco_stats(stats.eval_cache(segm_evaluation(gt, kept)))["AP"]
+    gt_rows, pair_rows = instance.instance_metrics(gt, kept)
+    return {"AP": ap, "PoLiS_paired": instance.summarize_instance(gt_rows, pair_rows)["PoLiS_paired"]}
+
+
 def _relative(path: Path | None) -> str | None:
     if path is None:
         return None

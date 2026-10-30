@@ -814,3 +814,23 @@ naik-turun sepersekian piksel (6,083 lawan 6,0), sehingga rumah 40 × 12 px yang
 pun nilai h-nya. Marker sekarang dihitung dengan definisi buku teks, yaitu maksimum regional rekonstruksi dilasi
 `dist − h` di bawah `dist` (*extended maxima*), dan dicatat di METHOD §8. Konektivitas 4 dari klarifikasi (a) tetap
 berlaku.
+
+**Langkah 6b — alat prediksi dan tuning (30 Okt 2026):**
+- `infer.py` dan `scripts/predict.py`: prediksi B0 per split, paralel per potongan citra dengan urutan tetap.
+  - Prediksi di `test` ditolak tanpa tuning beku, dan tidak menerima override `postproc`.
+  - `--time-sample N` mengukur detik per citra dari RGB, termasuk menghitung MBI, sekaligus memeriksa bahwa MBI yang
+    dihitung ulang sama dengan cache.
+- `tuning.py` dan `scripts/tune_postproc.py`: grid dua tahap EXPERIMENTS §4 dari `configs/postproc/grid.yaml`.
+  - Evaluasi ringan `run_eval.tuning_metrics` memberi AP dan PoLiS_paired yang identik dengan evaluasi penuh.
+  - Hasilnya dibekukan ke `configs/postproc/<dataset>/<exp>.yaml`, berisi nilai terpilih dan skor setiap titik grid.
+  - File beku tidak ditimpa tanpa `--force`.
+- `load_config` memuat tuning beku sebagai lapisan keempat, hanya bagian `postproc`-nya.
+- `postproc/oracle.py`: prediksi oracle §6.3 dari GT.
+- Pengukuran awal B0 di 100 citra `val_tune_sub` (`--dry-run`, tidak ada yang ditulis): tuning penuh 1.000 citra
+  diperkirakan ±29 menit dengan 12 worker, dan AP B0 di sampel itu ±0,1 poin.
+- Diagnosis B0 di 30 citra (skrip di luar repo):
+  - IoU piksel foreground hanya 0,25;
+  - 54,6 instance per citra, padahal GT 7,3;
+  - 18% rumah ditemukan dengan IoU ≥ 0,5.
+- Pemeriksaan visual: MBI hanya menangkap sisi atap yang terkena matahari dan melewatkan atap datar yang gelap. Kepingan
+  kecil muncul di pinggir atap. Jadi B0 memang lemah, bukan bug.

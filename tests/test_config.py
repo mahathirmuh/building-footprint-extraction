@@ -113,6 +113,21 @@ def test_names_must_match_the_files(tmp_path):
         load_config("toy", "e1", root=root)
 
 
+def test_frozen_tuning_merges_its_postproc_section_only(tmp_path):
+    base = BASE + "postproc:\n  tau: 0.4\n  b0: {t_min: 0.15}\n"
+    root = write_tree(tmp_path, base, "data: {name: toy}\n", "exp: e1\n")
+    tuned = root / "postproc" / "toy" / "e1.yaml"
+    tuned.parent.mkdir(parents=True)
+    tuned.write_text("postproc:\n  b0: {t_min: 0.1}\ntuning: {split: val_tune_sub, AP: 0.42}\n", encoding="utf-8")
+    cfg = load_config("toy", "e1", root=root)
+    assert (cfg.postproc.tau, cfg.postproc.b0.t_min) == (0.4, 0.1) and "tuning" not in cfg
+    assert load_config("toy", "e1", root=root, tuned=False).postproc.b0.t_min == 0.15
+    assert load_config("toy", "e1", ["postproc.tau=0.5"], root=root).postproc.tau == 0.5  # CLI still wins
+    tuned.write_text("postproc:\n  tauu: 0.3\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="tauu"):
+        load_config("toy", "e1", root=root)
+
+
 def test_cli_overrides():
     cfg = load_config("crowdai", "b4", ["train.lr=1e-3", "seed=2"])
     assert cfg.train.lr == pytest.approx(1e-3) and cfg.seed == 2
