@@ -268,7 +268,9 @@ def render_report(report: dict) -> str:
             f"### {part['case']}",
             "",
             f"{part['images']} citra, {part['annotations']} anotasi GT, {part['empty_masks']} GT bermask kosong. "
-            f"Pemeriksaan prediksi (ii): {part['pred_check_as_released']['dropped']} ring < 3 titik dibuang.",
+            f"Pemeriksaan prediksi (ii): {part['pred_check_as_released']['too_few_points']} ring dengan < 3 titik "
+            "berbeda (mask kosong bagi pycocotools, tidak dipakai PoLiS/MTA), "
+            f"{part['pred_check_as_released']['dropped']} ring tak terbaca dibuang.",
             "",
             "| Uji | Nilai | Target | Hasil |",
             "|---|---|---|---|",

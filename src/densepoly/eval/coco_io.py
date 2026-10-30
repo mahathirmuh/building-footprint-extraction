@@ -12,7 +12,7 @@ images without buildings) and the annotations pycocotools can evaluate:
 Predictions are COCO results with one ring each, closed like the GT (both datasets repeat the first vertex), a
 ``score`` and a ``bbox``: pycocotools ``loadRes`` reads polygon results only when they carry a bbox, and takes the bbox
 area as the detection area. check_predictions() enforces §1 strictly for our own outputs and leniently for released
-ones (HiSup), where only rings that pycocotools or shapely cannot read are dropped and the rest is counted.
+ones (HiSup), where only rings that pycocotools cannot read are dropped and the rest is counted.
 """
 
 from __future__ import annotations
@@ -36,8 +36,17 @@ from densepoly.utils.provenance import git_revision, timestamp
 
 REQUIRED_FIELDS = ("image_id", "category_id", "segmentation", "score", "bbox")
 OWN_FIELDS = ("theta_deg", "kappa")  # part of our prediction format, absent from released predictions
-# Problems check_predictions() counts; in strict mode each is an error, in lenient mode only too_few_points drops.
-PROBLEMS = ("too_few_points", "multi_ring", "closing_vertex", "out_of_frame", "bbox_mismatch", "zero_area", "invalid")
+# Problems check_predictions() counts; in strict mode each is an error, in lenient mode only unreadable drops.
+PROBLEMS = (
+    "unreadable",
+    "too_few_points",
+    "multi_ring",
+    "closing_vertex",
+    "out_of_frame",
+    "bbox_mismatch",
+    "zero_area",
+    "invalid",
+)
 
 
 def split_file_names(dataset: str, split: str, splits_dir: Path | None = None) -> list[str] | None:
@@ -205,9 +214,24 @@ def to_result(
     }
 
 
+def distinct_points(ring) -> int:
+    """Distinct vertices of a flat COCO ring (the repeated closing vertex is not counted twice)."""
+    return len(np.unique(np.reshape(np.asarray(ring, float), (-1, 2)), axis=0))
+
+
+def shapely_readable(results: list[dict]) -> list[dict]:
+    """Results whose ring shapely 2 can build as a polygon (≥ 3 distinct points), for polis.py and angle_eval.py.
+
+    The lenient check keeps rings such as [a, b, a] (6 numbers, 2 distinct points) because pycocotools reads them as
+    empty masks, as in the evaluation of whoever released them; shapely 2 refuses them."""
+    return [r for r in results if all(distinct_points(ring) >= 3 for ring in r["segmentation"])]
+
+
 def _ring_problems(rings: list, bbox, width: int, height: int, closed: bool) -> list[str]:
     xy = np.asarray(rings[0], float).reshape(-1, 2)
     problems = ["multi_ring"] if len(rings) > 1 else []
+    if any(len(ring) <= 4 for ring in rings):  # pycocotools reads 4 numbers as a bbox and fails on fewer
+        return [*problems, "unreadable"]
     is_closed = len(xy) > 1 and np.array_equal(xy[0], xy[-1])
     pts = xy[:-1] if is_closed else xy
     if len(np.unique(pts, axis=0)) < 3:
@@ -231,9 +255,10 @@ def check_predictions(results: list[dict], gt: dict, strict: bool = True) -> tup
     """(results kept, counts) after checking results against docs/EVALUATION.md §1 for the ground truth gt.
 
     A missing field, an unknown image or category, a non-finite score or a malformed segmentation is always an error.
-    The PROBLEMS are errors in strict mode (our outputs). In lenient mode (released predictions) a ring with fewer
-    than 3 distinct points is dropped, since pycocotools crashes on 4-number rings and shapely 2 cannot build such
-    polygons, and every other problem is only counted: those predictions are evaluated as released."""
+    The PROBLEMS are errors in strict mode (our outputs). In lenient mode (released predictions) only a ring of at most
+    4 numbers is dropped, since pycocotools reads 4 numbers as a bbox and crashes; every other problem is counted and
+    those predictions are evaluated as released. A ring with < 3 distinct points but ≥ 6 numbers is such a case: an
+    empty mask (a false positive) for pycocotools, left out of polis.py and angle_eval.py only (shapely_readable)."""
     images = {img["id"]: img for img in gt["images"]}
     categories = {c["id"] for c in gt["categories"]}
     closed = gt.get("info", {}).get("ring_convention", "closed") == "closed"
@@ -258,7 +283,7 @@ def check_predictions(results: list[dict], gt: dict, strict: bool = True) -> tup
             counts[problem] += 1
             if len(examples[problem]) < 3:
                 examples[problem].append(i)
-        if not strict and "too_few_points" in problems:
+        if not strict and "unreadable" in problems:
             continue
         kept.append(result)
     if strict and counts:

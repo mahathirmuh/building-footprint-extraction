@@ -133,6 +133,23 @@ def test_no_prediction_at_all(env):
     assert (o["CIoU_p2p"], o["PoLiS"], o["MTA"], o["PoLiS_paired"]) == (None, None, None, None)
 
 
+def test_a_released_two_point_ring_is_a_false_positive_but_stays_out_of_polis_and_mta(env):
+    """As in the evaluation of the release: pycocotools reads [a, b, a] as an empty mask with a score, so it lowers AP;
+    shapely 2 cannot build it, so polis.py and angle_eval.py do not see it."""
+    _, splits = env
+    results = predictions()
+    degenerate = {"image_id": 3, "category_id": 100, "segmentation": [[22.0, 22.0, 38.0, 38.0, 22.0, 22.0]],
+                  "score": 0.99, "bbox": [22.0, 22.0, 16.0, 16.0]}  # fmt: skip
+    clean = run_eval.evaluate("crowdai", "test", "clean", "ref", results, released=True, splits_dir=splits)
+    with_ring = run_eval.evaluate("crowdai", "test", "ring", "ref", [*results, degenerate], released=True,
+                                  splits_dir=splits)  # fmt: skip
+    check = with_ring["pred_check"]
+    assert (check["too_few_points"], check["dropped"], check["excluded_from_polis_mta"]) == (1, 0, 1)
+    assert with_ring["overall"]["AP"] < clean["overall"]["AP"]
+    for key in ("PoLiS", "MTA", "PoLiS_paired", "MTA_inst"):
+        assert with_ring["overall"][key] == clean["overall"][key]
+
+
 def test_multi_ring_predictions_stop_with_a_clear_error(env):
     gt, splits = env
     results = predictions()

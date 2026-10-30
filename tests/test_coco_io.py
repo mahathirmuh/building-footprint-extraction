@@ -170,8 +170,10 @@ def test_valid_predictions_pass_the_strict_check(gt):
 def broken(problem):
     """A result of image 1 with exactly one problem of coco_io.PROBLEMS."""
     result = coco_io.to_result(1, square(5, 5, 10), 0.9, CATEGORY)
-    if problem == "too_few_points":
-        result["segmentation"] = [[5.0, 5.0, 15.0, 15.0, 5.0, 5.0]]
+    if problem == "unreadable":
+        result["segmentation"] = [[5.0, 5.0, 15.0, 15.0]]  # 4 numbers: a bbox for pycocotools
+    elif problem == "too_few_points":
+        result["segmentation"] = [[5.0, 5.0, 15.0, 15.0, 5.0, 5.0]]  # [a, b, a], as 0.57% of HiSup's release
     elif problem == "multi_ring":
         result["segmentation"].append(closed_ring(square(7, 7, 2)))
     elif problem == "closing_vertex":
@@ -197,8 +199,14 @@ def test_each_problem_is_an_error_in_strict_mode(gt, problem):
 def test_lenient_mode_drops_only_rings_it_cannot_read(gt, problem):
     kept, report = coco_io.check_predictions([broken(problem)], gt, strict=False)
     assert report[problem] == 1 and sum(report[p] for p in coco_io.PROBLEMS) == 1
-    assert len(kept) == (0 if problem == "too_few_points" else 1)
+    assert len(kept) == (0 if problem == "unreadable" else 1)
     assert report["dropped"] == 1 - len(kept)
+
+
+def test_shapely_readable_leaves_out_rings_of_two_distinct_points():
+    good, degenerate = broken("zero_area"), broken("too_few_points")  # 3 collinear points / [a, b, a]
+    assert coco_io.shapely_readable([good, degenerate]) == [good]
+    assert coco_io.distinct_points(degenerate["segmentation"][0]) == 2
 
 
 @pytest.mark.parametrize(

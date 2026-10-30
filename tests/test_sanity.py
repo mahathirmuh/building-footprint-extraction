@@ -66,7 +66,7 @@ def test_determinism_and_bootstrap_on_the_toy_scene(tmp_path, monkeypatch):
 def test_report_renders_every_check():
     check = sanity.check("6.1", "crowdai/test", "(i) AP", 1.0, "1 ± 0,001", True)
     part = {"case": "crowdai/test", "images": 3, "annotations": 5, "empty_masks": 0,
-            "pred_check_as_released": {"dropped": 0}, "checks": [check]}  # fmt: skip
+            "pred_check_as_released": {"dropped": 0, "too_few_points": 0}, "checks": [check]}  # fmt: skip
     bootstrap = {"case": "crowdai/val_clean", "point_AP": 0.5, "n_rep": 10, "ci95": [0.4, 0.6], "sd": 0.05,
                  "n_naive": 5, "naive_unique_fraction_mean": 0.63, "naive_ci95": [0.45, 0.55],
                  "proper_ci95_first_n_naive": [0.4, 0.6], "width_ratio": 0.5,

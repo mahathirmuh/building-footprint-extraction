@@ -125,13 +125,15 @@ def vendor_metrics(gt_path: Path, gt: dict, results: list[dict], workers: int = 
     else:  # cIoU.py only iterates images with predictions
         ciou = {"iou": None, "ciou": None, "n_ratio": None, "n_images": 0, "per_image": {}}
 
+    # polis.py and angle_eval.py build shapely polygons; released rings such as [a, b, a] stay out of them only.
+    shapely_results = coco_io.shapely_readable(results)
     coco_gt = coco_io.coco_from_dict(gt)
-    polis_eval = polis.PolisEval(coco_gt, coco_io.load_results(coco_gt, results))
+    polis_eval = polis.PolisEval(coco_gt, coco_io.load_results(coco_gt, shapely_results))
     with _quiet():
         polis_value = polis_eval.evaluate()
 
     coco_gt = coco_io.coco_from_dict(gt)
-    contour = angle_eval.ContourEval(coco_gt, coco_io.load_results(coco_gt, results))
+    contour = angle_eval.ContourEval(coco_gt, coco_io.load_results(coco_gt, shapely_results))
     with _quiet():
         if workers > 1 and len(gt["images"]) > 1:
             with multiprocess.get_context("spawn").Pool(workers) as pool:
@@ -151,6 +153,7 @@ def vendor_metrics(gt_path: Path, gt: dict, results: list[dict], workers: int = 
         "mta_per_image": {img: (float(np.sum(v)), len(v)) for img, v in mta.items()},
         "MTA": float(np.mean(values)) if values else None,
         "MTA_values": len(values),
+        "excluded_from_polis_mta": len(results) - len(shapely_results),
     }
 
 
@@ -339,7 +342,11 @@ def evaluate(
         "pred_file": _relative(pred_file),
         "checkpoint": meta.get("checkpoint"),
         "postproc": meta.get("postproc"),
-        "pred_check": {"mode": "lenient" if released else "strict", **check},
+        "pred_check": {
+            "mode": "lenient" if released else "strict",
+            **check,
+            "excluded_from_polis_mta": vendor["excluded_from_polis_mta"],
+        },
         "overall": overall,
         "coco_stats": {name: stats.coco_stats(cache) for name, cache in caches.items()},
         "per_stratum": per_stratum,

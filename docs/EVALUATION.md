@@ -19,8 +19,13 @@
 
   Field `info` mencatat sumber, offset id, dan jumlah setiap kasus khusus.
 - Prediksi diperiksa `coco_io.check_predictions`: secara ketat untuk output kita (setiap pelanggaran aturan di atas
-  adalah error), dan longgar untuk prediksi rilisan. Pada mode longgar, hanya ring dengan < 3 titik berbeda yang
-  dibuang; masalah lain dihitung dan prediksinya dievaluasi apa adanya.
+  adalah error), dan longgar untuk prediksi rilisan. Pada mode longgar, hanya ring dengan ≤ 4 angka yang dibuang,
+  karena pycocotools membacanya sebagai bbox lalu crash. Masalah lain dihitung, dan prediksinya dievaluasi apa
+  adanya. Contohnya ring `[a, b, a]` (6 angka, 2 titik berbeda; 0,57% rilisan HiSup): bagi pycocotools ini mask
+  kosong, jadi tetap ikut AP sebagai positif palsu dan ikut hitungan verteks C-IoU, seperti di evaluasi HiSup
+  sendiri. Hanya `polis.py` dan `angle_eval.py` yang tidak menerimanya, karena shapely 2 tidak bisa membangun
+  poligonnya; jumlahnya dicatat di `pred_check.excluded_from_polis_mta`. (Ditetapkan 30 Okt 2026; semula ring
+  seperti ini dibuang seluruhnya.)
 
 ## 2. Metrik
 
