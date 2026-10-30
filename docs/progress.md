@@ -622,3 +622,22 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
   - replikasi dengan penyebut kosong dihitung, tetapi tidak dipakai untuk CI.
 - Waktu di CrowdAI test (diukur pada output uji asap langkah 4): 1.000 replikasi metrik rasio < 0,1 s; AP ±55 ms per
   replikasi, sehingga satu perbandingan AP 3 seed × 2 metode makan ±5,5 menit (±2,5 menit di strata padat).
+
+**Langkah 6 — uji kewarasan di data asli (30 Okt 2026)**: `scripts/sanity_checks.py` pada commit `1ddd931`, hasilnya
+**52 dari 52 uji lolos** dan 0 tes unit gagal. Laporan `docs/sanity_report.md` dihasilkan skrip dari
+`outputs/metrics/sanity_report.json`.
+- §6.1, di CrowdAI `val_clean` dan `test` serta WHU test (GT utama dan `p2p`):
+  - (i) tanpa GT bermask kosong: AP = AP_boundary = 1, C-IoU = CIoU_p2p = 1, PoLiS vendor `None` (0 citra valid),
+    PoLiS_paired = 0, MTA_inst dan MTA ±0,0028°;
+  - (ii) GT apa adanya: GT tak ter-match persis sama dengan GT bermask kosong (17, 181, 0, 0), dan IoU pasangan
+    terkecil = 1;
+  - merge/split di CrowdAI test: 20 dan 20 GT, persis sama dengan yang diramalkan dari tumpang tindih antar-GT.
+- §6.2: enam tes unit kasus tepi lolos, dan evaluasi yang sama dua kali memberi angka identik.
+- §6.6, prediksi buatan di `val_clean` (AP 0,518):
+  - resampel identitas = `stats[0]` persis, dan CI 95% [0,500; 0,542] memuat nilai titik;
+  - cara naif (`imgIds` duplikat langsung ke COCOeval) hanya menyisakan 63,3% citra unik dan memberi CI 29% lebih
+    sempit (rasio lebar 0,71), sesuai teori (±1 − 1/e citra unik).
+- Run pertama berhenti di WHU test: `cIoU.py` vendor hanya membaca satu ring per prediksi, sedangkan sebagian GT WHU
+  berlubang. GT-sebagai-prediksi kini memakai ring pertama saja (mask terbukti identik), dan prediksi dengan banyak ring
+  ditolak `run_eval` dengan pesan jelas. Ditambahkan juga `IoU_p2p`, IoU yang dilaporkan HiSup.
+- Waktu dengan 12 worker: CrowdAI `val_clean` 1 menit, `test` 4 menit, WHU test ±9,5 menit per GT; total 26 menit.
