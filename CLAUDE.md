@@ -138,8 +138,9 @@ Path data selalu dari variabel lingkungan `DENSEPOLY_DATA` (default `./data`), o
   `opencv-python-headless>=4.10,<5`, `scikit-image`, `scipy`, `shapely>=2`, `pycocotools`, `imagehash`,
   `omegaconf`, `numpy`, `pandas`, `matplotlib`, `tqdm`, `pytest`, `multiprocess` (diimpor skrip metrik vendor),
   `pyarrow` (tabel parquet metrik).
-- Evaluasi: `boundary-iou-api` (BSD-2-Clause). `pip install` dari GitHub hanya memasang `boundary_iou/__init__.py`,
-  jadi cara memasangnya sedang diputuskan (`docs/progress.md` Fase 3).
+- Evaluasi: `boundary-iou-api` (BSD-2-Clause), bagian COCO-nya di-vendor persis ke `third_party/boundary_iou/`
+  (30 Okt 2026), karena `pip install` dari GitHub hanya memasang `__init__.py`. `COCOeval.accumulate()`-nya memakai
+  `np.float` (rusak di numpy ≥ 1.24) dan tidak dipakai: AP dihitung `eval/stats.py` dari `evalImgs`.
 - Opsional FULL+Y: `ultralytics` (lisensi **AGPL-3.0**; hanya untuk eksperimen, jangan dicampur ke paket inti).
 - Training penuh di GPU Colab (`docs/COLAB.md`). Pekerjaan CPU berat (hash ±0,6 jam-inti, prior ±14 jam-inti, evaluasi
   val penuh, tuning post-processing) dijalankan di laptop multi-core bila datanya ada di sana, atau di sesi CPU Colab
@@ -184,7 +185,7 @@ densepoly/
 ## Perintah
 
 ```bash
-pip install -e ".[dev]"                     # + ".[eval]" untuk boundary-iou-api, ".[yolo]" untuk FULL+Y
+pip install -e ".[dev]"                     # + ".[yolo]" untuk FULL+Y; metrik vendor ada di third_party/
 pytest -q                                   # wajib lolos sebelum bilang "selesai"
 python scripts/dedup_crowdai.py --data crowdai        # path dibaca dari DENSEPOLY_DATA; output ke splits/
 python scripts/make_density.py --data crowdai --split test

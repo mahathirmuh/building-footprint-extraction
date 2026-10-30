@@ -314,7 +314,8 @@ terpisah di anotasi resmi, set ini bisa menjadi uji tambahan untuk pemisahan rum
   BlackShark.ai: hanya riset akademik, tanpa sublisensi); `polis.py` dari `spgriffin/polis` (repo tidak ditemukan lagi,
   lisensi tidak diketahui).
 - boundary-iou-api: BSD-2-Clause, beserta lisensi COCO API dan LVIS API yang disertakannya (`license.txt` di commit
-  `37d2558`, dicek 30 Okt 2026).
+  `37d2558`, dicek 30 Okt 2026). Bagian COCO-nya di-vendor persis ke `third_party/boundary_iou/`, dengan lisensi di
+  `third_party/licenses/boundary-iou-api-license.txt`.
 - Ultralytics: AGPL-3.0. Pisahkan sebagai dependensi opsional `[yolo]`.
 - Data: sitasi Ji, Wei & Lu (2019) untuk WHU; cek syarat penggunaan CrowdAI di halaman AIcrowd; SpaceNet 6 di bawah
   CC BY-SA 4.0.

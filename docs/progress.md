@@ -519,7 +519,8 @@ Pemeriksaan sesudah run (skrip sekali jalan, di luar repo):
   BlackShark.ai: hanya riset akademik, tanpa sublisensi), `polis.py` dari `spgriffin/polis` (repo tidak ditemukan,
   lisensi tidak diketahui).
 
-**boundary-iou-api (commit `37d2558`), menunggu keputusan:**
+**boundary-iou-api (commit `37d2558`).** Keputusan 30 Okt 2026 (opsi a, disetujui): bagian COCO-nya di-vendor persis ke
+`third_party/boundary_iou/` (sha256 dikunci di `tests/test_third_party.py`), dan extra `[eval]` dihapus. Alasannya:
 - Lisensinya BSD-2-Clause (`license.txt`), jadi boleh dipasang maupun disalin dengan pemberitahuan lisensinya.
 - `pip install git+…`, yaitu cara pertama di README-nya dan cara yang dipakai extra `[eval]` kita, hanya memasang
   `boundary_iou/__init__.py`, karena `setup.py`-nya tidak mendaftarkan subpaket. Paket yang terpasang rusak, jadi

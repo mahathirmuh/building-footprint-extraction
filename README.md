@@ -22,7 +22,7 @@ poligon rapi per rumah (COCO JSON / GeoJSON), dilatih **tanpa anotasi poligon**.
 ```bash
 python -m venv .venv
 .venv\Scripts\activate                             # Windows; Linux/macOS: source .venv/bin/activate
-pip install -e ".[dev]"                            # + ".[eval]" (Fase 3), ".[yolo]" (FULL+Y)
+pip install -e ".[dev]"                            # + ".[yolo]" untuk FULL+Y; metrik vendor ada di third_party/
 nbstripout --install --attributes .gitattributes   # sekali per clone: filter git pembuang output notebook
 pytest -q                                          # CPU, tanpa internet, data sintetis
 ```

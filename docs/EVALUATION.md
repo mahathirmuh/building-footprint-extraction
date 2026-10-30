@@ -29,9 +29,9 @@
 | Metrik | Tingkat | Definisi | Implementasi |
 |---|---|---|---|
 | AP, AP50, AP75, AP_S/M/L | instance | COCO mask AP, IoU 0,50:0,95 | `pycocotools` COCOeval `segm` |
-| AP_boundary | instance | AP dengan Boundary IoU (dilation ratio 0,02) | `boundary-iou-api` COCOeval `boundary` |
+| AP_boundary | instance | AP dengan IoU := min(IoU mask, Boundary IoU) (dilation ratio 0,02) | `evaluate()` dari COCOeval `boundary` boundary-iou-api (`third_party/boundary_iou/`), lalu `accumulate` kita (§4) |
 | IoU, F1 | piksel | gabungan semua poligon vs gabungan GT; utama ΣI/ΣU seluruh split; juga rata-rata per citra | `eval/pixel.py` |
-| Boundary IoU | piksel | Boundary IoU mask gabungan, rata-rata per citra | fungsi `boundary_iou` dari boundary-iou-api |
+| Boundary IoU | piksel | Boundary IoU mask gabungan (Cheng dkk. 2021: IoU pita batas selebar 2% diagonal citra), rata-rata per citra | `eval/pixel.py` dengan `mask_to_boundary` boundary-iou-api (paket itu tidak punya fungsi `boundary_iou` terpisah) |
 | `CIoU` (utama) | per citra | §2.2; **semua** citra split | `eval/pixel.py` (memakai fungsi vendor) |
 | `CIoU_p2p` | per citra | §2.2; aturan Pix2Poly: hanya citra yang punya prediksi | vendor `cIoU.py` |
 | N-ratio | per citra | rata-rata N / N_GT pada citra dengan GT (dua varian, mengikuti C-IoU) | vendor `cIoU.py` |

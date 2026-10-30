@@ -25,8 +25,8 @@ data selalu disalin ke disk lokal `/content/data` dulu.
 2. **Mount Drive:** `from google.colab import drive; drive.mount('/content/drive')`.
 3. **Clone repo privat:** token GitHub disimpan di Colab Secrets (`GITHUB_TOKEN`), dibaca dengan
    `google.colab.userdata.get`. Jangan pernah mencetak token atau menyimpannya di notebook.
-4. **Install:** `pip install -e ".[eval]"`. Jangan meng-install ulang `torch`; pakai versi bawaan Colab dan catat
-   versinya.
+4. **Install:** `pip install -e .`. Skrip metrik (Pix2Poly dan boundary-iou-api) sudah di-vendor di `third_party/`,
+   jadi tidak perlu instalasi tambahan. Jangan meng-install ulang `torch`; pakai versi bawaan Colab dan catat versinya.
 5. **Data:** salin tar dari Drive ke `/content/data`, lalu ekstrak.
 6. **Environment:** `DENSEPOLY_DATA=/content/data`, `DENSEPOLY_OUT=/content/drive/MyDrive/densepoly/outputs`.
 7. **Benchmark dulu:** `python scripts/train.py --data crowdai --exp full_p2 --benchmark 200` → it/s dan memori
