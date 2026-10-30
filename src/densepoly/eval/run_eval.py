@@ -276,13 +276,15 @@ def evaluate(
     pred_file: Path | None = None,
     cache_evalimgs: bool = True,
     splits_dir: Path | None = None,
+    gt_path: Path | None = None,
 ) -> dict:
     """Evaluate results on paths.gt_file(dataset, split, variant), write the metrics and tables, return the record.
-    released: check the predictions leniently (predictions released by another paper)."""
+    released: check the predictions leniently (predictions released by another paper). gt_path: another ground truth
+    of the same images (the sanity checks of docs/EVALUATION.md §6.1 drop its empty masks)."""
     meta = meta or {}
     seconds = {}
     start = time.perf_counter()
-    gt_path = paths.gt_file(dataset, split, variant)
+    gt_path = gt_path or paths.gt_file(dataset, split, variant)
     gt = read_json(gt_path)
     kept, check = coco_io.check_predictions(results, gt, strict=not released)
     image_ids = [img["id"] for img in gt["images"]]

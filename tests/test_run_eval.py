@@ -116,6 +116,14 @@ def test_gt_as_prediction_end_to_end(env):
     assert (o["recall_inst50"], o["merge_rate"], o["split_rate"]) == (1.0, 0.0, 0.0)
 
 
+def test_evaluating_twice_gives_identical_numbers(env):
+    """§6.2: everything but provenance and timings is identical."""
+    _, splits = env
+    first, second = (run_eval.evaluate("crowdai", "test", "toy", "ref", predictions(), splits_dir=splits) for _ in "12")
+    for key in ("overall", "coco_stats", "per_stratum", "pred_check"):
+        assert first[key] == second[key]
+
+
 def test_no_prediction_at_all(env):
     gt, splits = env
     o = run_eval.evaluate("crowdai", "test", "none", "ref", [], splits_dir=splits)["overall"]
