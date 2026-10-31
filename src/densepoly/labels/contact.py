@@ -6,22 +6,25 @@ the building and contact classes equals the union of all buildings.
 
 from __future__ import annotations
 
+import cv2
 import numpy as np
-from scipy import ndimage as ndi
 from skimage.morphology import disk
 
 
 def contact_mask(instance_map: np.ndarray, radius: int) -> np.ndarray:
     """True where a building pixel sees a different building inside a Euclidean disk of `radius` px.
 
-    One maximum and one minimum filter replace a loop over building pairs: a pixel of label l is in contact when the
-    largest label nearby is not l, or the smallest non-zero label nearby is not l.
+    One dilation and one erosion replace a loop over building pairs: a pixel of label l is in contact when the largest
+    label nearby is not l, or the smallest non-zero label nearby is not l. On gray levels, dilation and erosion are the
+    maximum and minimum filters; OpenCV runs them several times faster than scipy, which matters because this runs per
+    tile in the training loader, and BORDER_REFLECT is the default border of the scipy filters.
     """
-    footprint = disk(radius)
-    big = np.iinfo(instance_map.dtype).max
-    largest = ndi.maximum_filter(instance_map, footprint=footprint)
-    smallest = ndi.minimum_filter(np.where(instance_map > 0, instance_map, big), footprint=footprint)
-    return (instance_map > 0) & ((largest != instance_map) | (smallest != instance_map))
+    footprint = disk(radius).astype(np.uint8)
+    labels = instance_map.astype(np.uint16)
+    big = np.iinfo(np.uint16).max
+    largest = cv2.dilate(labels, footprint, borderType=cv2.BORDER_REFLECT)
+    smallest = cv2.erode(np.where(labels > 0, labels, big).astype(np.uint16), footprint, borderType=cv2.BORDER_REFLECT)
+    return (labels > 0) & ((largest != labels) | (smallest != labels))
 
 
 def class_map(instance_map: np.ndarray, radius: int) -> np.ndarray:

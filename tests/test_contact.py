@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 from scipy import ndimage as ndi
+from skimage.morphology import disk
 
 from densepoly.labels.contact import class_map, contact_mask
 from tests.fixtures.synthetic import make_scene
@@ -50,6 +51,35 @@ def test_only_touching_or_nearly_touching_houses_get_contact(scene, radius):
     contact = contact_mask(scene.instance_map, radius)
     found = set(np.unique(scene.instance_map[contact]).tolist())
     assert found == expected_contact_ids(scene, radius)
+
+
+def scipy_contact_mask(instance_map, radius):
+    """The maximum and minimum filters of scipy, which the OpenCV version replaced to speed up the training loader."""
+    footprint = disk(radius)
+    big = np.iinfo(instance_map.dtype).max
+    largest = ndi.maximum_filter(instance_map, footprint=footprint)
+    smallest = ndi.minimum_filter(np.where(instance_map > 0, instance_map, big), footprint=footprint)
+    return (instance_map > 0) & ((largest != instance_map) | (smallest != instance_map))
+
+
+@pytest.mark.parametrize("radius", [1, 2, 3, 4, 5, 8])
+def test_opencv_contact_equals_the_scipy_filters(scene, radius):
+    np.testing.assert_array_equal(
+        contact_mask(scene.instance_map, radius), scipy_contact_mask(scene.instance_map, radius)
+    )
+
+
+@pytest.mark.parametrize("radius", [1, 2, 5])
+def test_opencv_contact_equals_the_scipy_filters_at_the_tile_border(radius):
+    """Random blocks fill the tile up to its border and past label 255, where a uint8 version would overflow."""
+    rng = np.random.default_rng(radius)
+    blocks = rng.integers(0, 9, (12, 12)).astype(np.uint16)
+    labels = np.kron(blocks, np.ones((5, 5), np.uint16)) * rng.integers(1, 7000)
+    np.testing.assert_array_equal(contact_mask(labels, radius), scipy_contact_mask(labels, radius))
+
+
+def test_contact_is_empty_on_an_empty_tile():
+    assert not contact_mask(np.zeros((32, 32), np.uint16), 2).any()
 
 
 def test_contact_matches_a_distance_transform_definition(scene):

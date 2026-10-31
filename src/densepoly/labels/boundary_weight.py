@@ -3,8 +3,8 @@ distance to the nearest boundary pixel. Padding pixels get w = 0 later, when the
 
 from __future__ import annotations
 
+import cv2
 import numpy as np
-from scipy import ndimage as ndi
 
 
 def boundary_mask(instance_map: np.ndarray) -> np.ndarray:
@@ -21,9 +21,11 @@ def boundary_mask(instance_map: np.ndarray) -> np.ndarray:
 
 
 def edge_weight(instance_map: np.ndarray, alpha: float, sigma: float) -> np.ndarray:
-    """(H, W) float32 weight, 1 + α on boundary pixels and decaying to 1 away from them (1 everywhere without one)."""
+    """(H, W) float32 weight, 1 + α on boundary pixels and decaying to 1 away from them (1 everywhere without one).
+    DIST_MASK_PRECISE gives the exact Euclidean distance of scipy's distance_transform_edt, several times faster, which
+    matters because this runs per tile in the training loader."""
     boundary = boundary_mask(instance_map)
     if not boundary.any():
         return np.ones(instance_map.shape, np.float32)
-    distance = ndi.distance_transform_edt(~boundary)
+    distance = cv2.distanceTransform((~boundary).astype(np.uint8), cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
     return (1.0 + alpha * np.exp(-(distance**2) / (2.0 * sigma**2))).astype(np.float32)

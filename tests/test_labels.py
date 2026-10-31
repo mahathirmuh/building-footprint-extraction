@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from scipy import ndimage as ndi
 
 from densepoly.labels.boundary_weight import boundary_mask, edge_weight
 from densepoly.labels.contact import class_map
@@ -79,6 +80,24 @@ def test_edge_weight_is_one_plus_alpha_on_the_boundary_and_decays_with_distance(
     assert weight[30, 30] == pytest.approx(1 + 5 * np.exp(-(9**2) / (2 * 3.0**2)), rel=1e-5)  # 9 px from row 39
     assert weight[0, 0] == pytest.approx(1.0, abs=1e-6)
     assert np.array_equal(edge_weight(np.zeros((8, 8), np.uint16), 5.0, 3.0), np.ones((8, 8), np.float32))
+
+
+@pytest.mark.parametrize("seed", range(4))
+@pytest.mark.parametrize(("alpha", "sigma"), [(5.0, 3.0), (5.0, 4.5), (2.0, 1.0)])
+def test_opencv_distance_gives_the_weight_of_the_scipy_transform(seed, alpha, sigma):
+    """The OpenCV distance replaced scipy's distance_transform_edt to speed up the training loader."""
+    labels = make_scene(seed).instance_map
+    distance = ndi.distance_transform_edt(~boundary_mask(labels))
+    expected = (1.0 + alpha * np.exp(-(distance**2) / (2.0 * sigma**2))).astype(np.float32)
+    np.testing.assert_allclose(edge_weight(labels, alpha, sigma), expected, atol=1e-5)
+
+
+def test_opencv_distance_equals_the_scipy_transform_on_a_lone_boundary_pixel():
+    labels = np.zeros((101, 101), np.uint16)
+    labels[0, 0] = 1  # one house pixel in a corner: the distances run over the whole tile, at every angle
+    distance = ndi.distance_transform_edt(~boundary_mask(labels))
+    expected = (1.0 + 5.0 * np.exp(-(distance**2) / (2.0 * 30.0**2))).astype(np.float32)
+    np.testing.assert_allclose(edge_weight(labels, 5.0, 30.0), expected, atol=1e-5)
 
 
 @pytest.mark.parametrize("seed", range(3))
