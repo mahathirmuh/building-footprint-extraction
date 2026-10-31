@@ -718,7 +718,7 @@ GT per split (dari `info` file GT; WHU: GT utama / `p2p`):
 
 **Fase 3 disetujui dan ditutup 30 Okt 2026.** Berikutnya Fase 4 (post-processing dan baseline klasik B0).
 
-## Fase 4 — Post-processing dan baseline klasik B0 (sedang berjalan)
+## Fase 4 — Post-processing dan baseline klasik B0
 
 **Keputusan (30 Okt 2026, disetujui bersama rencana Fase 4):**
 1. Parameter post-processing:
@@ -946,3 +946,5 @@ Laporan kewarasan kini **55 dari 55 uji lolos**. Angkanya sama dengan pratinjau.
 - Uji oracle §6.3 lolos: (a) 0,997561 ≥ 0,99 dan (c) 96,53 ≥ 95. Laporan kewarasan 55 dari 55.
 - Metrik B0 di `crowdai/test`, total dan per strata, tersedia di `outputs/metrics/crowdai/b0/ref/test.json`.
   Waktu proses per citra dari RGB: median 0,491 s (langkah 6d).
+
+**Fase 4 disetujui dan ditutup 31 Okt 2026.** Berikutnya Fase 5 (infrastruktur model, B4 seed 0, dan B5).
