@@ -187,8 +187,10 @@ def test_resume_without_a_checkpoint_starts_the_run(splits, tmp_path):
 
 
 def test_epochs_must_be_set(splits, tmp_path):
-    with pytest.raises(ValueError, match="train.epochs"):
-        train.fit(load_config("crowdai", "b4", ["model.encoder_weights=null"]), tmp_path / "run", splits_dir=splits)
+    for overrides in ([], ["train.epochs=0"]):  # 0 is the placeholder of the notebook
+        cfg = load_config("crowdai", "b4", ["model.encoder_weights=null", *overrides])
+        with pytest.raises(ValueError, match="train.epochs"):
+            train.fit(cfg, tmp_path / "run", splits_dir=splits)
 
 
 def test_accumulation_makes_one_step_of_several_micro_batches(splits, tmp_path):

@@ -304,7 +304,7 @@ def fit(
 ) -> dict:
     """Train until the budget of E epochs ends, or until max_hours or stop_after optimizer steps stop the run cleanly
     with last.pt saved. Writes config.yaml, run.json, train_log.csv, val_log.csv, last.pt and best.pt in run_dir."""
-    if cfg.train.epochs is None:
+    if cfg.train.epochs is None or int(cfg.train.epochs) < 1:
         raise ValueError("train.epochs is not set: E is fixed after the benchmark (docs/EXPERIMENTS.md §5)")
     last, best = run_dir / "last.pt", run_dir / "best.pt"
     if last.exists() and not resume:
