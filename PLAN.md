@@ -144,8 +144,8 @@ tersedia.
 - `notebooks/colab_train.ipynb` sesuai `docs/COLAB.md`. Ukur it/s dan memori di Colab (micro-batch ≥ 8), isi tabel
   biaya di `docs/EXPERIMENTS.md` §5, lalu **minta persetujuan** sebelum training panjang. Run benchmark juga mencatat
   tiap komponen loss (CE, Dice, `L_θ`) sebagai bahan keputusan λ (Fase 6).
-- Latih **B4 seed 0** saja. Putuskan bobot kelas kontak di sini (`docs/METHOD.md` §5), lalu berlakukan untuk semua model
-  3 kelas. B5 = model B4 + `polygonize(mar)`. Setel post-processing di `val_tune_sub`, bekukan, evaluasi test.
+- Pilot r dan bobot kelas kontak (`docs/EXPERIMENTS.md` §4.1), lalu berlakukan untuk semua model 3 kelas. Setelah itu
+  latih **B4 seed 0** saja. B5 = model B4 + `polygonize(mar)`. Setel post-processing di `val_tune_sub`, bekukan, evaluasi test.
 
 **Output:** infrastruktur training/inferensi; checkpoint dan metrik B4, B5 (seed 0).
 

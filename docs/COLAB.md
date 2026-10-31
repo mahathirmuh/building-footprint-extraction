@@ -1,19 +1,18 @@
 # COLAB.md — Training di Google Colab dan Pekerjaan CPU Berat
 
-Claude Code menulis dan menguji kode di lokal (CPU, data sintetis). Training dan inferensi penuh dijalankan di Colab
-lewat `notebooks/colab_train.ipynb`. Notebook hanya berisi sel tipis yang memanggil skrip di repo. Logika tidak
-boleh ditulis di notebook. Pekerjaan CPU berat (hash, prior, evaluasi besar, tuning) dibahas di §8.
+Claude Code menulis dan menguji kode di lokal (CPU, data sintetis). **Colab hanya untuk training** (T4 gratis;
+diputuskan 31 Okt 2026), lewat `notebooks/colab_train.ipynb`. Notebook hanya berisi sel tipis yang memanggil skrip di
+repo. Logika tidak boleh ditulis di notebook. `best.pt` lalu dibawa ke laptop, dan inferensi, tuning, serta evaluasi
+berjalan di sana (§5). Pekerjaan CPU berat (hash, prior, evaluasi besar, tuning) dibahas di §8.
 
 ## 1. Tata letak Google Drive
 
 ```
 MyDrive/densepoly/
 ├── data_tar/
-│   ├── crowdai_train_dedup.tar      # citra train_dedup + val_tune + cache instance + cache prior
-│   ├── crowdai_test.tar             # citra test (holdout dari train) + val_clean + cache
-│   ├── crowdai_gt.tar               # anotasi GT, file GT subset, prediksi HiSup
-│   └── whu_pix2poly_224.tar         # tile resmi + annotation*.json + patches.csv (format final di Fase 4)
-└── outputs/                         # = DENSEPOLY_OUT (runs/, preds/, metrics/, tables/, figures/)
+│   ├── crowdai_train_dedup.tar      # citra train_dedup + val_tune + cache instance + cache prior (±3,4 GB)
+│   └── whu_pix2poly_224.tar         # tile resmi + annotation*.json + patches.csv (dibuat di Fase 7)
+└── outputs/                         # = DENSEPOLY_OUT di Colab (runs/)
 ```
 
 Tar dibuat sekali di lokal atau di sesi Colab CPU. Membaca ribuan file kecil langsung dari Drive sangat lambat, jadi
@@ -23,8 +22,7 @@ data selalu disalin ke disk lokal `/content/data` dulu.
 
 1. **GPU:** `!nvidia-smi` (catat nama GPU ke log run).
 2. **Mount Drive:** `from google.colab import drive; drive.mount('/content/drive')`.
-3. **Clone repo privat:** token GitHub disimpan di Colab Secrets (`GITHUB_TOKEN`), dibaca dengan
-   `google.colab.userdata.get`. Jangan pernah mencetak token atau menyimpannya di notebook.
+3. **Clone repo:** repo publik (31 Okt 2026), jadi `git clone` tanpa token.
 4. **Install:** `pip install -e .`. Skrip metrik (Pix2Poly dan boundary-iou-api) sudah di-vendor di `third_party/`,
    jadi tidak perlu instalasi tambahan. Jangan meng-install ulang `torch`; pakai versi bawaan Colab dan catat versinya.
 5. **Data:** salin tar dari Drive ke `/content/data`, lalu ekstrak.
@@ -32,7 +30,8 @@ data selalu disalin ke disk lokal `/content/data` dulu.
 7. **Benchmark dulu:** `python scripts/train.py --data crowdai --exp full_p2 --benchmark 200` → it/s dan memori
    puncak. Isi tabel biaya di `docs/EXPERIMENTS.md` §5.
 8. **Training:** `python scripts/train.py --data crowdai --exp <exp> --seed <k> --resume --max-hours 11`.
-9. **Prediksi dan evaluasi:** `scripts/predict.py` (GPU), lalu `scripts/evaluate.py` (CPU, bisa di sesi lain).
+9. **Salin `best.pt` ke laptop** dari `outputs/runs/<data>/<exp>/<run>/` di Drive. Prediksi dan evaluasi berjalan di
+   laptop (§5).
 
 ## 3. Resume dan putus koneksi
 
@@ -51,10 +50,11 @@ data selalu disalin ke disk lokal `/content/data` dulu.
 
 ## 5. Inferensi dan tuning post-processing
 
-- `scripts/predict.py --save-probs` menyimpan probabilitas `float16` (`.npz`) untuk `val_tune_sub` (1.000 citra,
-  ±1 GB), sehingga tuning post-processing (CPU) tidak perlu menjalankan model berulang kali.
-- Grid tuning dijalankan paralel dengan `multiprocessing`. Colab gratis hanya punya ±2 vCPU; ukur dulu waktunya (§8).
-  Bisa juga dijalankan di laptop.
+- Semuanya berjalan di laptop, jadi data `test` tidak perlu diunggah ke Drive. Inferensi di CPU laptop ±0,60 s per
+  tile (12 thread, diukur 31 Okt 2026): `val_tune_sub` ±10 menit, `test` ±30 menit.
+- `scripts/predict.py --save-probs` menyimpan probabilitas `float16` per citra untuk `val_tune_sub` (1.000 citra,
+  ±1 GB), sehingga tuning post-processing tidak perlu menjalankan model berulang kali.
+- Grid tuning dijalankan paralel dengan `multiprocessing`. Ukur dulu waktunya di sampel (§8).
 - Hapus probabilitas mentah setelah tuning dan evaluasi selesai (minta konfirmasi dulu).
 
 ## 6. FULL+Y (Ultralytics)

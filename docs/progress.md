@@ -948,3 +948,42 @@ Laporan kewarasan kini **55 dari 55 uji lolos**. Angkanya sama dengan pratinjau.
   Waktu proses per citra dari RGB: median 0,491 s (langkah 6d).
 
 **Fase 4 disetujui dan ditutup 31 Okt 2026.** Berikutnya Fase 5 (infrastruktur model, B4 seed 0, dan B5).
+
+## Fase 5 — Infrastruktur model, B4 (seed 0), dan B5 (sedang berjalan)
+
+**Pengukuran sebelum rencana (31 Okt 2026, skrip di luar repo, tanpa menyentuh `test`):**
+- Radius kontak r, pada 3.000 tile acak `train_dedup` (seed 0) dan oracle (c) di `val_tune_sub` (kontur persis,
+  parameter default):
+
+| r | Celah tercakup | Kontak / piksel bangunan | Tile berkontak | Bangunan berkontak | AP oracle | merge oracle |
+|---|---|---|---|---|---|---|
+| tanpa kontak (CC) | – | – | – | – | 96,44 | 0,26% |
+| 2 | ≤ 1 px | 0,015% | 4,6% | 1,2% | 96,53 | 0,09% |
+| 3 | ≤ 2 px | 0,033% | 11,1% | 3,0% | 96,59 | 0,09% |
+| 4 | ≤ 3 px | 0,067% | 18,3% | 5,7% | 96,63 | 0,09% |
+| 5 | ≤ 4 px | 0,130% | 26,0% | 8,8% | 96,64 | 0,09% |
+
+  - r besar tidak merugikan tahap watershed, dan piksel kontak naik ±9 kali dari r = 2 ke r = 5.
+  - Dengan probabilitas sempurna, kelas kontak hanya menambah 0,09 poin AP di atas CC, dan merge turun dari 0,26%
+    ke 0,09%. Manfaatnya baru muncul bila model mengaburkan celah sempit, jadi efeknya di CrowdAI kemungkinan terbatas.
+- Biaya loader per tile, satu proses di laptop saat CPU menganggur (300 tile `train_dedup`, median): baca RGB 3,1 ms,
+  instance 1,8 ms, prior 6,2 ms; augmentasi dan label P2 32,3 ms. Di dalamnya bobot tepi 11,5 ms, kelas kontak 7,7 ms,
+  orientasi 5,8 ms. Dengan 2 worker, batasnya ±2,9 iterasi per detik pada bs 16.
+- Model U-Net++ EfficientNet-B4 5 kanal keluaran: 20,81 juta parameter (83 MB). Inferensi CPU laptop (12 thread): 0,60 s
+  per tile 320².
+- Data training untuk Colab (`train_dedup` + `val_tune`: citra, instance, prior): ±3,4 GB.
+- Laptop tidak punya GPU. Repo GitHub ternyata publik, padahal dokumen menulis privat.
+
+**Keputusan (31 Okt 2026, disetujui bersama rencana Fase 5):**
+1. Radius r dan bobot kontak diputuskan sekali dengan pilot B4 r = 2 lawan r = 5 di `val_select`. Aturannya dibekukan
+   sebelum ada model (`docs/EXPERIMENTS.md` §4.1): r = 5 dipakai bila `merge_rate` lebih rendah dan AP tidak turun
+   lebih dari 0,5 poin.
+2. Ambang "F1 kontak rendah" (pertanyaan terbuka sejak Fase 0): F1 piksel kelas kontak < 0,30 di `val_select`. Bila
+   rendah, satu pilot lagi dengan bobot 5. METHOD semula menulis `val_tune`; `val_select` dipakai karena `val_tune_sub`
+   khusus untuk tuning post-processing.
+3. Label dipercepat dengan OpenCV (`edge_weight`, `contact_mask`). Definisinya tidak berubah, dan tes membuktikan
+   hasilnya sama dengan implementasi lama.
+4. Colab hanya untuk training. `best.pt` dibawa ke laptop; inferensi, tuning, dan evaluasi berjalan di laptop, jadi data
+   `test` tidak perlu diunggah (`docs/COLAB.md`).
+5. Colab T4 gratis, ruang Drive cukup untuk CrowdAI, dan repo tetap publik, jadi Colab tidak butuh token. Saran privat
+   sampai tugas akhir dinilai sudah disampaikan; repo tetap publik atas pilihan pemilik proyek.

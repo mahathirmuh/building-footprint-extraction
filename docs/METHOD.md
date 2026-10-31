@@ -180,8 +180,8 @@ Tabel berikut dipakai sebagai **tes invarian** (label hasil turunan ulang harus 
   ignore_index=255)`, dengan `w = 1` (selain 255) untuk B1–B2. Target BCE dibentuk dari `y == 1`, karena nilai 255
   tidak valid untuk BCE.
 - **3 kelas (B4):** `L = mean_{piksel non-255}(w · CE(logits, cls)) + Dice(mode="multiclass", classes=[1, 2],
-  ignore_index=255)`. Bobot kelas kontak default 1. Naikkan ke 2–5 **hanya** bila F1 kontak di `val_tune` rendah;
-  putuskan sekali di Fase 5, lalu berlaku untuk semua model 3 kelas.
+  ignore_index=255)`. Bobot kelas kontak default 1; diputuskan sekali di Fase 5 dengan aturan beku
+  `docs/EXPERIMENTS.md` §4.1, lalu berlaku untuk semua model 3 kelas.
 - **FULL:** `L_B4 + λ · L_θ`, dengan `L_θ = Σ_{p∈V} [(ŝ − S)² + (ĉ − C)²] / max(|V|, 1)`, default `λ = 1`.
 - Dice dari `smp.losses.DiceLoss`; CE dari `F.cross_entropy(..., ignore_index=255, reduction="none")`.
 
@@ -321,7 +321,8 @@ grid-nya) dikali 2,25.
 
 | Parameter | Simbol | Default (CrowdAI) | Grid tuning | Disetel di | Catatan |
 |---|---|---|---|---|---|
-| Radius kontak | r | 2 px | — | tetap | ubah hanya lewat diskusi |
+| Radius kontak | r | 2 px | {2, 5} | pilot Fase 5, sekali | aturan beku `docs/EXPERIMENTS.md` §4.1 |
+| Bobot kelas kontak | — | 1 | {1, 5} | pilot Fase 5, sekali | aturan beku `docs/EXPERIMENTS.md` §4.1 |
 | Luas min. untuk θ | A_θ | 20 px | — | tetap | |
 | Bobot tepi | α, σ | 5, 3 px | — | tetap | |
 | Bobot loss θ | λ | 1,0 | {0,5; 1; 2} hanya bila L_θ mendominasi | awal Fase 6, sebelum FULL seed 0, sekali | dari run pendek; sama untuk semua seed |

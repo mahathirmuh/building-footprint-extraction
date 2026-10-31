@@ -69,6 +69,23 @@ Protokol tuning (CPU, tanpa training ulang):
 4. Tuning di seed 0, parameternya dipakai ulang untuk seed 1–2 (dicatat).
 5. Bekukan ke `configs/postproc/<dataset>/<exp>.yaml` (beserta skor val-nya) **sebelum** menyentuh test.
 
+### 4.1 Radius kontak r dan bobot kelas kontak (pilot Fase 5)
+
+Aturan ini dibekukan 31 Okt 2026, sebelum ada model. Dengan r = 2, kontak sangat langka dan hanya mencakup celah
+≤ 1 px, sedangkan pada probabilitas sempurna r = 5 tidak merugikan tahap watershed (`docs/progress.md` Fase 5).
+Keputusan diambil sekali, sebelum B4 seed 0 penuh:
+
+1. Latih dua pilot B4 (seed 0, input RGB, bobot kontak 1) dengan budget epoch yang sama: r = 2 dan r = 5. Budget
+   ditetapkan setelah benchmark.
+2. Ukur `best.pt` masing-masing di `val_select`, dengan post-processing default (`docs/METHOD.md` §10) dan poligon
+   `raw`: AP, `merge_rate`, dan F1 piksel kelas kontak (prediksi = argmax, dijumlah atas semua tile).
+3. r = 5 dipakai bila `merge_rate`-nya lebih rendah daripada r = 2 **dan** AP-nya tidak turun lebih dari 0,5 poin.
+   Selain itu r = 2.
+4. Pada r terpilih, bila F1 kontak < 0,30: satu pilot lagi dengan bobot kontak 5 dan budget yang sama. Bobot 5 dipakai
+   bila memenuhi aturan nomor 3 terhadap bobot 1. Selain itu bobot 1.
+5. Hasilnya berlaku untuk semua model 3 kelas di CrowdAI. Di WHU, r terpilih dikali 1,5 lalu dibulatkan (Fase 7).
+   Strata `bersentuhan` tetap beku pada r = 2.
+
 ## 5. Prioritas run dan biaya
 
 | Tier | Run training | Fase | Keterangan |
