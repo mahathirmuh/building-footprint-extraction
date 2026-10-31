@@ -84,6 +84,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--data", choices=paths.DATASETS, required=True)
     parser.add_argument("--exp", required=True, help="experiment code, e.g. full_p2, b0, hisup_release")
     parser.add_argument("--seed", type=int, help="seed of a trained run; omitted for seedless runs (ref)")
+    parser.add_argument("--run", help="named run, e.g. pilot_r5 (instead of --seed)")
     parser.add_argument("--split", choices=paths.SPLITS, required=True)
     parser.add_argument("--variant", help="ground truth variant (WHU: p2p)")
     parser.add_argument("--pred", type=Path, help="prediction file (default: outputs/preds/...)")
@@ -93,7 +94,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--benchmark", type=int, metavar="N", help="time N random images and project the full run")
     args = parser.parse_args(argv)
 
-    run = paths.run_name(args.seed)
+    run = args.run or paths.run_name(args.seed)
     pred_file = args.pred or paths.pred_file(args.data, args.exp, run, args.split)
     if args.benchmark:
         print(json.dumps(benchmark(args, run, read_json(pred_file))))

@@ -76,6 +76,11 @@ def test_choose_takes_the_best_ap_then_the_smallest_polis_within_the_tie():
     assert tuning.choose(rows, tie_ap=0.05) == 1
 
 
+def test_choose_takes_the_first_best_ap_when_no_row_has_pairs():
+    rows = [{"AP": 0.0, "PoLiS_paired": None}, {"AP": 0.0, "PoLiS_paired": None}]
+    assert tuning.choose(rows, tie_ap=0.2) == 0
+
+
 def test_predictions_are_the_same_in_parallel_and_in_order(fake):
     gt, _ = fake
     ids = [image["id"] for image in gt["images"]]

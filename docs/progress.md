@@ -1036,3 +1036,14 @@ Daya tangkapnya diuji dengan sengaja merusak resume (8 tile, potong di langkah 1
 | sampler tidak melewati data yang sudah dipakai | 1,5·10⁻¹–6,8·10⁻¹ (di batas epoch memang tidak ada yang dilewati) |
 
 Ambang tes 2·10⁻³. Dua kerusakan (RNG dan optimizer) ikut menjadi tes, supaya pemeriksaannya tetap tajam.
+
+**Langkah 5 — inferensi dan tuning model (31 Okt 2026):** `infer.py`, `scripts/predict.py`, `tuning.py`,
+`scripts/tune_postproc.py`, dan opsi `--run` di `scripts/evaluate.py`.
+- Jaringan memberi kanal per tile: input di-pad, softmax (sigmoid di model biner), crop kembali ke tile, dengan
+  tanh(ŝ, ĉ) di belakang probabilitas pada FULL.
+- Kanal selalu melewati float16, baik disimpan maupun tidak, sehingga prediksi dari kanal tersimpan sama dengan prediksi
+  langsung (ada tesnya). B5 memakai kanal B4 lewat `--from-channels`, jadi di CPU laptop jaringan tidak dijalankan dua
+  kali.
+- Tuning model berjalan dari kanal tersimpan: tahap 1 untuk semua model, tahap 2 hanya untuk poligon `mar`/`theta`.
+- `choose` kini memilih AP terbaik pertama bila tidak ada baris yang punya pasangan. Kasus ini muncul pada model yang
+  baru dilatih satu epoch di tes; pada model sungguhan tidak diharapkan.

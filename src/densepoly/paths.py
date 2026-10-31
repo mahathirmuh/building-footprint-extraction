@@ -143,6 +143,18 @@ def run_dir(dataset: str, exp: str, run: str) -> Path:
     return out_root() / "runs" / dataset / exp / run
 
 
+def checkpoint_file(dataset: str, exp: str, run: str) -> Path:
+    """Selected checkpoint of a training run (docs/EXPERIMENTS.md §3)."""
+    return run_dir(dataset, exp, run) / "best.pt"
+
+
+def channel_file(dataset: str, exp: str, run: str, split: str, image_id: int) -> Path:
+    """float16 (C, H, W) network output of one image: class probabilities, then (ŝ, ĉ) on FULL (docs/COLAB.md §5). exp
+    is the experiment of the checkpoint, so B5 finds the output of B4."""
+    _check(dataset, split)
+    return out_root() / "channels" / dataset / exp / run / split / f"{image_id}.npy"
+
+
 def pred_file(dataset: str, exp: str, run: str, split: str) -> Path:
     _check(dataset, split)
     return out_root() / "preds" / dataset / exp / run / f"{split}.json"

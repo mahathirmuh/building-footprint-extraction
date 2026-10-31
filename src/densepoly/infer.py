@@ -1,20 +1,36 @@
 """Predictions of an experiment on a split (scripts/predict.py; docs/EVALUATION.md §1).
 
-Phase 4 runs the classical baseline B0 only. Network inference (padding to a multiple of 32, softmax, cropping back,
-docs/METHOD.md §6.2 step 1) comes with the first model in Phase 5.
+A network gives per tile its channels: padded input, softmax (sigmoid on binary models), cropped back to the tile
+(docs/METHOD.md §6.2 step 1), with tanh(ŝ, ĉ) behind the probabilities on FULL. The channels go through float16 whether
+they are saved or not, so a prediction made from saved channels equals the one made from the network: the tuning, B5
+(the network of B4) and B5′ reuse saved channels instead of running the network on CPU again.
 """
 
 from __future__ import annotations
 
 import multiprocessing
 import time
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
+import torch
+import torch.nn.functional as F
+from omegaconf import OmegaConf
+from torch import nn
 
 from densepoly import paths
 from densepoly.classical import b0
-from densepoly.postproc.polygonize import PolygonParams, polygonize, to_results
+from densepoly.models.factory import build_model, split_output
+from densepoly.postproc.polygonize import (
+    InstancePolygon,
+    PolygonParams,
+    head_theta,
+    polygonize,
+    to_results,
+)
+from densepoly.postproc.watershed import Instances, binary_instances, three_class_instances
 from densepoly.priors.cache import load_stats, quantize, read_prior, read_rgb
 from densepoly.priors.mbi import brightness, mbi
 
@@ -47,6 +63,132 @@ def b0_image(job: B0Job, image_id: int) -> tuple[list[dict], dict]:
 def _b0_chunk(args) -> list[tuple[list[dict], dict]]:
     job, image_ids = args
     return [b0_image(job, image_id) for image_id in image_ids]
+
+
+@dataclass(frozen=True)
+class InstanceParams:
+    tau: float = 0.4  # τ
+    marker_min_px: int = 8  # m_min
+    instance_min_px: int = 10  # A_min
+
+    @classmethod
+    def from_config(cls, postproc) -> InstanceParams:
+        return cls(float(postproc.tau), int(postproc.marker_min_px), int(postproc.instance_min_px))
+
+
+@dataclass(frozen=True)
+class NetworkJob:
+    dataset: str
+    source: str  # experiment of the checkpoint and of the saved channels
+    run: str
+    split: str
+    instance: InstanceParams
+    polygon: PolygonParams
+    category: int
+
+
+def network_source(cfg) -> str:
+    """The experiment whose checkpoint a config uses: its source_exp (B5, B5′), or itself."""
+    return str(cfg.model.source_exp or cfg.exp)
+
+
+def load_network(cfg, checkpoint: Path, device: torch.device) -> tuple[nn.Module, dict]:
+    """The network of a checkpoint in eval mode, and what the checkpoint says about itself. Nothing is downloaded: the
+    checkpoint replaces the pretrained weights."""
+    model = build_model(OmegaConf.merge(cfg, {"model": {"encoder_weights": None}}))
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    model.load_state_dict(state.pop("model"))
+    return model.to(device).eval(), state
+
+
+@torch.inference_mode()
+def network_channels(
+    model: nn.Module, batches: Iterable[dict], device: torch.device, tile_size: int, amp: bool = False
+) -> Iterator[tuple[int, np.ndarray, float]]:
+    """(image id, float16 (C, H, W) channels cropped to the tile, seconds of the network per image) of every tile."""
+    for batch in batches:
+        tic = time.perf_counter()
+        with torch.autocast(device.type, dtype=torch.float16, enabled=amp):
+            output = model(batch["image"].to(device, non_blocking=True))
+        logits, orientation = split_output(output.float())
+        probabilities = torch.sigmoid(logits) if logits.shape[1] == 1 else F.softmax(logits, dim=1)
+        channels = probabilities if orientation is None else torch.cat([probabilities, orientation], dim=1)
+        cropped = channels[:, :, :tile_size, :tile_size].cpu().numpy().astype(np.float16)
+        seconds = (time.perf_counter() - tic) / len(cropped)
+        for image_id, tile in zip(batch["image_id"].tolist(), cropped, strict=True):
+            yield image_id, tile, seconds
+
+
+def network_instances(channels: np.ndarray, params: InstanceParams) -> Instances:
+    """§6.3 on one channel (binary models), §6.2 on the three class probabilities otherwise."""
+    if channels.shape[0] == 1:
+        return binary_instances(channels[0], params.instance_min_px)
+    return three_class_instances(*channels[:3], params.tau, params.marker_min_px, params.instance_min_px)
+
+
+def network_polygons(instances: Instances, channels: np.ndarray, params: PolygonParams) -> list[InstancePolygon]:
+    """Polygons of the instances; mode theta takes θ and κ from the head, weighted by 1 − P_bg (§6.4)."""
+    if params.mode != "theta":
+        return polygonize(instances.instance_map, params)
+    theta, kappa = head_theta(instances.instance_map, channels[3], channels[4], 1.0 - channels[0])
+    return polygonize(instances.instance_map, params, theta, kappa)
+
+
+def network_image(job: NetworkJob, channels: np.ndarray, image_id: int) -> tuple[list[dict], dict]:
+    """Results of one image from its float32 channels, and the seconds of the instance and polygon stages."""
+    tic = time.perf_counter()
+    instances = network_instances(channels, job.instance)
+    mid = time.perf_counter()
+    polygons = network_polygons(instances, channels, job.polygon)
+    results = to_results(polygons, instances.scores, image_id, job.category)
+    return results, {"instances": mid - tic, "polygons": time.perf_counter() - mid}
+
+
+def channel_path(job: NetworkJob, image_id: int) -> Path:
+    return paths.channel_file(job.dataset, job.source, job.run, job.split, image_id)
+
+
+def saved_channels(job: NetworkJob, image_id: int) -> np.ndarray:
+    return np.load(channel_path(job, image_id)).astype(np.float32)
+
+
+def predict_network(
+    job: NetworkJob,
+    model: nn.Module,
+    batches: Iterable[dict],
+    device: torch.device,
+    tile_size: int,
+    save_channels: bool = False,
+) -> tuple[list[dict], list[dict]]:
+    """(results, timings per image) of a network on a split. The post-processing runs here, image after image: on the
+    CPU of the laptop the network takes far longer anyway."""
+    results, timings = [], []
+    for image_id, channels, seconds in network_channels(model, batches, device, tile_size):
+        if save_channels:
+            target = channel_path(job, image_id)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            np.save(target, channels)
+        image_results, timing = network_image(job, channels.astype(np.float32), image_id)
+        results += image_results
+        timings.append({**timing, "network": seconds})
+    return results, timings
+
+
+def _saved_chunk(args) -> list[tuple[list[dict], dict]]:
+    job, image_ids = args
+    return [network_image(job, saved_channels(job, image_id), image_id) for image_id in image_ids]
+
+
+def predict_saved(job: NetworkJob, image_ids: list[int], workers: int = 1) -> tuple[list[dict], list[dict]]:
+    """(results in image order, timings per image) from the saved channels of a split."""
+    parts = chunks(image_ids, max(1, min(workers, len(image_ids))) * 4)
+    if workers > 1:
+        with multiprocessing.get_context("spawn").Pool(workers) as pool:
+            done = pool.map(_saved_chunk, [(job, part) for part in parts])
+    else:
+        done = [_saved_chunk((job, part)) for part in parts]
+    per_image = [item for part in done for item in part]
+    return [r for results, _ in per_image for r in results], [timing for _, timing in per_image]
 
 
 def chunks(items: list, n: int) -> list[list]:

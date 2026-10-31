@@ -52,8 +52,9 @@ data selalu disalin ke disk lokal `/content/data` dulu.
 
 - Semuanya berjalan di laptop, jadi data `test` tidak perlu diunggah ke Drive. Inferensi di CPU laptop ±0,60 s per
   tile (12 thread, diukur 31 Okt 2026): `val_tune_sub` ±10 menit, `test` ±30 menit.
-- `scripts/predict.py --save-probs` menyimpan probabilitas `float16` per citra untuk `val_tune_sub` (1.000 citra,
-  ±1 GB), sehingga tuning post-processing tidak perlu menjalankan model berulang kali.
+- `scripts/predict.py --save-channels` menyimpan keluaran model `float16` per citra di `outputs/channels/`, untuk
+  `val_tune_sub` (1.000 citra, ±1 GB), sehingga tuning tidak perlu menjalankan model berulang kali. B5 dan B5′ memakai
+  ulang kanal model sumbernya lewat `--from-channels`.
 - Grid tuning dijalankan paralel dengan `multiprocessing`. Ukur dulu waktunya di sampel (§8).
 - Hapus probabilitas mentah setelah tuning dan evaluasi selesai (minta konfirmasi dulu).
 
