@@ -100,6 +100,9 @@ def main(argv: list[str] | None = None) -> None:
     target = args.out or paths.out_root() / "colab" / f"{args.data}_train_dedup.tar"
     manifest_file = target.with_suffix(".json")
     if args.verify:
+        missing = [path for path in (target, manifest_file) if not path.exists()]
+        if missing:
+            raise SystemExit(f"{missing[0]} is missing: has its upload to Drive finished?")
         problems = verify(target, read_json(manifest_file))
         if problems:
             raise SystemExit(f"{target}: " + "; ".join(problems))

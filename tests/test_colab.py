@@ -69,6 +69,15 @@ def test_verify_accepts_the_tar_and_refuses_a_damaged_copy(packed, capsys):
         script.main(["--data", "crowdai", "--verify"])
 
 
+@pytest.mark.parametrize("suffix", [".tar", ".json"])
+def test_verify_names_a_file_that_has_not_arrived(packed, suffix):
+    _, _, tar_path = packed
+    absent = tar_path.with_suffix(suffix)
+    absent.unlink()
+    with pytest.raises(SystemExit, match=absent.name):
+        load_script().main(["--data", "crowdai", "--verify"])
+
+
 def test_a_missing_file_stops_the_packing(packed):
     root, splits, _ = packed
     next((root / "data" / "priors" / "crowdai" / "train_dedup").glob("*.png")).unlink()
@@ -85,3 +94,10 @@ def test_the_notebook_stays_thin_and_clean():
     assert "scripts/pack_colab.py" in source and "--verify" in source
     assert "token" not in source.lower() and "userdata" not in source  # the repo is public
     assert not any(word in source for word in ("def ", "class ", "import torch\n"))  # logic stays in src/
+
+
+def test_a_bad_tar_stops_run_all_before_the_extraction():
+    notebook = json.loads((paths.REPO_ROOT / "notebooks" / "colab_train.ipynb").read_text(encoding="utf-8"))
+    source = next("".join(cell["source"]) for cell in notebook["cells"] if "--verify" in "".join(cell["source"]))
+    assert source.index("--verify") < source.index("assert os.path.exists(TAR)") < source.index("tar -xf")
+    assert "--verify --out {TAR} || rm -f {TAR}\n" in source  # the next run copies a bad tar again

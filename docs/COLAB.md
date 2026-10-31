@@ -27,7 +27,9 @@ data selalu disalin ke disk lokal `/content/data` dulu.
    jadi tidak perlu instalasi tambahan. Jangan meng-install ulang `torch`; pakai versi bawaan Colab dan catat versinya.
 5. **Data:** tar dibuat sekali di laptop dengan `python scripts/pack_colab.py --data crowdai`, lalu tar dan manifest
    `.json`-nya diunggah ke `MyDrive/densepoly/data_tar/`. Notebook menyalinnya ke disk lokal, memeriksa salinannya
-   (`--verify`), lalu mengekstrak ke `/content/data`.
+   (`--verify`), lalu mengekstrak ke `/content/data`. Perintah `!` yang gagal tidak menghentikan Run all, jadi sebuah
+   `assert` menghentikan notebook bila tar belum ada atau rusak. Salinan yang rusak dihapus, dan Run all berikutnya
+   menyalinnya lagi.
 6. **Environment:** `DENSEPOLY_DATA=/content/data`, `DENSEPOLY_OUT=/content/drive/MyDrive/densepoly/outputs`.
 7. **Benchmark dulu:** `python scripts/train.py --data crowdai --exp full_p2 --benchmark 200` → it/s dan memori
    puncak. Isi tabel biaya di `docs/EXPERIMENTS.md` §5.
