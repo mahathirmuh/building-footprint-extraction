@@ -55,7 +55,7 @@ filterwarnings = [
 line-length = 120
 target-version = "py310"
 src = ["src", "."]
-extend-exclude = ["reference", "third_party"]
+extend-exclude = ["reference", "third_party", "notebooks"]
 
 [tool.ruff.format]
 exclude = ["*.md"]  # code blocks in the docs are illustrative excerpts, kept as written

@@ -1053,3 +1053,25 @@ prior `train_dedup` + `val_tune`) dengan manifest jumlah file dan sha256, dan `-
 `notebooks/colab_train.ipynb` hanya memanggil skrip, tanpa token karena repo publik, dan `TASK` memilih `benchmark` atau
 `train`. Tes (5): data test tidak ikut, dataset bisa membaca hasil ekstrak, salinan rusak ditolak, file hilang
 menghentikan pembuatan tar, dan notebook tersimpan tanpa output.
+
+**Langkah 6 — smoke test dan uji integrasi (31 Okt 2026):**
+- Smoke test CPU (2 epoch, `encoder_weights=None`) lolos untuk B2, B4, dan FULL-P2, ditambah `num_workers=2`.
+- Uji integrasi di tile asli (skrip di luar repo, hasil di luar `outputs/`, `test` tidak disentuh): bobot pretrained dari
+  Hugging Face, 64 tile `train_dedup`, 32 tile `val_select`, 32 tile `val_tune_sub`.
+  - Training B4 2 epoch (16 langkah, bs 8) di CPU: 8,9 menit, termasuk mengunduh bobot. `fg_iou` naik dari 0,23 ke 0,28.
+  - Prediksi B4: 0,51 s per tile untuk jaringan. B5 memakai kanal B4 lewat `--from-channels`.
+  - Evaluasi B4 dan B5 berjalan penuh, dan semua 6.458 poligon lolos pemeriksaan ketat.
+  - Angka metriknya tidak bermakna: model baru 16 langkah dan memberi ±200 kepingan per tile.
+  - Uji waktu tuning B5 di 32 tile: 12,8 menit. Ini jauh di atas model terlatih per tile, karena biaya tuning mengikuti
+    jumlah instance. Waktu sebenarnya diukur saat tuning B4.
+- **Bug yang ditemukan uji integrasi:** `pycocotools.mask.area` menyimpan jumlah RLE dalam array `uint8`, yang ditolak
+  numpy 2 mulai 256 RLE (`OverflowError`). Dari fungsi mask yang dipakai, hanya `area` yang gagal. Diperbaiki dengan
+  `eval.instance.rle_areas`, yang memprosesnya per potongan. Tes baru membawa 300 prediksi dalam satu citra melewati
+  seluruh evaluasi. Angka lama tidak berubah: B0 dan HiSup selalu di bawah 256 prediksi per citra, karena kalau tidak
+  evaluasinya sudah berhenti dengan error ini.
+- Tes: 614 lolos.
+
+**Tar Colab (31 Okt 2026, commit `5b3698f`):** `outputs/colab/crowdai_train_dedup.tar`, 3,47 GB (3.472.148.480 byte),
+79.067 file: 26.355 tile (citra, peta instance, prior) ditambah 2 `index.csv`. Dibuat dalam 6,5 menit, bersamaan dengan
+uji integrasi. `--verify` di laptop lolos dalam 40 s. sha256
+`cac71e66d38ae4ab547a430560e61bbb094b516a056c16f0fff45f5822444b3f`.

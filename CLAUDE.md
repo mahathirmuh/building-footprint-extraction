@@ -174,7 +174,7 @@ densepoly/
 │   └── eval/        # coco_io.py, pixel.py, instance.py, vertex.py, orientation.py, run_eval.py, stats.py
 ├── third_party/pix2poly_metrics/            # polis.py, angle_eval.py, cIoU.py (MIT, dengan catatan perbaikan)
 ├── scripts/         # CLI: prepare_*, dedup_crowdai, make_density, precompute_priors, train, predict, evaluate,
-│                    #      tune_postproc, benchmark, tables, figures
+│                    #      tune_postproc, pack_colab, benchmark, tables, figures
 ├── notebooks/       # colab_train.ipynb (menjalankan skrip di Colab), demo_hasil.ipynb (demo untuk dosen, Fase 10);
 │                    # keduanya tipis: logika tetap di src/, notebook hanya memanggil dan memplot
 ├── tests/           # fixtures/ sintetis + test_*.py
@@ -194,7 +194,12 @@ python scripts/dedup_crowdai.py --data crowdai        # path dibaca dari DENSEPO
 python scripts/make_density.py --data crowdai --split test
 python scripts/prepare_gt.py --data crowdai           # GT per split untuk evaluasi → outputs/gt/ (WHU: + _p2p)
 python scripts/precompute_priors.py --data crowdai --split train_dedup
-python scripts/train.py --data crowdai --exp full_p2 --seed 0 [--resume]
+python scripts/pack_colab.py --data crowdai           # tar training untuk Colab → outputs/colab/ (--verify memeriksa salinan)
+python scripts/train.py --data crowdai --exp full_p2 --benchmark 200          # it/s, memori, komponen loss
+python scripts/train.py --data crowdai --exp full_p2 --seed 0 --resume --max-hours 3.5 train.epochs=<E>
+python scripts/predict.py --data crowdai --exp b4 --seed 0 --split val_tune_sub --save-channels
+python scripts/tune_postproc.py --data crowdai --exp b4                       # bekukan ke configs/postproc/
+python scripts/predict.py --data crowdai --exp b5 --seed 0 --split test --from-channels
 python scripts/predict.py --data crowdai --exp full_p2 --seed 0 --split test
 python scripts/evaluate.py --data crowdai --exp full_p2 --seed 0 --split test
 python scripts/tables.py && python scripts/figures.py
@@ -248,6 +253,10 @@ python scripts/tables.py && python scripts/figures.py
   batch efektif untuk optimizer, tidak untuk statistik BN, jadi micro-batch tetap minimal 8.
 - **Loss dan padding:** piksel 255 tidak boleh menyumbang loss di model mana pun, termasuk biner (BCE target dari
   `y == 1`, `w = 0` di 255, `DiceLoss(mode="binary", ignore_index=255)`).
+- **pycocotools + numpy 2:** `mask.area` gagal pada daftar ≥ 256 RLE (`OverflowError`), jadi daftar RLE lewat
+  `eval.instance.rle_areas`. Model yang belum terlatih bisa memberi ratusan kepingan per tile.
+- **Reproduksibilitas:** dua run dari seed yang sama di CPU tidak identik per bit, bahkan dengan 1 thread. Jadi resume
+  diuji lewat kurva loss, bukan kesamaan bobot.
 - **Skor instance untuk AP:** rata-rata `1 − P_latar` di piksel instance. B0 tidak punya probabilitas: pakai skor
   konstan 1 dan catat bahwa AP B0 setara satu titik precision–recall.
 
