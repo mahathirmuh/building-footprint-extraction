@@ -1047,3 +1047,9 @@ Ambang tes 2·10⁻³. Dua kerusakan (RNG dan optimizer) ikut menjadi tes, supay
 - Tuning model berjalan dari kanal tersimpan: tahap 1 untuk semua model, tahap 2 hanya untuk poligon `mar`/`theta`.
 - `choose` kini memilih AP terbaik pertama bila tidak ada baris yang punya pasangan. Kasus ini muncul pada model yang
   baru dilatih satu epoch di tes; pada model sungguhan tidak diharapkan.
+
+**Langkah 7 — bahan Colab (31 Okt 2026):** `scripts/pack_colab.py` membuat satu tar (citra, cache instance, dan cache
+prior `train_dedup` + `val_tune`) dengan manifest jumlah file dan sha256, dan `--verify` memeriksa salinan di Colab.
+`notebooks/colab_train.ipynb` hanya memanggil skrip, tanpa token karena repo publik, dan `TASK` memilih `benchmark` atau
+`train`. Tes (5): data test tidak ikut, dataset bisa membaca hasil ekstrak, salinan rusak ditolak, file hilang
+menghentikan pembuatan tar, dan notebook tersimpan tanpa output.
