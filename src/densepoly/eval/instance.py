@@ -28,6 +28,7 @@ from densepoly.eval.vertex import ring_vertices, vertex_matches
 
 IOU_THRESHOLD = 0.5
 COVER_THRESHOLD = 0.5
+AREA_CHUNK = 255
 
 
 def instance_rle(segmentation: list, height: int, width: int) -> dict:
@@ -36,6 +37,15 @@ def instance_rle(segmentation: list, height: int, width: int) -> dict:
     if not rings:
         return mask_utils.encode(np.zeros((height, width, 1), np.uint8, order="F"))[0]
     return mask_utils.merge(mask_utils.frPyObjects(rings, height, width))
+
+
+def rle_areas(rles: list[dict]) -> np.ndarray:
+    """(n,) float pixels per RLE. pycocotools.mask.area keeps the number of RLEs in a uint8 array, which numpy ≥ 2
+    refuses from 256 on, and a barely trained network gives that many instances on one tile; so the list goes in chunks."""
+    if not rles:
+        return np.zeros(0)
+    parts = [mask_utils.area(rles[i : i + AREA_CHUNK]) for i in range(0, len(rles), AREA_CHUNK)]
+    return np.concatenate(parts).astype(float)
 
 
 def match(ious: np.ndarray, scores) -> list[tuple[int, int, float]]:
@@ -77,8 +87,7 @@ def evaluate_image(job: tuple[dict, list[dict], list[tuple[int, dict]]]) -> tupl
     height, width = image["height"], image["width"]
     gt_rles = [instance_rle(a["segmentation"], height, width) for a in gt_anns]
     pred_rles = [instance_rle(r["segmentation"], height, width) for _, r in preds]
-    gt_px = np.asarray(mask_utils.area(gt_rles) if gt_rles else [], float)
-    pred_px = np.asarray(mask_utils.area(pred_rles) if pred_rles else [], float)
+    gt_px, pred_px = rle_areas(gt_rles), rle_areas(pred_rles)
     shape = (len(pred_rles), len(gt_rles))
     ious = np.asarray(mask_utils.iou(pred_rles, gt_rles, [0] * len(gt_rles)), float).reshape(shape)
 

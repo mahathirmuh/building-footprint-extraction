@@ -80,7 +80,7 @@ def gt_overlap_sets(gt: dict) -> tuple[set[int], set[int]]:
     covered, covering = set(), set()
     for image_id, anns in by_image.items():
         rles = [instance.instance_rle(a["segmentation"], *sizes[image_id]) for a in anns]
-        areas = mask_utils.area(rles)
+        areas = instance.rle_areas(rles)
         ious = np.asarray(mask_utils.iou(rles, rles, [0] * len(rles)), float).reshape(len(rles), len(rles))
         for i, j in zip(*np.nonzero(np.triu(ious > 0, k=1)), strict=True):
             inter = mask_utils.area(mask_utils.merge([rles[i], rles[j]], intersect=True))

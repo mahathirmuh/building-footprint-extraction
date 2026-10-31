@@ -14,7 +14,7 @@ from pycocotools.cocoeval import COCOeval
 from densepoly import paths
 from densepoly.eval import coco_io, run_eval, stats
 from densepoly.utils.io import read_json, write_json
-from tests.fixtures.coco_toy import make_gt
+from tests.fixtures.coco_toy import make_gt, make_results, square
 from tests.fixtures.eval_scene import HOUSES, predictions, write_scene
 
 
@@ -39,6 +39,14 @@ def segm(gt, results, img_ids=None):
     with contextlib.redirect_stdout(io.StringIO()):
         evaluator.evaluate()
     return evaluator
+
+
+def test_an_image_with_more_predictions_than_a_uint8_counts_is_evaluated(env):
+    """A barely trained network gives hundreds of fragments on one tile (found on real tiles, 31 Oct 2026)."""
+    _, splits = env
+    results = make_results({1: [square(3 * (i % 20), 3 * (i // 20), 2) for i in range(300)]})
+    record = run_eval.evaluate("crowdai", "test", "many", "ref", results, splits_dir=splits)
+    assert record["overall"]["n_pred"] == 300
 
 
 def test_coco_stats_reproduce_pycocotools_exactly():

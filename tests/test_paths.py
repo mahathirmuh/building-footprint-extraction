@@ -96,3 +96,12 @@ def test_parts_of_val_tune_share_its_cache_folders(monkeypatch, tmp_path):
 def test_run_name():
     assert paths.run_name(0) == "seed0"
     assert paths.run_name(None) == "ref"
+
+
+def test_checkpoint_and_channels_of_a_run(monkeypatch, tmp_path):
+    monkeypatch.setenv("DENSEPOLY_OUT", str(tmp_path))
+    root = tmp_path.resolve()
+    assert paths.checkpoint_file("crowdai", "b4", "seed0") == root / "runs/crowdai/b4/seed0/best.pt"
+    assert paths.channel_file("crowdai", "b4", "seed0", "test", 7) == root / "channels/crowdai/b4/seed0/test/7.npy"
+    with pytest.raises(ValueError):
+        paths.channel_file("crowdai", "b4", "seed0", "nope", 7)

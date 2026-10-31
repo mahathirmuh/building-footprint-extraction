@@ -18,6 +18,13 @@ def evaluate(gt, results, workers=1):
     return gt_rows, pair_rows, instance.summarize_instance(gt_rows, pair_rows)
 
 
+def test_areas_of_more_rles_than_pycocotools_counts_in_a_uint8():
+    rles = [instance.instance_rle([closed_ring(square(i % 40, i // 40, 1 + i % 3))], 64, 64) for i in range(300)]
+    areas = instance.rle_areas(rles)
+    assert areas.tolist() == [float((1 + i % 3) ** 2) for i in range(300)]
+    assert instance.rle_areas([]).size == 0
+
+
 def test_matching_is_greedy_by_score_and_one_to_one():
     ious = np.array([[0.9, 0.6], [0.7, 0.2]])
     assert instance.match(ious, [0.5, 0.9]) == [(1, 0, 0.7), (0, 1, 0.6)]  # the higher score picks first
