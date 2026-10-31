@@ -987,3 +987,52 @@ Laporan kewarasan kini **55 dari 55 uji lolos**. Angkanya sama dengan pratinjau.
    `test` tidak perlu diunggah (`docs/COLAB.md`).
 5. Colab T4 gratis, ruang Drive cukup untuk CrowdAI, dan repo tetap publik, jadi Colab tidak butuh token. Saran privat
    sampai tugas akhir dinilai sudah disampaikan; repo tetap publik atas pilihan pemilik proyek.
+
+**Langkah 1 — model (31 Okt 2026):** `models/first_conv.py` dan `models/factory.py`. Tes (17): model 5 kanal sama dengan
+model RGB untuk input prior apa pun (toleransi 1e-5), bobot RGB tidak berubah, bobot kanal prior mulai dari nol tetapi
+mendapat gradien, dan setiap eksperimen mendapat arsitektur serta jumlah kanalnya.
+
+**Langkah 2 — loss (31 Okt 2026):** `losses.py` untuk model biner, 3 kelas, dan FULL. Tes (19): nilai CE, BCE, Dice, dan
+L_θ yang dihitung tangan; piksel padding tidak menyumbang nilai maupun gradien; bobot tepi dan bobot kontak hanya
+mengubah suku yang dimaksud; loss turun di adegan sintetis; loss dihitung dalam float32 di dalam autocast.
+
+**Langkah 3 — label lebih cepat (31 Okt 2026):** `contact_mask` memakai dilasi dan erosi OpenCV, `edge_weight` memakai
+`distanceTransform` presisi. Tes membandingkan keduanya dengan implementasi scipy lama: mask kontak identik untuk
+r = 1–8, termasuk di tepi tile dan label > 255, dan bobot tepi sama dengan toleransi 1e-5. Biaya tile P2 di laptop:
+
+| Tahap | Sebelum | Sesudah |
+|---|---|---|
+| Kelas kontak | 7,7 ms | 0,9 ms |
+| Bobot tepi | 11,5 ms | 2,3 ms |
+| Augmentasi dan semua label | 32,3 ms | 13,3 ms |
+| Total per tile (dengan baca file) | ±43 ms | ±24 ms |
+
+Dengan 2 worker, batas loader naik dari ±2,9 menjadi ±5,3 iterasi per detik pada kecepatan CPU laptop; CPU Colab diukur
+saat benchmark.
+
+**Langkah 4 — dataset dan training (31 Okt 2026):** `data/dataset.py`, `train.py`, dan `scripts/train.py`.
+- Augmentasi tiap sampel adalah fungsi murni dari (seed, epoch, indeks), sehingga batch tidak bergantung pada jumlah
+  worker, dan run yang dilanjutkan melihat data yang sama. `EpochSampler` memberikan (epoch, indeks) ke dataset, karena
+  worker persisten tidak melihat perubahan epoch pada salinan dataset mereka.
+- DataLoader punya generator sendiri, karena membuat iterator mengambil angka dari RNG global yang juga dipakai
+  *stochastic depth* EfficientNet.
+- `last.pt` ditulis atomik tiap epoch dan tiap 20 menit. Log CSV baris-baris sesudah checkpoint dibuang saat resume.
+  Melanjutkan run dengan config yang berbeda ditolak.
+- Tambahan config: `train.accumulate` dan `train.log_every_steps`.
+- `--benchmark N` mencatat iterasi per detik, porsi waktu menunggu data, memori GPU puncak, dan rata-rata CE, Dice, L_θ.
+
+**Temuan langkah 4 (uji resume):** dua run tanpa henti dari seed yang sama di CPU **tidak identik per bit**, bahkan
+dengan 1 thread dan tanpa oneDNN. Bobot akhirnya berbeda sampai 2·10⁻³, sebesar selisih dengan run yang di-resume.
+Selisih kurva loss-nya sangat kecil (tabel di bawah), jadi kemungkinan besar ini pembulatan yang diperbesar Adam pada parameter
+bergradien hampir nol; sumber persisnya belum dicari. Karena itu tes resume membandingkan kurva loss, bukan bobot.
+Daya tangkapnya diuji dengan sengaja merusak resume (8 tile, potong di langkah 1, 2, 4, 6; skrip di luar repo):
+
+| Resume | Selisih loss terbesar |
+|---|---|
+| utuh | ≤ 8,3·10⁻⁴ |
+| RNG tidak dipulihkan | 1,7·10⁻²–5,9·10⁻² |
+| optimizer tidak dipulihkan | 3,7·10⁻³–4,3·10⁻² |
+| BatchNorm tidak dipulihkan | 2,6·10⁻²–3,5·10⁻² |
+| sampler tidak melewati data yang sudah dipakai | 1,5·10⁻¹–6,8·10⁻¹ (di batas epoch memang tidak ada yang dilewati) |
+
+Ambang tes 2·10⁻³. Dua kerusakan (RNG dan optimizer) ikut menjadi tes, supaya pemeriksaannya tetap tajam.

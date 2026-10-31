@@ -42,6 +42,7 @@ train:                        # docs/EXPERIMENTS.md §3
   enabled: ???
   epochs: null                # E: same for all runs of a dataset, set after measuring it/s (Phase 5)
   batch_size: 16
+  accumulate: 1               # micro-batches per optimizer step; the micro-batch is batch_size / accumulate
   min_micro_batch: 8          # BatchNorm needs ≥ 8 samples; gradient accumulation does not help BN
   optimizer: adamw
   lr: 2.0e-4
@@ -51,6 +52,7 @@ train:                        # docs/EXPERIMENTS.md §3
   amp: true
   num_workers: 2
   checkpoint_every_min: 20
+  log_every_steps: 50
   select_split: val_select    # checkpoint selection
   select_metric: fg_iou
 
