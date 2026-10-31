@@ -1075,3 +1075,21 @@ menghentikan pembuatan tar, dan notebook tersimpan tanpa output.
 79.067 file: 26.355 tile (citra, peta instance, prior) ditambah 2 `index.csv`. Dibuat dalam 6,5 menit, bersamaan dengan
 uji integrasi. `--verify` di laptop lolos dalam 40 s. sha256
 `cac71e66d38ae4ab547a430560e61bbb094b516a056c16f0fff45f5822444b3f`.
+
+**Run pertama di Colab (31 Okt 2026):**
+- Lingkungan: T4 gratis (GPU 15 GB), RAM 12,7 GB, disk 112,6 GB, Python 3.13, torch 2.11.0+cu130, smp 0.6.0, numpy 2.1.3.
+  Laptop: Python 3.12.0, torch 2.14.1+cpu, numpy 2.5.4. Panel Colab menyebut runtime bisa bertahan sampai 5 jam, jadi
+  `MAX_HOURS = 3.5` masih di dalamnya.
+- Run gagal di sel data karena tar belum selesai terunggah ke Drive. Folder `data_tar` baru berisi `.json`, sehingga
+  `cp` hanya menyalin manifest dan `--verify` berhenti pada tar yang tidak ada.
+- **Cacat notebook yang terlihat dari sini:** `!` yang gagal tidak menghentikan Run all. Sel berikutnya tetap berjalan,
+  dan tar yang ditolak `--verify` pun akan tetap diekstrak dan dilatih. Sekarang `--verify` menyebut file yang belum
+  sampai, salinan yang gagal diperiksa dihapus, dan `assert` menghentikan notebook sebelum ekstraksi.
+- **Simulasi Colab di laptop:** uji integrasi tadi memakai laptop yang punya seluruh data, jadi tar belum pernah diuji
+  sebagai satu-satunya sumber. Simulasi memakai clone baru dari GitHub (commit `4c5d6e0`) dan isi tar saja:
+  - Ekstraksi 196 s di laptop.
+  - `TileDataset` B2, B4, dan FULL-P0/P1/P2 membaca tile pertama dan terakhir `train_dedup` (23.427) dan `val_select`
+    (1.928). Masukan 3, 4, dan 5 kanal, ukuran 320².
+  - `--benchmark 1` FULL-P2 berjalan dan menulis `benchmark.json`. Satu langkah B4 menulis `config.yaml`, `run.json`,
+    log, dan `last.pt`.
+  - Jalur GPU (AMP, GradScaler, `torch.save` ke Drive) tetap belum teruji sampai benchmark dan uji resume di Colab.

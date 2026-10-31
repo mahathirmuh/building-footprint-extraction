@@ -257,6 +257,9 @@ python scripts/tables.py && python scripts/figures.py
   `eval.instance.rle_areas`. Model yang belum terlatih bisa memberi ratusan kepingan per tile.
 - **Reproduksibilitas:** dua run dari seed yang sama di CPU tidak identik per bit, bahkan dengan 1 thread. Jadi resume
   diuji lewat kurva loss, bukan kesamaan bobot.
+- **Colab `!`:** perintah `!` yang gagal tidak menghentikan Run all. Pemeriksaan yang harus menghentikan notebook memakai
+  `assert`. Notebook dibuka dari GitHub, jadi sel baru muncul setelah tab dimuat ulang; `git pull` di sel hanya
+  memperbarui kode repo.
 - **Skor instance untuk AP:** rata-rata `1 − P_latar` di piksel instance. B0 tidak punya probabilitas: pakai skor
   konstan 1 dan catat bahwa AP B0 setara satu titik precision–recall.
 
