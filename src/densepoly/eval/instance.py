@@ -41,7 +41,7 @@ def instance_rle(segmentation: list, height: int, width: int) -> dict:
 
 def rle_areas(rles: list[dict]) -> np.ndarray:
     """(n,) float pixels per RLE. pycocotools.mask.area keeps the number of RLEs in a uint8 array, which numpy ≥ 2
-    refuses from 256 on, and a barely trained network gives that many instances on one tile; so the list goes in chunks."""
+    refuses from 256 on, and a barely trained network gives that many instances on one tile; so it gets chunks."""
     if not rles:
         return np.zeros(0)
     parts = [mask_utils.area(rles[i : i + AREA_CHUNK]) for i in range(0, len(rles), AREA_CHUNK)]
