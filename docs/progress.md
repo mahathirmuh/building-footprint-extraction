@@ -1258,25 +1258,31 @@ lain; grid `configs/postproc/grid.yaml` sha256 `8c2f5528…`, sama dengan B0):**
 `outputs/metrics/crowdai/{b0/ref,b4/seed0,b5/seed0}/test.json`, tabel `densepoly-work/logs/phase5_test.md`):**
 - Tile `test` dan `val_clean` dari laptop (`crowdai_eval.tar`, 676.730.880 byte, tanpa manifest) tiba pukul 16.22.
   Hasil ekstraksi cocok dengan jumlah GT: `test` 2.928 tile, `val_clean` 212, tanpa file yang hilang.
-- Prediksi B4 di GPU gagal (CUDA out of memory), karena GPU penuh oleh dua training proyek lain. B4 dijalankan di CPU
-  (8 thread, 1.870 s). Hasilnya setara: inferensi fp32 di kedua perangkat, karena `infer` tidak memakai AMP.
-  Perangkat tercatat di `<split>.meta.json`. B5 memakai kanal B4 yang tersimpan (`--from-channels`).
+- Prediksi B4 di GPU gagal (CUDA out of memory), karena GPU penuh oleh dua training proyek lain. B4 lalu dijalankan
+  di CPU (8 thread, 1.870 s). Pemilik proyek memilih menunggu GPU, jadi setelah GPU kosong (21.27) B4 diprediksi ulang
+  di GPU (60 s) dan B4/B5 dievaluasi ulang. **Angka di bawah dari GPU**, perangkat yang sama dengan kanal tuning
+  `val_tune_sub`. Hasil CPU disimpan di `outputs/backup_phase5_test_cpu/`.
+  - Model dan post-processing sama (beku); yang berbeda hanya perangkat. Konvolusi GPU memakai TF32, CPU fp32. Di
+    32 tile `val_tune_sub`, kanal berselisih paling besar 0,003 dan argmax berbeda di 52 dari 2,88 juta piksel.
+  - Di test: 26.856 prediksi (CPU 26.857). Selisih metrik paling besar 0,14 poin (AP_boundary B5 strata
+    bersentuhan); AP total B4 dan B5 tidak berubah.
+  - B5 memakai kanal B4 yang tersimpan (`--from-channels`). Perangkat tercatat di `<split>.meta.json`.
 
 | `test` (seed 0) | AP | AP50 | AP75 | AP_boundary | `PoLiS_paired` | `MTA_inst` | C-IoU | N-ratio | `merge_rate` | `split_rate` | recall@0,5 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | B0 | 0,08 | 0,26 | 0,03 | 0,05 | 2,775 | 34,66 | 6,93 | 9,82 | 0,02% | 49,18% | 13,2% |
-| B4 | 63,24 | 86,22 | 72,28 | 39,02 | 1,699 | 47,12 | 62,96 | 1,82 | 2,11% | 3,34% | 87,7% |
-| B5 | 62,27 | 86,17 | 71,21 | 36,73 | 1,635 | 37,39 | 73,98 | 1,27 | 2,11% | 3,32% | 87,6% |
+| B4 | 63,24 | 86,21 | 72,28 | 39,01 | 1,699 | 47,11 | 62,97 | 1,82 | 2,11% | 3,34% | 87,7% |
+| B5 | 62,27 | 86,18 | 71,22 | 36,73 | 1,635 | 37,38 | 73,99 | 1,27 | 2,11% | 3,32% | 87,6% |
 
 | AP B4 / B5 per strata | jarang | sedang | padat | bersentuhan | tidak bersentuhan |
 |---|---|---|---|---|---|
 | B4 | 62,53 | 64,29 | 62,83 | 56,64 | 63,65 |
-| B5 | 61,76 | 63,37 | 61,77 | 55,54 | 62,83 |
+| B5 | 61,76 | 63,37 | 61,76 | 55,47 | 62,83 |
 | `merge_rate` B4 | 1,90% | 1,74% | 2,41% | 8,83% | 1,58% |
 
 - B5 dibanding B4 (satu seed, belum ada uji signifikansi): AP −0,97, tetapi poligonnya lebih rapi. `MTA_inst` turun
   9,7°, C-IoU naik 11,0 poin, `PoLiS_paired` turun 0,064 px, N-ratio turun 1,82 → 1,27. Polanya sama di semua strata.
-  8,7% poligon B5 (2.333 dari 26.857) memakai fallback DP/kontur, karena pelurusan gagal pemeriksaan §7.3. Di
+  8,7% poligon B5 (2.323 dari 26.856) memakai fallback DP/kontur, karena pelurusan gagal pemeriksaan §7.3. Di
   `val_tune_sub` angkanya 8,8%.
 - Untuk N2, yang paling membedakan bukan tertil kepadatan: AP strata padat hampir sama dengan jarang. Yang membedakan
   adalah tile dengan rumah bersentuhan: AP B4 56,64 vs 63,65, dan `merge_rate` 8,83% vs 1,58%.

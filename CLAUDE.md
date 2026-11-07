@@ -57,7 +57,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   mereproduksi angka HiSup di val penuh (AP 79,43; dilaporkan di paper 79,4). Fase 4 selesai dan disetujui
   (31 Okt 2026): post-processing lolos oracle §6.3 (laporan kewarasan 55 dari 55; AP watershed oracle 96,53), B0 tersedia
   di `test` (AP 0,076). Fase 5 (infrastruktur model, B4, B5): semua butir selesai, menunggu persetujuan (7 Nov 2026).
-  B4 seed 0 (E = 60) di `test`: AP 63,24; B5: AP 62,27, C-IoU 73,98 (B4 62,96), `MTA_inst` 37,4 (B4 47,1).
+  B4 seed 0 (E = 60) di `test`: AP 63,24; B5: AP 62,27, C-IoU 73,99 (B4 62,97), `MTA_inst` 37,4 (B4 47,1).
 
 ## Cara bekerja di proyek ini
 
