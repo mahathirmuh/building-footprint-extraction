@@ -56,8 +56,9 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   semua split. Fase 3 selesai dan disetujui (30 Okt 2026): pipeline evaluasi lolos uji kewarasan (53 dari 53) dan
   mereproduksi angka HiSup di val penuh (AP 79,43; dilaporkan di paper 79,4). Fase 4 selesai dan disetujui
   (31 Okt 2026): post-processing lolos oracle §6.3 (laporan kewarasan 55 dari 55; AP watershed oracle 96,53), B0 tersedia
-  di `test` (AP 0,076). Fase 5 (infrastruktur model, B4, B5): semua butir selesai, menunggu persetujuan (7 Nov 2026).
+  di `test` (AP 0,076). Fase 5 (infrastruktur model, B4, B5) selesai dan disetujui (7 Nov 2026).
   B4 seed 0 (E = 60) di `test`: AP 63,24; B5: AP 62,27, C-IoU 73,99 (B4 62,97), `MTA_inst` 37,4 (B4 47,1).
+  Fase 6 (Tier 1: N1 dan N3) berjalan sejak 7 Nov 2026: λ = 1 dibekukan, antrean 8 run training (E = 60).
 
 ## Cara bekerja di proyek ini
 

@@ -949,7 +949,7 @@ Laporan kewarasan kini **55 dari 55 uji lolos**. Angkanya sama dengan pratinjau.
 
 **Fase 4 disetujui dan ditutup 31 Okt 2026.** Berikutnya Fase 5 (infrastruktur model, B4 seed 0, dan B5).
 
-## Fase 5 — Infrastruktur model, B4 (seed 0), dan B5 (sedang berjalan)
+## Fase 5 — Infrastruktur model, B4 (seed 0), dan B5 (selesai dan disetujui 7 November 2026)
 
 **Pengukuran sebelum rencana (31 Okt 2026, skrip di luar repo, tanpa menyentuh `test`):**
 - Radius kontak r, pada 3.000 tile acak `train_dedup` (seed 0) dan oracle (c) di `val_tune_sub` (kontur persis,
@@ -1295,3 +1295,35 @@ lain; grid `configs/postproc/grid.yaml` sha256 `8c2f5528…`, sama dengan B0):**
 - Butir "training di Colab terbukti bisa dilanjutkan setelah runtime diputus" diganti uji resume di GPU server
   (6 Nov 2026, di atas), karena training pindah dari Colab. Resume di Colab sendiri tidak pernah dijalankan sampai
   selesai: run pertama berhenti di sel data.
+
+**Persetujuan:** Fase 5 disetujui pemilik proyek pada 7 Nov 2026, pukul 22.01 ("oke setuju"), sekaligus mulainya
+Fase 6 (Tier 1, ±15 jam GPU) dan λ = 1.
+
+## Fase 6 — Tier 1: N1 dan N3 (sedang berjalan)
+
+**λ dibekukan = 1 (7 Nov 2026, sebelum FULL seed 0; PLAN.md Fase 6).** Bahannya benchmark 200 langkah di tile asli
+`train_dedup` (bs 16, 4 worker, AMP, GPU tanpa proses lain; `densepoly-work/logs/benchmark_full_p{0,2}_w4.json`):
+
+| Model | Langkah/s | Memori GPU dicadangkan | CE | Dice | L_θ | Total |
+|---|---|---|---|---|---|---|
+| FULL-P0 (7 Nov 2026, commit `806f53d`) | 13,43 | 6,39 GB | 0,720 | 0,424 | 0,316 | 1,461 |
+| FULL-P2 (6 Nov 2026, commit `e5ca893`) | 13,43 | 6,41 GB | 0,720 | 0,424 | 0,315 | 1,459 |
+
+- L_θ ±22% dari loss total, lebih kecil dari CE dan dari Dice, jadi tidak mendominasi. Aturan PLAN.md: λ diubah dari 1
+  hanya bila L_θ jelas mendominasi. **λ = 1** untuk semua seed FULL.
+- Komponen loss FULL-P0 dan FULL-P2 hampir identik. Ini sesuai desain bobot awal nol kanal prior (keputusan #2): di
+  awal training kedua model berperilaku sama, dan batch-nya sama karena augmentasi adalah fungsi murni dari (seed,
+  epoch, indeks).
+
+**Antrean training Tier 1** (`densepoly-work/phase6.sh`, berjalan lepas dari sesi editor; log
+`densepoly-work/logs/phase6.log`):
+- Semua run memakai E = 60, r = 2, bobot kontak 1, λ = 1, `train.num_workers=4`, dan `--resume`.
+- Urutan: FULL-P0 s0, FULL-P2 s0, B4 s1, FULL-P0 s1, FULL-P2 s1, B4 s2, FULL-P0 s2, FULL-P2 s2. Satu run ±1,85 jam,
+  total ±15 jam bila GPU tidak dipakai proyek lain. Seed 0 didahulukan karena post-processing disetel pada kanal
+  seed 0, dan masalah λ paling awal terlihat di sana.
+- Sebelum tiap run, antrean menunggu sampai GPU tidak dipakai proyek lain: tidak ada proses GPU lain dan antrean
+  aksara (`rep_seeds.py`) tidak berjalan, diperiksa dua kali berselang 60 s. Tujuannya supaya run proyek lain tidak
+  kehabisan memori. Run yang gagal diulang dengan `--resume` setelah GPU kosong, paling banyak 3 kali.
+- Setelah FULL-P0 s0 dan FULL-P2 s0 selesai, kanal `val_tune_sub` disimpan (`predict.py --save-channels`, GPU ±1
+  menit, di antara dua run). Tuning post-processing FULL-P0, B5′, dan FULL-P2 di `val_tune_sub` (grid yang sama,
+  §4) lalu berjalan di CPU sambil run berikutnya dilatih. Test belum disentuh sampai semua tuning beku.
