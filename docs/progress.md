@@ -1093,3 +1093,145 @@ uji integrasi. `--verify` di laptop lolos dalam 40 s. sha256
   - `--benchmark 1` FULL-P2 berjalan dan menulis `benchmark.json`. Satu langkah B4 menulis `config.yaml`, `run.json`,
     log, dan `last.pt`.
   - Jalur GPU (AMP, GradScaler, `torch.save` ke Drive) tetap belum teruji sampai benchmark dan uji resume di Colab.
+
+**Pindah ke server lab (6 Nov 2026, keputusan pemilik proyek):** training dan semua pekerjaan lain dijalankan di server
+lab ITS (akun bersama `s2_giga`), bukan di Colab. Clone tetap di
+`/home/s2_giga/mahathir/trial/building-footprint-extraction`; clone ulang ditolak.
+- Perangkat: NVIDIA RTX 5090 32 GB (driver CUDA 13.2), Intel Core i7-12700 (12 core, 20 thread), RAM 31 GB.
+- Protokol training tidak berubah: AMP fp16 + GradScaler, batch 16, micro-batch ≥ 8, E sama untuk semua run.
+- Clone milik `root`, jadi `s2_giga` hanya bisa membacanya sampai di-chown oleh pemilik proyek (terlihat 7 Nov,
+  03.04). Sampai saat itu:
+  - venv di `/home/s2_giga/mahathir/.venv-densepoly`; paket dibaca dari `src/` dan `third_party/` lewat file `.pth`,
+    setara `pip install -e .`;
+  - data dan output di `/home/s2_giga/mahathir/densepoly-work/{data,outputs}` lewat `DENSEPOLY_DATA`/`DENSEPOLY_OUT`;
+  - git membaca clone lewat `safe.directory` per proses (`densepoly-work/env.sh`), sehingga `git_revision()` tetap
+    mencatat commit. Config git global akun bersama tidak diubah.
+- Lingkungan: Python 3.12.3, torch 2.15.0+cu132, torchvision 0.29.2+cu132, smp 0.6.0, timm 1.0.31, numpy 2.5.4,
+  OpenCV 4.14.0, scikit-image 0.26.0, scipy 1.18.1, shapely 2.2.0, pycocotools 2.0.11, pandas 3.1.1.
+- `pytest -q` dengan GPU disembunyikan (`CUDA_VISIBLE_DEVICES=""`, seperti di laptop): 617 lolos dalam 87 s, di commit
+  `e5ca893`. Log langkah 6 mencatat 614; commit `df01ef0` menambah 3 tes. Tanpa variabel itu, tes training di server
+  ini ikut memakai GPU.
+- Uji jalur GPU di tile sintetis 300² (fixture `write_tiles`, 800 + 64 tile; skrip di luar repo): B4, 2 epoch × 50
+  langkah, bobot ImageNet.
+  - Dua run tanpa putus berselisih paling besar 5,6·10⁻⁵ pada loss.
+  - Run yang diputus di langkah 70 lalu di-resume berselisih paling besar 1,25·10⁻⁴, di langkah 62, sebelum titik
+    putus. Ambang tes 2·10⁻³.
+  - Jalur AMP, GradScaler, state RNG CUDA, dan checkpoint di GPU kini teruji. `run.json` mencatat GPU, torch, dan
+    commit `e5ca893`.
+- Kecepatan sementara (tile sintetis, bs 16, 320², GPU tanpa beban lain). Ini bukan angka laporan; benchmark resmi
+  diulang di tile asli.
+  - FULL-P2: 8,28 langkah/s dengan 2 worker (menunggu data 4%), 9,69 dengan 8 worker.
+  - B4: 13,51 langkah/s dengan 2 worker. Memori GPU puncak 5,9 GB.
+  - Run B4 dengan 8 worker dibuang, karena bertabrakan dengan training proyek lain di GPU yang sama (mulai 21.34).
+  - Log: `densepoly-work/logs/synthetic_benchmark_*.json`.
+
+**Data training di server (6 Nov 2026, 22.07):** tar Colab dari laptop (`crowdai_train_dedup.tar`, 3.472.148.480 byte,
+dibuat di commit `5b3698f`) dikirim dengan `scp`. `pack_colab.py --verify` lolos (ukuran, sha256, file per folder).
+Hasil ekstraksi: 79.067 file di 5 folder, jumlahnya sama dengan manifest. Isi `splits/` dan `configs/data/` tidak
+berubah antara `5b3698f` dan `e5ca893`.
+
+**Benchmark resmi (6 Nov 2026, tile asli `train_dedup`, 200 langkah setelah 10 langkah pemanasan, bs 16, 320², AMP;
+GPU tanpa proses lain sebelum dan sesudah setiap run; `densepoly-work/logs/benchmark_*.json`, commit `e5ca893`):**
+
+| Model | Worker loader | Langkah/s | Menunggu data | Menit per epoch (1.464 langkah) | Memori GPU puncak (dicadangkan) |
+|---|---|---|---|---|---|
+| FULL-P2 | 2 | 10,37 | 25% | 2,35 | 5,90 GB (6,41) |
+| FULL-P2 | 4 | 13,43 | 0% | 1,82 | 5,90 GB (6,41) |
+| B4 | 2 | 14,12 | 0% | 1,73 | 5,88 GB (6,40) |
+
+- **Keputusan:** semua run di server ini memakai `train.num_workers=4` (override CLI, tercatat di `config.yaml` tiap
+  run). Dengan 2 worker, FULL-P2 menunggu data 25% dari waktunya. Jumlah worker tidak mengubah batch
+  (`test_loader_workers_give_the_batches_of_the_main_process`).
+- Komponen loss rata-rata di 200 langkah pertama (bahan keputusan λ, Fase 6): FULL-P2 CE 0,720, Dice 0,424,
+  L_θ 0,316; B4 CE 0,831, Dice 0,413. L_θ tidak mendominasi.
+- Isi tabel EXPERIMENTS §5 (CrowdAI): GPU RTX 5090, 13,43 it/s (FULL-P2, 4 worker), 1.464 iterasi per epoch; E
+  menunggu kurva pilot.
+
+**GT dan hasil Fase 1–4 di server (6 Nov 2026, 22.27):** `crowdai_results.tar` dari laptop (`outputs/gt`, `metrics`,
+`figures`; 1.264.290.816 byte) diekstrak ke `DENSEPOLY_OUT`. Tar ini tidak punya manifest. Jumlah citra dan anotasi
+GT CrowdAI per split sama persis dengan tabel Fase 3 langkah 2: `val_tune` 2.928 / 24.972, `val_tune_sub`
+1.000 / 8.499, `val_select` 1.928 / 16.473, `test` 2.928 / 25.145, `val_clean` 212 / 1.786.
+
+**Pilot kontak dimulai (6 Nov 2026, 22.12; EXPERIMENTS §4.1):** B4 seed 0, bobot kontak 1, E = 30, `pilot_r2` lalu
+`pilot_r5` berurutan (`densepoly-work/pilots.sh`). Keduanya dijalankan berurutan karena GPU juga dipakai pekerjaan lain
+pemilik proyek (±20 GB). Config dicek sebelum mulai: U-Net++ EffB4 ImageNet, RGB, `ce_dice` dengan bobot tepi,
+batch 16, lr 2e-4, wd 1e-4, warmup 1, AMP, seleksi `fg_iou` di `val_select`.
+- 22.16–22.30: evaluasi CPU proyek lain (±11 core) memperlambat training dari ±14 ke ±8 langkah/detik, dengan GPU 55%
+  dan menunggu data 0%. Proses utama kekurangan CPU untuk meluncurkan kernel. Setelah itu kembali ±1,85 menit per epoch.
+
+**Pilot r = 2 selesai (23.14) dan dinilai di `val_select`** (`best.pt` epoch 27, post-processing default, poligon
+`raw`; `outputs/metrics/crowdai/b4/pilot_r2/val_select.json`, ringkasan `densepoly-work/logs/pilot_eval_pilot_r2.json`):
+AP 61,69 (AP50 85,38, AP75 71,27), `merge_rate` 2,83% (padat 3,47%), `split_rate` 3,22%, recall@0,5 86,9%,
+`fg_iou` 0,8796, F1 kontak 0,177 (presisi 0,171, recall 0,182). 17.907 prediksi untuk 16.473 GT, tanpa yang dibuang.
+- `fg_iou` naik cepat sampai epoch ±13, lalu pelan, dan mendatar di epoch 23–29 (0,8789 → 0,8796).
+- Kelas kontak tidak pernah dipilih argmax sampai epoch 7. F1-nya naik pelan sesudahnya, sampai ±0,18.
+
+**Aturan E (dibekukan 6 Nov 2026, 23.17, sebelum hasil pilot r = 5 dan sebelum ada run E = 60):**
+- Kurva E = 30 mendatar, tetapi cosine memang menurunkan lr ke 1e-6 di akhir, jadi mendatarnya kurva belum membuktikan
+  bahwa 30 epoch cukup.
+- Setelah r dan bobot kontak diputuskan (§4.1), satu run B4 seed 0 dengan config terpilih dilatih dengan E = 60.
+- E = 60 dipakai untuk semua run CrowdAI bila AP-nya di `val_select` (post-processing default, poligon `raw`) lebih
+  tinggi ≥ 0,5 poin daripada pilot E = 30 dengan config yang sama. Selain itu E = 30. Ambang 0,5 AP sama dengan
+  §4.1 dan §8.
+- Run dengan E terpilih menjadi B4 seed 0. Run lainnya identik kecuali E, jadi tidak dilatih ulang.
+
+**Lanjutan otomatis (6 Nov 2026, 23.19):** `densepoly-work/orchestrate.sh` berjalan lepas dari sesi editor (`setsid`)
+dan hanya menerapkan aturan yang dibekukan sebelum hasilnya ada:
+1. Pilot r = 5 dinilai.
+2. Radius r ditetapkan (§4.1 langkah 3).
+3. Bila F1 kontak pada r terpilih < 0,30, dijalankan pilot bobot 5 (langkah 4).
+4. Run E = 60 dilatih, lalu E ditetapkan (aturan 23.17).
+5. `seed0` = salinan run dengan E terpilih.
+
+Logika keputusannya (`densepoly-work/decide.py`) diuji dengan 9 kasus buatan, termasuk selisih tepat ±0,5 poin. Uji itu
+menemukan galat pembulatan: AP yang turun tepat 0,5 poin terbaca −0,5000000000000004 dan ditolak. Diperbaiki dengan
+membulatkan selisih AP ke 6 desimal sebelum dibandingkan. Setiap keputusan beserta angkanya tercatat di
+`densepoly-work/logs/decisions.json`.
+
+**Pilot r = 5 dan keputusan radius (7 Nov 2026, 00.12; `densepoly-work/logs/decisions.json`):**
+
+| Pilot (`val_select`, post-processing default, `raw`) | AP | `merge_rate` (padat) | `split_rate` | recall@0,5 | F1 kontak | `fg_iou` |
+|---|---|---|---|---|---|---|
+| r = 2 (`best.pt` epoch 27) | 61,69 | 2,83% (3,47%) | 3,22% | 86,9% | 0,177 | 0,8796 |
+| r = 5 (`best.pt` epoch 29) | 58,61 | 2,63% (2,79%) | 3,57% | 85,7% | 0,289 | 0,8626 |
+
+- **Keputusan: r = 2** (§4.1 langkah 3). `merge_rate` r = 5 memang lebih rendah, tetapi AP-nya turun 3,08 poin, melebihi
+  batas 0,5 poin.
+- Pita kontak yang lebar membuat kelas kontak lebih mudah dipelajari: F1 sudah 0,098 di epoch 2, sedangkan r = 2 baru
+  0,041 di epoch 8. Penggabungan rumah sedikit berkurang, terutama di strata padat (3,47% → 2,79%). Namun `fg_iou` dan
+  AP turun.
+- F1 kontak pada r = 2 (0,177) < 0,30, jadi pilot bobot kontak 5 (`pilot_r2_w5`, E = 30) dimulai pukul 00.12
+  (§4.1 langkah 4).
+
+**Pilot bobot kontak 5 dan keputusan bobot (7 Nov 2026, 01.09):** `pilot_r2_w5` (r = 2, bobot 5, E = 30; `best.pt`
+epoch 29) di `val_select`: AP 59,44, `merge_rate` 3,31% (padat 3,88%), `split_rate` 3,34%, recall@0,5 85,8%,
+F1 kontak 0,403 (presisi 0,377, recall 0,434), `fg_iou` 0,8687.
+- **Keputusan: bobot 1** (§4.1 langkah 4 dengan aturan langkah 3). `merge_rate` bobot 5 justru lebih tinggi
+  (3,31% vs 2,83%), dan AP-nya turun 2,26 poin.
+- Temuan: bobot 5 menggandakan F1 kontak (0,177 → 0,403), tetapi tidak mengurangi penggabungan rumah. Deteksi kontak
+  yang lebih baik di tingkat piksel tidak otomatis menghasilkan pemisahan instance yang lebih baik, dan `fg_iou` turun
+  (0,880 → 0,869).
+- Config B4 di CrowdAI: r = 2 dan bobot kontak 1, sama dengan default `configs/`, jadi tidak ada config yang perlu
+  diubah. Run E = 60 (`e60_r2_w1`) dimulai pukul 01.09.
+
+**Run E = 60 dan keputusan E (7 Nov 2026, 03.01; `densepoly-work/logs/decisions.json`):** `e60_r2_w1` (r = 2, bobot 1,
+E = 60) dilatih 01.09–03.00, 6.656 s untuk 60 epoch (±1,85 menit per epoch). `best.pt` epoch 58, di `val_select`
+(post-processing default, `raw`):
+
+| Run | AP | AP50 | AP75 | `merge_rate` (padat) | `split_rate` | recall@0,5 | F1 kontak | `fg_iou` |
+|---|---|---|---|---|---|---|---|---|
+| E = 30 (`pilot_r2`, epoch 27) | 61,69 | 85,38 | 71,27 | 2,83% (3,47%) | 3,22% | 86,9% | 0,177 | 0,8796 |
+| E = 60 (`e60_r2_w1`, epoch 58) | 62,58 | 86,34 | 72,30 | 3,36% (4,02%) | 2,70% | 87,4% | 0,418 | 0,8849 |
+
+- **Keputusan: E = 60** untuk semua run CrowdAI (aturan 23.17). AP naik 0,89 poin, di atas ambang 0,5.
+- **B4 seed 0** = `outputs/runs/crowdai/b4/seed0`, salinan `e60_r2_w1` (isi identik, `diff -r`; sha256 `best.pt`
+  `0245a40f…`). Config tercatat: seed 0, `train.epochs` 60, `contact_radius_px` 2, `contact_class_weight` 1,
+  `num_workers` 4, commit `e5ca893`.
+- Temuan: dengan training lebih lama, rumah yang terbelah berkurang (3,22% → 2,70%), tetapi yang tergabung bertambah
+  (2,83% → 3,36%). F1 kontak dengan bobot 1 naik sendiri ke 0,418, setara pilot bobot 5, jadi rendahnya F1 di pilot
+  E = 30 sebagian karena training belum cukup. Aturan §4.1 diterapkan di E = 30 sesuai rencana dan tidak diubah.
+- Satu run E = 60 butuh ±1 jam 51 menit di server ini, bila GPU tidak dipakai pekerjaan lain.
+
+**Prediksi B4 seed 0 di `val_tune_sub` (7 Nov 2026):** 1.000 citra, 9.205 prediksi, 22,6 s dengan 16 worker. Kanal
+jaringan disimpan (`--save-channels`, 516 MB). Uji waktu tuning (`--dry-run --limit 100`, 18 worker): B4 ±3,3 menit,
+B5 ±6,9 menit untuk 1.000 citra.
