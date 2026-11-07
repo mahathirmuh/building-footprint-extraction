@@ -1235,3 +1235,21 @@ E = 60) dilatih 01.09–03.00, 6.656 s untuk 60 epoch (±1,85 menit per epoch). 
 **Prediksi B4 seed 0 di `val_tune_sub` (7 Nov 2026):** 1.000 citra, 9.205 prediksi, 22,6 s dengan 16 worker. Kanal
 jaringan disimpan (`--save-channels`, 516 MB). Uji waktu tuning (`--dry-run --limit 100`, 18 worker): B4 ±3,3 menit,
 B5 ±6,9 menit untuk 1.000 citra.
+
+**Tuning post-processing B4 dan B5 (7 Nov 2026; `val_tune_sub`, 1.000 citra; 8 worker, CPU dibagi dengan training proyek
+lain; grid `configs/postproc/grid.yaml` sha256 `8c2f5528…`, sama dengan B0):** dibekukan ke
+`configs/postproc/crowdai/{b4,b5}.yaml` sebelum test disentuh.
+- **B4** (tahap 1 saja, poligon `raw`; 374 s): τ 0,6, m_min 16, A_min 20. AP 62,93, `PoLiS_paired` 1,687.
+  - Ke-36 kombinasi memberi AP 62,90–62,93, jadi tahap instance hampir tidak berpengaruh. Titik terpilih ada di pojok
+    grid, tetapi selisihnya hanya 0,03 poin, sehingga grid tidak diperluas.
+  - Dugaan: kelas kontak jarang aktif, sehingga pemisahan rumah terutama datang dari celah latar yang diprediksi.
+    τ, m_min, dan A_min hanya menggeser kepingan kecil.
+- **B5** (tahap 1 dan 2, poligon `mar`; 751 s): tahap 1 sama dengan B4. Tahap 2: ρ 0,93, k 0,02, δ 10. AP 61,84,
+  `PoLiS_paired` 1,627.
+  - AP tertinggi 61,92 dicapai dengan k 0,03. Selisihnya < 0,2 poin dan `PoLiS_paired`-nya lebih besar (1,641), jadi
+    aturan seri (§4) memilih k 0,02. Rentang tahap 2: AP 59,36–61,92, `PoLiS_paired` 1,627–1,840.
+  - Titik terpilih juga di pojok grid (ρ terbesar, δ terkecil). Ini trade-off yang memang diharapkan: dengan AP sebagai
+    kriteria, makin sedikit regularisasi makin mendekati `raw`. B0 memilih pojok sebaliknya (ρ 0,85, k 0,06, δ 20).
+    Grid tidak diubah, karena grid sama untuk semua model (§4) dan test B0 sudah disentuh.
+- Di `val_tune_sub`, regularisasi B5 menurunkan AP 1,09 poin dibanding B4 (`raw`) dan memperbaiki `PoLiS_paired`
+  (1,687 → 1,627). Klaim baru diambil dari test.

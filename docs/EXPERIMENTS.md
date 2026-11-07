@@ -107,7 +107,7 @@ Biaya CPU (diukur di CPU sandbox saat dokumen disusun; ukur ulang di mesinmu den
 |---|---|---|---|
 | p-hash 6 varian (CrowdAI train + val) | ±6,4 ms/citra + baca disk | 341.058 citra | ±0,6 jam + I/O |
 | MBI by reconstruction + peta celah | ±1,4 s/tile 320² | ±35 rb tile (train_dedup + val_tune + test) | ±14 jam |
-| Tuning post-processing per model | `TODO` (ukur) | 72 kombinasi × 1.000 citra | `TODO` |
+| Tuning post-processing per model | server lab, 8 worker, CPU dibagi: B4 (36 kombinasi) 374 s, B5 (72) 751 s | 36–72 kombinasi × 1.000 citra | ≤ ±0,8 jam (B4), ≤ ±1,7 jam (B5) |
 
 Kalau total Tier 1 melebihi kuota, kurangi E (sama untuk semua run) atau batasi jumlah tile per epoch; jangan
 mengurangi seed Tier 1. Diskusikan dulu.
