@@ -47,12 +47,12 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 | Jadwal lr | warmup linear 1 epoch → cosine ke 1e-6 |
 | Batch | 16 (CrowdAI 320²; WHU 224²). **Micro-batch minimal 8**: gradient accumulation hanya memperbesar batch efektif untuk optimizer, tidak untuk statistik BatchNorm |
 | Presisi | AMP fp16 + GradScaler (T4 tidak cocok untuk bf16); loss dalam float32 |
-| Budget | E epoch yang sama untuk semua run satu dataset; E ditetapkan setelah it/s diukur (§5) |
+| Budget | E epoch yang sama untuk semua run satu dataset; E ditetapkan setelah it/s diukur (§5). CrowdAI: **E = 60** (7 Nov 2026, aturan E di `docs/progress.md` Fase 5) |
 | Augmentasi | flip H/V, rot90, transpose (p 0,5 masing-masing); brightness/contrast ±0,1 hanya di RGB (p 0,5) |
 | Seleksi checkpoint | IoU foreground di `val_select` tiap epoch (sama untuk model biner dan 3 kelas); simpan `best.pt` dan `last.pt`. `val_tune_sub` tidak dipakai selama training |
 | Early stopping | tidak ada (budget tetap) |
 | Seed | 0, 1, 2; `cudnn.benchmark=True` (variasi antar-seed dilaporkan) |
-| Loader | `num_workers=2` di Colab, `pin_memory=True`, label diturunkan on-the-fly dari cache instance |
+| Loader | `num_workers=4` di server lab (`num_workers=2` di Colab), `pin_memory=True`, label diturunkan on-the-fly dari cache instance |
 
 ## 4. Split validasi dan protokol tuning post-processing
 
@@ -98,7 +98,7 @@ Biaya GPU diisi setelah it/s diukur di Fase 5: `jam GPU = E × (iterasi per epoc
 
 | Run | GPU | it/s | iterasi/epoch | E | jam GPU per run | jumlah run | total |
 |---|---|---|---|---|---|---|---|
-| U-Net++ EffB4, CrowdAI 320², bs 16 | `TODO` | `TODO` | ≈ jumlah `train_dedup` / 16 | `TODO` | `TODO` | 9 (Tier 1) | `TODO` |
+| U-Net++ EffB4, CrowdAI 320², bs 16 | RTX 5090 (server lab) | 13,43 (FULL-P2, 4 worker) | 1.464 | 60 | ±1,82 (B4 terukur 1,85 dengan validasi) | 9 (Tier 1) | ±16,4 |
 | U-Net++ EffB4, WHU 224², bs 16 | `TODO` | `TODO` | `TODO` | `TODO` | `TODO` | 1 | `TODO` |
 
 Biaya CPU (diukur di CPU sandbox saat dokumen disusun; ukur ulang di mesinmu dengan 50 tile/citra):
@@ -200,7 +200,7 @@ Dikonfirmasi tanpa perubahan saat Fase 3 dimulai (30 Okt 2026), jadi sejak itu t
 | FULL-P1 | | | | | |
 | FULL-P2 | | | | | |
 
-**SOTA (`crowdai/test`)**
+**SOTA (`crowdai/val_clean`)**
 
 | Metode | Anotasi poligon? | AP | AP_b | PoLiS | MTA | C-IoU | C-IoU_p2p | Param (M) | FPS | Sumber |
 |---|---|---|---|---|---|---|---|---|---|---|

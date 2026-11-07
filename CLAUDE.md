@@ -56,7 +56,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   semua split. Fase 3 selesai dan disetujui (30 Okt 2026): pipeline evaluasi lolos uji kewarasan (53 dari 53) dan
   mereproduksi angka HiSup di val penuh (AP 79,43; dilaporkan di paper 79,4). Fase 4 selesai dan disetujui
   (31 Okt 2026): post-processing lolos oracle §6.3 (laporan kewarasan 55 dari 55; AP watershed oracle 96,53), B0 tersedia
-  di `test` (AP 0,076). Fase 5 (infrastruktur model, B4, B5) berjalan. Belum ada model.
+  di `test` (AP 0,076). Fase 5 (infrastruktur model, B4, B5) berjalan: B4 seed 0 sudah dilatih (7 Nov 2026, E = 60,
+  AP `val_select` 62,58 dengan post-processing default).
 
 ## Cara bekerja di proyek ini
 
@@ -145,9 +146,10 @@ Path data selalu dari variabel lingkungan `DENSEPOLY_DATA` (default `./data`), o
   (30 Okt 2026), karena `pip install` dari GitHub hanya memasang `__init__.py`. `COCOeval.accumulate()`-nya memakai
   `np.float` (rusak di numpy ≥ 1.24) dan tidak dipakai: AP dihitung `eval/stats.py` dari `evalImgs`.
 - Opsional FULL+Y: `ultralytics` (lisensi **AGPL-3.0**; hanya untuk eksperimen, jangan dicampur ke paket inti).
-- Training penuh di GPU Colab (`docs/COLAB.md`). Pekerjaan CPU berat (hash ±0,6 jam-inti, prior ±14 jam-inti, evaluasi
-  val penuh, tuning post-processing) dijalankan di laptop multi-core bila datanya ada di sana, atau di sesi CPU Colab
-  (`docs/COLAB.md` §8). Selalu ukur dulu di sampel kecil dan minta konfirmasi.
+- Training penuh di **server lab** (RTX 5090 32 GB, i7-12700 20 thread; keputusan 6 Nov 2026, menggantikan Colab T4;
+  `docs/COLAB.md` tetap berlaku bila kembali ke Colab). Pekerjaan CPU berat (hash ±0,6 jam-inti, prior ±14 jam-inti,
+  evaluasi val penuh, tuning post-processing) juga di server itu. Selalu ukur dulu di sampel kecil dan minta konfirmasi.
+  GPU dan CPU server dipakai bersama proyek lain: cek `nvidia-smi` sebelum benchmark.
 - Bobot pretrained smp diunduh dari Hugging Face Hub (`smp-hub/efficientnet-b4.imagenet`). Tes selalu memakai
   `encoder_weights=None`.
 
@@ -279,7 +281,8 @@ python scripts/tables.py && python scripts/figures.py
 - Unduhan CrowdAI v1.0 selesai (28 Okt 2026). Unduhan WHU 0,2 m (raster + COCO resmi) selesai (29 Okt 2026). Ruang
   Google Drive: cukup untuk CrowdAI (±3,4 GB data plus checkpoint; dikonfirmasi 31 Okt 2026). WHU (±16 GB citra)
   dicek lagi di Fase 7.
-- Tier GPU Colab: **T4 gratis** (31 Okt 2026). Repo GitHub: **publik** (31 Okt 2026), jadi Colab tidak butuh token.
+- Tier GPU Colab: **T4 gratis** (31 Okt 2026); sejak 6 Nov 2026 training pindah ke server lab (RTX 5090). Repo
+  GitHub: **publik** (31 Okt 2026), jadi Colab tidak butuh token.
 - Definisi kepadatan: default disetujui (28 Okt 2026), yaitu jumlah bangunan GT per tile dibagi tertil. Ambang CrowdAI
   disetujui dan dibekukan 28 Okt 2026: 6 dan 11 bangunan per tile. Indeks sekunder diganti menjadi tile bersentuhan
   vs tidak (r = 2), karena tertil rasio bersentuhan degenerasi. Ambang WHU (GT utama, per patch 224², r = 3)
@@ -287,7 +290,9 @@ python scripts/tables.py && python scripts/figures.py
 - Prior (Fase 2) dibekukan 29 Okt 2026: mode celah `contrast`, L_g 9 px (WHU 13), skala MBI CrowdAI 11–81 px dan WHU
   15, 31, 45, 61, 75, 91, 105, 121 px (SE garis harus ganjil). Radius kontak r dan bobot kelas kontak diputuskan
   sekali di Fase 5 dengan pilot r = 2 lawan r = 5 di `val_select`, karena kontak hanya ±0,01% piksel bangunan di kedua
-  dataset. Aturannya dibekukan 31 Okt 2026, sebelum ada model (`docs/EXPERIMENTS.md` §4.1).
+  dataset. Aturannya dibekukan 31 Okt 2026, sebelum ada model (`docs/EXPERIMENTS.md` §4.1). Hasil pilot (7 Nov 2026):
+  **r = 2, bobot kontak 1** untuk semua model 3 kelas CrowdAI. Budget **E = 60** untuk semua run CrowdAI (aturan E
+  dibekukan 6 Nov 2026 sebelum run E = 60; AP `val_select` +0,89). Server memakai `train.num_workers=4`.
 - Kriteria keputusan di `docs/EXPERIMENTS.md` §8 (termasuk ambang "mendekati SOTA" ≤ 3 AP dan aturan pemilihan FULL
   final) dibekukan, lalu dikonfirmasi tanpa perubahan saat Fase 3 dimulai (30 Okt 2026). Sejak itu terkunci.
 - Sitasi yang perlu dicek: Dahatonde dkk. (2024) [lengkapi]; Huang & Zhang (2011) halaman/DOI; halaman Pix2Poly
