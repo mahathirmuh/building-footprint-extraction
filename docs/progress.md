@@ -1327,3 +1327,19 @@ Fase 6 (Tier 1, ±15 jam GPU) dan λ = 1.
 - Setelah FULL-P0 s0 dan FULL-P2 s0 selesai, kanal `val_tune_sub` disimpan (`predict.py --save-channels`, GPU ±1
   menit, di antara dua run). Tuning post-processing FULL-P0, B5′, dan FULL-P2 di `val_tune_sub` (grid yang sama,
   §4) lalu berjalan di CPU sambil run berikutnya dilatih. Test belum disentuh sampai semua tuning beku.
+
+**Tuning seed 0 FULL-P0, B5′, FULL-P2 (7–8 Nov 2026; `val_tune_sub`, 8 worker di CPU sambil run berikutnya dilatih;
+grid sha256 `8c2f5528…`, sama dengan B0, B4, dan B5):** dibekukan ke `configs/postproc/crowdai/{full_p0,b5p,full_p2}.yaml`
+sebelum test disentuh.
+
+| Model (mode poligon) | τ | m_min | A_min | ρ | k | δ | AP | `PoLiS_paired` | waktu |
+|---|---|---|---|---|---|---|---|---|---|
+| FULL-P0 (`theta`) | 0,6 | 8 | 20 | 0,93 | 0,02 | 10 | 62,74 | 1,565 | 325 s |
+| B5′ (`mar`, model FULL-P0) | 0,6 | 8 | 20 | 0,93 | 0,02 | 10 | 62,66 | 1,583 | 355 s |
+| FULL-P2 (`theta`) | 0,6 | 16 | 10 | 0,93 | 0,02 | 10 | 62,95 | 1,559 | 307 s |
+
+- Tahap instance kembali hampir datar: rentang AP tahap 1 hanya 0,22 poin (FULL-P0 63,54–63,76) dan 0,14 poin
+  (FULL-P2). Tahap poligon kembali memilih regularisasi paling ringan di grid, sama seperti B5.
+- FULL-P2: AP tertinggi tahap 2 adalah 63,08, tetapi selisihnya < 0,2 poin, jadi aturan seri memilih titik dengan
+  `PoLiS_paired` terkecil.
+- Ini angka split tuning, bukan klaim. Uji N1 dan N3 memakai test, 3 seed, dan kriteria §8.
