@@ -174,7 +174,7 @@ densepoly/
 │   ├── losses.py  train.py  infer.py
 │   ├── postproc/    # markers.py, watershed.py, contours.py, regularize.py, polygonize.py, yolo_seeds.py
 │   ├── classical/b0.py
-│   └── eval/        # coco_io.py, pixel.py, instance.py, vertex.py, orientation.py, run_eval.py, stats.py
+│   └── eval/        # coco_io.py, pixel.py, instance.py, vertex.py, orientation.py, run_eval.py, stats.py, tables.py
 ├── third_party/pix2poly_metrics/            # polis.py, angle_eval.py, cIoU.py (MIT, dengan catatan perbaikan)
 ├── scripts/         # CLI: prepare_*, dedup_crowdai, make_density, precompute_priors, train, predict, evaluate,
 │                    #      tune_postproc, pack_colab, benchmark, tables, figures
