@@ -1343,3 +1343,16 @@ sebelum test disentuh.
 - FULL-P2: AP tertinggi tahap 2 adalah 63,08, tetapi selisihnya < 0,2 poin, jadi aturan seri memilih titik dengan
   `PoLiS_paired` terkecil.
 - Ini angka split tuning, bukan klaim. Uji N1 dan N3 memakai test, 3 seed, dan kriteria §8.
+
+**FULL final dipilih di `val_select` sebelum test disentuh (8 Nov 2026, §8 poin 6): FULL-P0.** Parameter post-processing
+beku, 3 seed, GPU, commit `a04178a`; dibuat `scripts/tables.py --table full_final`
+(`outputs/tables/crowdai/full_final.json`).
+
+| Model | AP seed 0 | AP seed 1 | AP seed 2 | AP rata-rata |
+|---|---|---|---|---|
+| FULL-P0 | 62,48 | 61,29 | 61,49 | 61,76 |
+| FULL-P2 | 62,57 | 60,83 | 61,23 | 61,54 |
+
+- Selisih FULL-P2 − FULL-P0 = −0,21 poin. FULL-P0 lebih tinggi. Andai selisihnya di bawah 0,2 poin, aturan seri juga
+  memilih FULL-P0 karena kanal inputnya lebih sedikit, jadi pilihannya tidak bergantung pada batas 0,2.
+- Pilihan ini dipakai untuk SOTA, WHU, dan FULL+Y (§2). Uji N3 tetap membandingkan FULL-P2 dengan FULL-P0 di test.
