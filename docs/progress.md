@@ -1435,3 +1435,36 @@ Tabel baru dibuat 9 Nov: pemantau ikut mati saat sesi editor terputus, dan pembu
 
 **Persetujuan:** Fase 6 disetujui pemilik proyek pada 9 Nov 2026, pukul 22.30 ("lanjut sesuai rekomendasimu"). FULL final
 = FULL-P0 dipakai untuk Fase 7 dan seterusnya.
+
+## Fase 7 — Tier 2: atribusi prior, rantai ablasi lengkap, WHU (sedang berjalan)
+
+**Rencana dan biayanya disetujui pemilik proyek pada 9 Nov 2026, pukul 22.40 ("ya"),** termasuk training CrowdAI ±11 jam
+GPU, FULL-P1, dan aturan tunggu GPU yang baru.
+
+**Biaya CrowdAI** (benchmark 200 langkah di tile asli, 9 Nov 2026, commit `a1a1dac`, 4 worker; `densepoly-work/logs/benchmark_*_w4.json`):
+
+| Model | Langkah/s | Memori GPU dicadangkan | Jam per run (E = 60, tanpa validasi) | Run |
+|---|---|---|---|---|
+| B1 | 17,74 | 5,08 GB | 1,38 | 1 |
+| B2 | 13,30 | 6,41 GB | 1,83 | 1 |
+| B3 | 13,38 | 6,41 GB | 1,82 | 1 |
+| FULL-P1 | 13,01 | 6,40 GB | 1,88 | 3 |
+
+Di Fase 6, waktu nyata per run 1,5–5% di atas angka benchmark karena validasi tiap epoch, dan bisa lebih lama bila
+server dipakai bersama.
+
+**FULL-P1 tetap dijalankan, paling akhir (9 Nov 2026).** N3 gabungan tidak didukung, tetapi hasil itu belum memisahkan MBI
+dari peta celah (§8 poin 3). Bila GPU dibutuhkan proyek lain, bagian ini yang pertama dipotong, dengan alasan tertulis.
+
+**Aturan tunggu GPU diubah (9 Nov 2026):** langkah GPU menunggu hanya bila antrean aksara (`rep_seeds.py`) hidup atau proses
+lain memakai lebih dari 2 GB GPU, diperiksa dua kali berselang 60 s. Alasannya: layanan whisper milik pengguna lain (±1 GB)
+muncul-hilang di GPU, sehingga aturan "GPU harus benar-benar kosong" bisa menahan antrean tanpa batas.
+
+**Antrean CrowdAI** (`densepoly-work/phase7.sh`, berjalan lepas dari sesi editor; log `densepoly-work/logs/phase7.log`):
+- B1, B2, B3 seed 0, lalu FULL-P1 seed 0–2. Semua E = 60, r = 2, bobot kontak 1, λ = 1, `train.num_workers=4`, `--resume`.
+- Setelah seed 0 tiap eksperimen: kanal `val_tune_sub` (GPU), lalu tuning di CPU dengan grid yang sama (§4).
+- Setelah semua tuning ada, file `configs/postproc/crowdai/{b1,b2,b3,full_p1}.yaml` di-commit oleh antrean. Baru sesudah itu
+  test disentuh: prediksi, evaluasi, lalu `scripts/tables.py`.
+
+**WHU belum dimulai.** Citra WHU belum ada di server (dikirim dari laptop) dan `TileDataset` masih khusus CrowdAI. E dan
+biayanya ditetapkan setelah diukur, lalu disetujui dulu.
