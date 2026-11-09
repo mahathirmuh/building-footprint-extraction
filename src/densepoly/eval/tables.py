@@ -1,7 +1,7 @@
 """Result tables of docs/EXPERIMENTS.md §9 and the decisions of §8, from the saved evaluations of scripts/evaluate.py.
 
-Phase 6 needs four tables: the ablation table (test, mean ± SD over the seeds), N1 (B5 → B5′ → FULL-P0) and N3 (FULL-P0 →
-FULL-P2) in the dense stratum of test, and the choice of the FULL final on val_select. The comparisons are those of
+The tables: ablation (test, mean ± SD over the seeds), N1 (B5 → B5′ → FULL-P0), N3 (FULL-P0 → FULL-P2) and the attribution
+of the priors (FULL-P0 → FULL-P1 → FULL-P2) in the dense stratum of test, and the choice of the FULL final on val_select. The comparisons are those of
 eval/stats.py (cluster bootstrap by image, Δ per seed and then averaged); no metric is recomputed from predictions. Every
 table is written as Markdown for reading and as JSON with its numbers and the metric files behind them.
 """
@@ -59,6 +59,13 @@ N1_METRICS = ("PoLiS_paired", "MTA_inst", "AP")
 N3_METHODS = ("full_p0", "full_p2")
 N3_STEPS = (("full_p0", "full_p2"),)
 N3_METRICS = ("merge_rate", "split_rate", "recall_inst50", "AP")
+ATTRIBUTION_METHODS = ("full_p0", "full_p1", "full_p2")
+ATTRIBUTION_STEPS = (("full_p0", "full_p1"), ("full_p1", "full_p2"), ("full_p0", "full_p2"))
+ATTRIBUTION_STEP_NOTES = {
+    "full_p0->full_p1": "sumbangan MBI, deskriptif",
+    "full_p1->full_p2": "sumbangan peta celah",
+    "full_p0->full_p2": "prior gabungan (N3)",
+}
 THETA_STATS = ("theta_err_median", "theta_err_p90")
 
 PERCENT = {
@@ -181,6 +188,15 @@ def decide_n1(total: dict) -> dict:
 def decide_n3(step: dict) -> dict:
     """§8 point 2, from the comparisons of FULL-P0 → FULL-P2 in the dense stratum."""
     return _decision("EXPERIMENTS §8 point 2", {"merge_rate": improved(step["merge_rate"]), "AP": ap_kept(step["AP"])})
+
+
+def decide_attribution(steps: dict) -> dict:
+    """§8 point 3: "the gap map helps" needs FULL-P2 to pass criterion 2 against FULL-P0 and also against FULL-P1."""
+    checks = {}
+    for name, title in (("full_p0->full_p2", "FULL-P0 → FULL-P2"), ("full_p1->full_p2", "FULL-P1 → FULL-P2")):
+        checks[f"merge_rate ({title})"] = improved(steps[name]["merge_rate"])
+        checks[f"AP ({title})"] = ap_kept(steps[name]["AP"])
+    return _decision("EXPERIMENTS §8 point 3", checks)
 
 
 def choose_full_final(ap_per_seed: dict[str, list[float]]) -> dict:
@@ -357,7 +373,7 @@ def _check_line(metric: str, check: dict) -> str:
             f"- `{metric}` lebih baik: CI 95% di bawah 0 = {_yes(check['ci_below_zero'])}, "
             f"turun di semua seed = {_yes(check['lower_in_every_seed'])}"
         )
-    return f"- AP tidak turun lebih dari 0,5 poin: Δ {cell('AP', check['delta'], True)} poin = {_yes(check['passed'])}"
+    return f"- {metric} tidak turun lebih dari 0,5 poin: Δ {cell('AP', check['delta'], True)} poin = {_yes(check['passed'])}"
 
 
 def _comparison_lines(title: str, payload: dict, header: tuple, names: tuple, notes: dict | None, claim: str) -> list[str]:
@@ -405,8 +421,22 @@ def n3(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None)
     return payload, _comparison_lines("N3", payload, header, N3_METRICS, None, "N3")
 
 
-BUILDERS = {"ablation": ablation, "full_final": full_final, "n1": n1, "n3": n3}
-REQUIRED = {"full_final": (FULL_CANDIDATES, "val_select"), "n1": (N1_METHODS, "test"), "n3": (N3_METHODS, "test")}
+def attribution(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> tuple[dict, list[str]]:
+    """FULL-P0 → FULL-P1 → FULL-P2 in the dense stratum of test, with the decision of §8 point 3."""
+    payload = _comparison(dataset, ATTRIBUTION_METHODS, ATTRIBUTION_STEPS, N3_METRICS, n_rep, splits_dir)
+    payload["decision"] = decide_attribution(payload["steps"])
+    header = ("merge rate ↓", "split rate ↓", "recall@0,5", "AP")
+    claim = 'Klaim "peta celah membantu"'
+    return payload, _comparison_lines("Atribusi prior", payload, header, N3_METRICS, ATTRIBUTION_STEP_NOTES, claim)
+
+
+BUILDERS = {"ablation": ablation, "full_final": full_final, "n1": n1, "n3": n3, "attribution": attribution}
+REQUIRED = {
+    "full_final": (FULL_CANDIDATES, "val_select"),
+    "n1": (N1_METHODS, "test"),
+    "n3": (N3_METHODS, "test"),
+    "attribution": (ATTRIBUTION_METHODS, "test"),
+}
 
 
 def missing_for(dataset: str, name: str) -> list[str]:

@@ -170,6 +170,27 @@ def test_n3_when_the_prior_fixes_a_merge_on_the_dense_tiles(splits):
     assert any("**N3 didukung**" in line for line in lines)
 
 
+@pytest.mark.parametrize(
+    ("p0", "p1", "p2", "supported"),
+    [
+        ("a", "a", "fix_merge", True),  # the gap map alone removes the merge
+        ("a", "fix_merge", "fix_merge", False),  # MBI already removed it: P2 is no better than P1
+        ("fix_merge", "a", "fix_merge", False),  # P2 beats P1 only, MBI made it worse: no better than without priors
+        ("a", "a", "a", False),  # nothing changes
+    ],
+)
+def test_the_gap_map_claim_needs_p2_to_beat_both_p0_and_p1(splits, p0, p1, p2, supported):
+    install(full_p0=p0, full_p1=p1, full_p2=p2)
+    make_dense(splits, [6])
+    payload, lines = tables.attribution("crowdai", n_rep=30, splits_dir=splits)
+    assert payload["decision"]["supported"] is supported
+    assert list(payload["steps"]) == ["full_p0->full_p1", "full_p1->full_p2", "full_p0->full_p2"]
+    verdict = "didukung" if supported else "tidak didukung"
+    assert any(f'**Klaim "peta celah membantu" {verdict}**' in line for line in lines)
+    assert any("AP (FULL-P1 → FULL-P2) tidak turun" in line for line in lines)
+    assert any("sumbangan MBI, deskriptif" in line for line in lines)
+
+
 def test_values_of_the_methods_use_the_gt_that_all_of_them_matched():
     def run(gt_ids, polis, theta):
         pairs = pd.DataFrame(
@@ -200,7 +221,8 @@ def test_theta_errors_are_none_for_a_method_without_theta():
 
 def test_ablation_summarises_the_seeds_and_leaves_out_what_was_not_run(splits):
     install(b5="a", b5p="a", full_p0="gt")
-    shutil.rmtree(metrics_root() / "full_p2", ignore_errors=True)
+    for exp in ("full_p1", "full_p2"):
+        shutil.rmtree(metrics_root() / exp, ignore_errors=True)
     payload, lines = tables.ablation("crowdai")
     assert "b1" not in payload["rows"] and "full_p2" not in payload["rows"]
     row = payload["rows"]["b5"]
