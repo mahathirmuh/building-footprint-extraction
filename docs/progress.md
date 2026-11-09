@@ -1299,7 +1299,7 @@ lain; grid `configs/postproc/grid.yaml` sha256 `8c2f5528…`, sama dengan B0):**
 **Persetujuan:** Fase 5 disetujui pemilik proyek pada 7 Nov 2026, pukul 22.01 ("oke setuju"), sekaligus mulainya
 Fase 6 (Tier 1, ±15 jam GPU) dan λ = 1.
 
-## Fase 6 — Tier 1: N1 dan N3 (sedang berjalan)
+## Fase 6 — Tier 1: N1 dan N3 (selesai, menunggu persetujuan)
 
 **λ dibekukan = 1 (7 Nov 2026, sebelum FULL seed 0; PLAN.md Fase 6).** Bahannya benchmark 200 langkah di tile asli
 `train_dedup` (bs 16, 4 worker, AMP, GPU tanpa proses lain; `densepoly-work/logs/benchmark_full_p{0,2}_w4.json`):
@@ -1356,3 +1356,79 @@ beku, 3 seed, GPU, commit `a04178a`; dibuat `scripts/tables.py --table full_fina
 - Selisih FULL-P2 − FULL-P0 = −0,21 poin. FULL-P0 lebih tinggi. Andai selisihnya di bawah 0,2 poin, aturan seri juga
   memilih FULL-P0 karena kanal inputnya lebih sedikit, jadi pilihannya tidak bergantung pada batas 0,2.
 - Pilihan ini dipakai untuk SOTA, WHU, dan FULL+Y (§2). Uji N3 tetap membandingkan FULL-P2 dengan FULL-P0 di test.
+
+**Hasil uji di `crowdai/test` (9 Nov 2026).** Tiga seed, post-processing beku dari `val_tune_sub`, jaringan dijalankan di
+GPU (commit `499e966`; B4 dan B5 seed 0 dari Fase 5, commit `2de5950`, kode prediksinya sama), bootstrap klaster per citra
+1.000 replikasi. Dibuat `scripts/tables.py`; angka di `outputs/tables/crowdai/{ablation,n1,n3,full_final}.json`. Selisih
+per seed `PoLiS_paired`, `MTA_inst`, AP, dan `merge_rate` dihitung ulang langsung dari tabel `pairs`/`per_image` dan JSON
+metrik tanpa `eval/stats.py`, dan hasilnya sama.
+
+Semua tile (rata-rata ± SD; B0 satu run):
+
+| Model | AP | AP_b | IoU | PoLiS | MTA | C-IoU | N-ratio | merge rate |
+|---|---|---|---|---|---|---|---|---|
+| B0 | 0,08 | 0,05 | 22,49 | 3,525 | 41,12 | 6,93 | 9,82 | 0,02 |
+| B4 | 62,91 ± 0,32 | 38,39 ± 0,61 | 88,46 ± 0,18 | 1,903 ± 0,028 | 47,11 ± 0,13 | 62,69 ± 0,26 | 1,83 ± 0,01 | 2,07 ± 0,03 |
+| B5 | 61,93 ± 0,31 | 36,22 ± 0,49 | 88,04 ± 0,17 | 1,836 ± 0,018 | 37,30 ± 0,13 | 73,87 ± 0,10 | 1,27 ± 0,01 | 2,05 ± 0,06 |
+| B5′ | 62,04 ± 0,67 | 36,21 ± 1,21 | 88,03 ± 0,36 | 1,844 ± 0,042 | 36,63 ± 0,22 | 74,40 ± 0,67 | 1,25 ± 0,02 | 1,94 ± 0,21 |
+| FULL-P0 | 61,94 ± 0,68 | 36,22 ± 1,19 | 88,01 ± 0,35 | 1,823 ± 0,044 | 36,34 ± 0,24 | 74,55 ± 0,64 | 1,26 ± 0,03 | 1,96 ± 0,20 |
+| FULL-P2 | 61,86 ± 0,66 | 36,16 ± 1,29 | 87,99 ± 0,38 | 1,815 ± 0,045 | 36,22 ± 0,23 | 74,22 ± 0,85 | 1,27 ± 0,03 | 2,09 ± 0,30 |
+
+**N1 didukung (§8 poin 1).** Strata padat, 857 tile; nilai absolut pada GT yang ter-match oleh ketiga metode:
+
+| Model | `PoLiS_paired` | `MTA_inst` | galat θ median | galat θ p90 | AP |
+|---|---|---|---|---|---|
+| B5 | 1,503 ± 0,012 | 36,94 ± 0,11 | 0,00 ± 0,00 | 3,48 ± 0,07 | 61,47 ± 0,27 |
+| B5′ | 1,482 ± 0,029 | 36,17 ± 0,19 | 0,00 ± 0,00 | 3,11 ± 0,09 | 61,86 ± 0,63 |
+| FULL-P0 | 1,465 ± 0,028 | 36,01 ± 0,25 | 0,27 ± 0,03 | 2,45 ± 0,06 | 61,82 ± 0,61 |
+
+| Langkah | Metrik | Δ | CI 95% | Δ per seed |
+|---|---|---|---|---|
+| B5 → B5′ (pelatihan θ) | `PoLiS_paired` | −0,020 | [−0,027; −0,013] | −0,039, −0,002, −0,020 |
+| B5 → B5′ | `MTA_inst` | −0,77 | [−0,92; −0,63] | −0,96, −0,74, −0,62 |
+| B5 → B5′ | AP | +0,40 | [+0,13; +0,56] | +0,81, −0,02, +0,40 |
+| B5′ → FULL-P0 (pemanduan θ) | `PoLiS_paired` | −0,017 | [−0,019; −0,015] | −0,016, −0,016, −0,018 |
+| B5′ → FULL-P0 | `MTA_inst` | −0,18 | [−0,27; −0,09] | −0,22, −0,23, −0,07 |
+| B5′ → FULL-P0 | AP | −0,04 | [−0,13; +0,07] | −0,05, +0,04, −0,12 |
+| **B5 → FULL-P0 (total)** | `PoLiS_paired` | **−0,037** | [−0,044; −0,030] | −0,054, −0,018, −0,039 |
+| **B5 → FULL-P0** | `MTA_inst` | **−0,94** | [−1,10; −0,78] | −1,20, −0,98, −0,63 |
+| **B5 → FULL-P0** | AP | **+0,35** | [+0,11; +0,54] | +0,76, +0,02, +0,28 |
+
+- Semua syarat terpenuhi: CI kedua metrik di bawah 0, keduanya turun di ketiga seed, dan AP tidak turun.
+- Efeknya konsisten tetapi kecil, ±2,5% dari nilai B5 untuk `PoLiS_paired` maupun `MTA_inst`.
+- Dekomposisi (deskriptif): perbaikan `MTA_inst` sebagian besar datang dari **pelatihan** θ (−0,77°), bukan dari
+  **pemanduan** dengan head θ (−0,18°). `PoLiS_paired` terbagi hampir sama (−0,020 dan −0,017 px). Pemanduan tidak
+  mengubah AP (CI memuat 0).
+- Diagnostik θ pada model yang sama (B5′ minAreaRect vs FULL-P0 head): p90 turun dari 3,11° ke 2,45°. Median tidak bisa
+  dipakai membandingkan keduanya: minAreaRect tepat 0° pada lebih dari separuh pasangan (51,6% pada B5 seed 0, dari
+  `test.pairs.parquet`, cek ad hoc) karena mask dan GT sama-sama sejajar sumbu, sedangkan keluaran head kontinu.
+- CI bootstrap hanya memuat variasi citra, bukan variasi seed. SD AP antar-seed B5′ dan FULL-P0 (±0,6) dua kali B5 (±0,3);
+  syarat "arah sama di ketiga seed" menjaga sebagian masalah ini.
+
+**N3 tidak didukung (§8 poin 2).** Strata padat, 857 tile:
+
+| Model | `merge_rate` | `split_rate` | recall@0,5 | AP |
+|---|---|---|---|---|
+| FULL-P0 | 2,22 ± 0,24 | 3,11 ± 0,37 | 88,06 ± 0,22 | 61,82 ± 0,61 |
+| FULL-P2 | 2,38 ± 0,35 | 3,29 ± 0,23 | 87,87 ± 0,19 | 61,74 ± 0,69 |
+
+| Metrik (FULL-P0 → FULL-P2) | Δ | CI 95% | Δ per seed |
+|---|---|---|---|
+| `merge_rate` | +0,15 | [+0,02; +0,30] | +0,19, +0,37, −0,11 |
+| `split_rate` | +0,17 | [−0,01; +0,35] | +0,31, +0,24, −0,03 |
+| recall@0,5 | −0,19 | [−0,40; −0,00] | −0,23, −0,20, −0,14 |
+| AP | −0,08 | [−0,27; +0,08] | −0,01, −0,22, −0,00 |
+
+- Syarat utama gagal: `merge_rate` tidak turun. CI-nya malah sedikit di atas 0 dan arahnya tidak sama di ketiga seed. AP
+  lolos syarat (tidak turun lebih dari 0,5 poin). Hasil negatif ini dilaporkan apa adanya.
+- Selisih `merge_rate` (0,15 poin) lebih kecil dari variasi antar-seed (SD 0,24 dan 0,35).
+- Bobot konvolusi pertama FULL-P2 setelah training (`best.pt`, 3 seed, cek ad hoc): norma kanal prior 0,61–0,70, kanal RGB
+  5,59–13,23. Jaringan hanya memakai prior sedikit. Ini deskriptif saja, karena skala input tiap kanal berbeda.
+
+**Masalah:** antrean test menunggu GPU pukul 17.16–22.18 (8 Nov), karena proses Kraken proyek `aksara-jawa-ocr` memakainya.
+Tabel baru dibuat 9 Nov: pemantau ikut mati saat sesi editor terputus, dan pembuatan tabel belum masuk antrean lepas-sesi.
+
+**Cek "Selesai jika" Fase 6:**
+- Semua run Tier 1 selesai dengan 3 seed: B4, FULL-P0, dan FULL-P2 (B4 seed 0 dari Fase 5), semuanya E = 60.
+- Uji §8 untuk N1 dan N3 selesai, keputusannya di atas; FULL final = FULL-P0 (dipilih di `val_select`).
+- `pytest -q` (GPU disembunyikan): 646 lolos.
