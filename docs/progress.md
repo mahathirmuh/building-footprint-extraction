@@ -1299,7 +1299,7 @@ lain; grid `configs/postproc/grid.yaml` sha256 `8c2f5528…`, sama dengan B0):**
 **Persetujuan:** Fase 5 disetujui pemilik proyek pada 7 Nov 2026, pukul 22.01 ("oke setuju"), sekaligus mulainya
 Fase 6 (Tier 1, ±15 jam GPU) dan λ = 1.
 
-## Fase 6 — Tier 1: N1 dan N3 (selesai, menunggu persetujuan)
+## Fase 6 — Tier 1: N1 dan N3 (selesai dan disetujui 9 November 2026)
 
 **λ dibekukan = 1 (7 Nov 2026, sebelum FULL seed 0; PLAN.md Fase 6).** Bahannya benchmark 200 langkah di tile asli
 `train_dedup` (bs 16, 4 worker, AMP, GPU tanpa proses lain; `densepoly-work/logs/benchmark_full_p{0,2}_w4.json`):
@@ -1432,3 +1432,6 @@ Tabel baru dibuat 9 Nov: pemantau ikut mati saat sesi editor terputus, dan pembu
 - Semua run Tier 1 selesai dengan 3 seed: B4, FULL-P0, dan FULL-P2 (B4 seed 0 dari Fase 5), semuanya E = 60.
 - Uji §8 untuk N1 dan N3 selesai, keputusannya di atas; FULL final = FULL-P0 (dipilih di `val_select`).
 - `pytest -q` (GPU disembunyikan): 646 lolos.
+
+**Persetujuan:** Fase 6 disetujui pemilik proyek pada 9 Nov 2026, pukul 22.30 ("lanjut sesuai rekomendasimu"). FULL final
+= FULL-P0 dipakai untuk Fase 7 dan seterusnya.

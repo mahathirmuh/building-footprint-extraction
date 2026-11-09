@@ -58,7 +58,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   (31 Okt 2026): post-processing lolos oracle §6.3 (laporan kewarasan 55 dari 55; AP watershed oracle 96,53), B0 tersedia
   di `test` (AP 0,076). Fase 5 (infrastruktur model, B4, B5) selesai dan disetujui (7 Nov 2026).
   B4 seed 0 (E = 60) di `test`: AP 63,24; B5: AP 62,27, C-IoU 73,99 (B4 62,97), `MTA_inst` 37,4 (B4 47,1).
-  Fase 6 (Tier 1) selesai 9 Nov 2026, menunggu persetujuan: FULL final = FULL-P0 (`val_select`); N1 didukung di strata padat
+  Fase 6 (Tier 1) selesai dan disetujui (9 Nov 2026): FULL final = FULL-P0 (`val_select`); N1 didukung di strata padat
   `test` (`PoLiS_paired` −0,037 px, `MTA_inst` −0,94°, AP +0,35); N3 tidak didukung (`merge_rate` +0,15 poin, arah tidak konsisten).
 
 ## Cara bekerja di proyek ini
