@@ -10,11 +10,14 @@ batch does not depend on the number of workers, and a run resumed in the middle 
 drawn. EpochSampler hands (epoch, index) to the dataset, because persistent workers keep their own copy of the dataset
 and would never see a new epoch set on it.
 
-CrowdAI only for now; WHU patches, cut from the official tiles, come with Phase 7.
+A CrowdAI sample is one tile. A WHU sample is one patch cut from its official tile at the offset in patches.csv
+(docs/DATA.md §3.2), with the instance map of the patch and the priors cut from the cached map of that tile.
 """
 
 from __future__ import annotations
 
+import csv
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -25,11 +28,32 @@ from densepoly import paths
 from densepoly.data.transforms import make_sample, pad
 from densepoly.labels.contact import class_map
 from densepoly.priors.cache import CHANNELS, load_stats, normalize, read_prior, read_rgb, units
-from densepoly.utils.io import read_png
+from densepoly.utils.io import read_lines, read_png
 
 MODES = ("train", "val", "predict")
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], np.float32)
 IMAGENET_STD = np.array([0.229, 0.224, 0.225], np.float32)
+
+
+@dataclass(frozen=True)
+class TileRef:
+    """Where the pixels of one sample are."""
+
+    key: str  # image id: names the instance map and identifies the predictions
+    image: Path  # the file holding the pixels
+    prior_key: str  # names the prior map
+    offset: tuple[int, int] | None = None  # (x, y) of the sample inside the file; None when the file is the sample
+
+
+def tile_refs(dataset: str, split: str, splits_dir: Path | None = None) -> list[TileRef]:
+    """The samples of a split, in the order of its list."""
+    if dataset == "crowdai":
+        return [TileRef(unit.key, unit.image, unit.key) for unit in units(dataset, split, splits_dir)]
+    tiles = {unit.key: unit.image for unit in units(dataset, split, splits_dir)}
+    with paths.patch_index(dataset, split).open(encoding="utf-8") as f:
+        patches = {row["file_name"]: row for row in csv.DictReader(f)}
+    rows = [patches[name] for name in read_lines(paths.split_list(dataset, split, splits_dir))]
+    return [TileRef(row["image_id"], tiles[row["tile"]], row["tile"], (int(row["x"]), int(row["y"]))) for row in rows]
 
 
 class EpochSampler(Sampler):
@@ -55,11 +79,9 @@ class TileDataset(Dataset):
     def __init__(self, cfg, split: str, mode: str, seed: int = 0, splits_dir: Path | None = None):
         if mode not in MODES:
             raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
-        if cfg.data.name != "crowdai":
-            raise NotImplementedError("the tile dataset covers CrowdAI; WHU patches come with Phase 7")
         self.cfg, self.split, self.mode, self.seed = cfg, split, mode, seed
         self.dataset = str(cfg.data.name)
-        self.units = units(self.dataset, split, splits_dir)
+        self.units = tile_refs(self.dataset, split, splits_dir)
         self.prior_channels = [CHANNELS.index(name) for name in cfg.input.priors]
         if self.prior_channels:
             stats = load_stats(self.dataset)
@@ -68,11 +90,23 @@ class TileDataset(Dataset):
     def __len__(self) -> int:
         return len(self.units)
 
-    def read_priors(self, key: str) -> np.ndarray | None:
+    def cut(self, array: np.ndarray, ref: TileRef) -> np.ndarray:
+        """The part of a file's array that is this sample: all of it for a whole tile, else the patch at its offset."""
+        if ref.offset is None:
+            return array
+        x, y = ref.offset
+        size = int(self.cfg.data.tile_size)
+        patch = array[y : y + size, x : x + size]
+        if patch.shape[:2] != (size, size):
+            raise ValueError(f"patch at {ref.offset} of size {size} lies outside {ref.image.name}, {array.shape[:2]}")
+        return patch
+
+    def read_priors(self, ref: TileRef) -> np.ndarray | None:
         """(H, W, k) uint8 prior channels of the experiment, or None for RGB-only models."""
         if not self.prior_channels:
             return None
-        return read_prior(paths.prior_cache(self.dataset, self.split, key))[..., self.prior_channels]
+        prior = read_prior(paths.prior_cache(self.dataset, self.split, ref.prior_key))
+        return self.cut(prior, ref)[..., self.prior_channels]
 
     def model_input(self, image: np.ndarray, priors: np.ndarray | None) -> torch.Tensor:
         """(C, H, W) float32: RGB with the ImageNet statistics, then the priors with those of the train split."""
@@ -87,11 +121,11 @@ class TileDataset(Dataset):
 
     def __getitem__(self, item) -> dict:
         epoch, index = item if isinstance(item, tuple) else (0, item)
-        unit = self.units[index]
-        image, priors = read_rgb(unit.image), self.read_priors(unit.key)
+        ref = self.units[index]
+        image, priors = self.cut(read_rgb(ref.image), ref), self.read_priors(ref)
         if self.mode == "predict":
-            return {"image": self.plain_input(image, priors), "image_id": int(unit.key)}
-        instance_map = read_png(paths.instance_cache(self.dataset, self.split, unit.key))
+            return {"image": self.plain_input(image, priors), "image_id": int(ref.key)}
+        instance_map = read_png(paths.instance_cache(self.dataset, self.split, ref.key))
         if self.mode == "val":
             classes = class_map(instance_map, int(self.cfg.labels.contact_radius_px))
             padded = pad(classes, int(self.cfg.data.pad_to), int(self.cfg.data.ignore_index))

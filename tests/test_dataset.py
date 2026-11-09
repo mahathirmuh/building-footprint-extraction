@@ -9,8 +9,8 @@ from densepoly import paths
 from densepoly.config import load_config
 from densepoly.data.dataset import IMAGENET_MEAN, IMAGENET_STD, EpochSampler, TileDataset
 from densepoly.labels.contact import class_map
-from densepoly.priors.cache import load_stats
-from densepoly.utils.io import read_png
+from densepoly.priors.cache import load_stats, write_prior
+from densepoly.utils.io import read_png, write_lines, write_png
 from tests.fixtures.fake_tiles import write_tiles
 
 SIZE, PADDED = 120, 128
@@ -137,11 +137,102 @@ def test_predict_mode_reads_no_instance_map(tiles):
     assert dataset(tiles, "predict", "b4", "val_select")[0]["image_id"] == image_id
 
 
-def test_unknown_mode_and_whu_are_refused(tiles):
+def test_unknown_mode_is_refused(tiles):
     with pytest.raises(ValueError):
         dataset(tiles, "training")
-    with pytest.raises(NotImplementedError):
-        TileDataset(load_config("whu", "b4"), "train_dedup", "train", 0, tiles[0])
+
+
+WHU_SIZE, WHU_TILE = 224, 512
+WHU_LAYOUT = {  # split: source folder, {tile: [(image id, x, y), ...]}; image id 99 is left out of the split list
+    "train_dedup": ("train", {"T1": [(10, 0, 0), (11, 190, 190), (99, 288, 288)], "T2": [(12, 288, 100)]}),
+    "val_select": ("val", {"V1": [(20, 100, 50)]}),
+}
+
+
+def whu_instance_map():
+    """Two houses 2 px apart, so that some of their pixels are contact at the WHU radius r = 3."""
+    instance_map = np.zeros((WHU_SIZE, WHU_SIZE), np.uint16)
+    instance_map[20:60, 20:60], instance_map[20:60, 62:100] = 1, 2
+    return instance_map
+
+
+@pytest.fixture
+def whu(tmp_path, monkeypatch):
+    """Splits folder of a fake WHU layout: official tiles whose pixels encode their position (R = x // 2, G = y // 2),
+    priors with the same code (MBI = x // 2, gap = y // 2) and one instance map per patch."""
+    monkeypatch.setenv("DENSEPOLY_DATA", str(tmp_path / "data"))
+    splits = tmp_path / "splits"
+    splits.mkdir()
+    y, x = np.mgrid[:WHU_TILE, :WHU_TILE]
+    pixels = np.dstack([x // 2, y // 2, np.full_like(x, 7)]).astype(np.uint8)
+    for split, (folder, tiles) in WHU_LAYOUT.items():
+        rows, names = ["file_name,image_id,tile,quadrant,x,y"], []
+        for tile, patches in tiles.items():
+            image_dir = paths.dataset_dir("whu") / "raw_0.2" / folder / "image"
+            image_dir.mkdir(parents=True, exist_ok=True)
+            Image.fromarray(pixels).save(image_dir / f"{tile}.tif", compression="tiff_lzw")
+            write_prior(paths.prior_cache("whu", split, tile), pixels[..., :2])
+            for image_id, px, py in patches:
+                name = f"{tile}_0-{image_id}.tif"
+                rows.append(f"{name},{image_id},{tile},0,{px},{py}")
+                write_png(paths.instance_cache("whu", split, image_id), whu_instance_map())
+                if image_id != 99:
+                    names.append(name)
+        paths.patch_index("whu", split).parent.mkdir(parents=True, exist_ok=True)
+        write_lines(paths.patch_index("whu", split), rows)
+        write_lines(paths.split_list("whu", split, splits), names)
+    return splits
+
+
+def whu_dataset(splits, mode, exp="full_p0", split="train_dedup"):
+    return TileDataset(load_config("whu", exp), split, mode, 0, splits)
+
+
+def imagenet(red, green, blue=7):
+    return (np.array([red, green, blue], np.float32) / 255 - IMAGENET_MEAN) / IMAGENET_STD
+
+
+def test_a_whu_sample_is_the_patch_of_its_official_tile_at_its_offset(whu):
+    data = whu_dataset(whu, "predict")
+    assert [data[i]["image_id"] for i in range(len(data))] == [10, 11, 12]  # order of the list; 99 is not listed
+    image = data[2]["image"].numpy()  # x = 288, y = 100: an offset that would show a swap of x and y
+    assert image.shape == (3, WHU_SIZE, WHU_SIZE)
+    np.testing.assert_allclose(image[:, 0, 0], imagenet(288 // 2, 100 // 2), rtol=1e-5)
+    last = WHU_SIZE - 1
+    np.testing.assert_allclose(image[:, last, last], imagenet((288 + last) // 2, (100 + last) // 2), rtol=1e-5)
+
+
+@pytest.mark.parametrize(("exp", "channels"), [("full_p1", 4), ("full_p2", 5)])
+def test_whu_priors_are_cut_from_their_tile_at_the_same_offset(whu, exp, channels):
+    image = whu_dataset(whu, "predict", exp)[2]["image"].numpy()
+    assert image.shape[0] == channels
+    stats = load_stats("whu")
+    assert image[3, 0, 0] == pytest.approx((144 / 255 - stats["mean"][0]) / stats["std"][0], rel=1e-5)
+    if channels == 5:
+        assert image[4, 0, 0] == pytest.approx((50 / 255 - stats["mean"][1]) / stats["std"][1], rel=1e-5)
+
+
+def test_whu_val_mode_gives_the_classes_of_the_patch_at_the_whu_radius_without_padding(whu):
+    sample = whu_dataset(whu, "val", "b4", "val_select")[0]
+    assert sample["image"].shape == (3, WHU_SIZE, WHU_SIZE)
+    np.testing.assert_array_equal(sample["classes"].numpy(), class_map(whu_instance_map(), 3))
+    assert (sample["classes"].numpy() == 2).any() and not (sample["classes"].numpy() == 255).any()
+
+
+def test_whu_train_mode_gives_patch_sized_targets_as_a_pure_function_of_seed_epoch_and_index(whu):
+    data = whu_dataset(whu, "train")
+    first, second = data[(3, 1)], data[(3, 1)]
+    assert first["image"].shape == (3, WHU_SIZE, WHU_SIZE) and first["classes"].shape == (WHU_SIZE, WHU_SIZE)
+    assert first["sin4"].shape == (WHU_SIZE, WHU_SIZE) and not (first["classes"].numpy() == 255).any()
+    for key, value in first.items():
+        assert torch.equal(value, second[key])
+
+
+def test_a_whu_patch_outside_its_tile_is_refused(whu):
+    file = paths.patch_index("whu", "train_dedup")
+    file.write_text(file.read_text(encoding="utf-8").replace(",288,100", ",400,100"), encoding="utf-8")
+    with pytest.raises(ValueError, match="outside"):
+        whu_dataset(whu, "predict")[2]
 
 
 def test_epoch_sampler_shuffles_every_index_once_by_seed_and_epoch():
