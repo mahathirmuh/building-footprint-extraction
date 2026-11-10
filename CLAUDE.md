@@ -185,6 +185,8 @@ densepoly/
 ├── notebooks/       # colab_train.ipynb (menjalankan skrip di Colab), demo_hasil.ipynb (demo untuk dosen, Fase 10),
 │                    # full_pipeline.ipynb (seluruh alur termasuk training, Fase 10);
 │                    # semuanya tipis: logika tetap di src/, notebook hanya memanggil dan memplot
+├── paper/           # naskah template IEEE (IEEEtran): sumber LaTeX dan PDF (Fase 10)
+├── slides/          # PPT presentasi (Fase 10)
 ├── tests/           # fixtures/ sintetis + test_*.py
 ├── reference/       # demo/ (kode demo ETS) dan prototypes/ (uji spesifikasi); hanya referensi
 ├── docs/            # METHOD, DATA, EXPERIMENTS, EVALUATION, COLAB, progress

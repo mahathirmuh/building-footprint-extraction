@@ -241,6 +241,10 @@ B5 (seed 0) di `crowdai/test` tersedia, total dan per strata.
   ditulis ke `DENSEPOLY_OUT` tersendiri, supaya run yang sudah dibekukan dan checkpoint-nya tidak tertimpa. Eksperimen dan seed dipilih
   di sel pertama. Melatih semua run butuh ±33 jam GPU, satu run FULL-P0 seed 0 ±2 jam; cakupan eksekusinya disepakati sebelum dijalankan.
   Di git disimpan tanpa output; versi berisi output diekspor ke `outputs/report/`.
+- **Paper** (diminta pemilik proyek, 10 Nov 2026): template standar IEEE (`IEEEtran`), sumber LaTeX dan PDF di `paper/`. Semua angka
+  tabel berasal dari `outputs/tables/` (tabel `.tex` dibuat skrip, tidak disalin tangan), dan angka dari paper lain ditandai
+  "dilaporkan di paper". Sitasi yang belum terverifikasi di `CLAUDE.md` dilengkapi dulu.
+- **PPT presentasi** (diminta pemilik proyek, 10 Nov 2026): `.pptx` di `slides/`, memakai tabel dan gambar yang sama dengan paper.
 - Opsional lebih awal: setelah Fase 4, bagian 1–4 (tanpa model) sudah bisa dibuat sebagai bahan laporan kemajuan.
 - Tulis temuan dan keterbatasan di `docs/progress.md`: test WHU direkonstruksi (banding angka Pix2Poly hanya
   kira-kira), GT `p2p` WHU dari CC, deduplikasi berbasis kesamaan p-hash,
@@ -249,7 +253,7 @@ B5 (seed 0) di `crowdai/test` tersedia, total dan per strata.
 
 **Selesai jika:** satu perintah membuat ulang semua tabel dan gambar; `notebooks/demo_hasil.ipynb` lolos "Restart &
 Run all" di runtime baru dan ekspor HTML-nya ada; `notebooks/full_pipeline.ipynb` selesai dieksekusi sesuai cakupan yang disepakati dan
-ekspornya ada; `docs/progress.md` lengkap.
+ekspornya ada; PDF paper berhasil dikompilasi dari sumber LaTeX-nya; PPT presentasi ada; `docs/progress.md` lengkap.
 
 ---
 
