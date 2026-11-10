@@ -1466,5 +1466,75 @@ muncul-hilang di GPU, sehingga aturan "GPU harus benar-benar kosong" bisa menaha
 - Setelah semua tuning ada, file `configs/postproc/crowdai/{b1,b2,b3,full_p1}.yaml` di-commit oleh antrean. Baru sesudah itu
   test disentuh: prediksi, evaluasi, lalu `scripts/tables.py`.
 
-**WHU belum dimulai.** Citra WHU belum ada di server (dikirim dari laptop) dan `TileDataset` masih khusus CrowdAI. E dan
-biayanya ditetapkan setelah diukur, lalu disetujui dulu.
+**Antrean CrowdAI selesai** (9 Nov 22.42 sampai 10 Nov 10.58 WIB), tanpa kegagalan dan tanpa menunggu GPU. Tuning di-commit
+(`67b83dc`) sebelum test disentuh, dan keenam evaluasi test memakai commit itu.
+
+| Run | fg-IoU validasi terbaik | Tuning di `val_tune_sub` (seed 0, bukan klaim) |
+|---|---|---|
+| B1 seed 0 | 0,8918 | `A_min` 5; AP 63,57; `PoLiS_paired` 1,618 |
+| B2 seed 0 | 0,8911 | `A_min` 10; AP 63,47; `PoLiS_paired` 1,629 |
+| B3 seed 0 | 0,8986 | `A_min` 5; AP 65,86; `PoLiS_paired` 1,520 |
+| FULL-P1 seed 0 | 0,8876 | τ 0,6; `m_min` 16; `A_min` 10; ρ 0,93; k 0,02; δ 10; AP 63,25; `PoLiS_paired` 1,557 |
+| FULL-P1 seed 1 | 0,8808 | memakai tuning seed 0 |
+| FULL-P1 seed 2 | 0,8836 | memakai tuning seed 0 |
+
+**Ablasi lengkap di `crowdai/test`** (`outputs/tables/crowdai/ablation.md`; B1–B3 satu seed, yang lain rata-rata ± SD tiga seed):
+
+| Kode | Run | AP | AP_b | IoU | PoLiS | MTA | C-IoU | N-ratio | merge rate |
+|---|---|---|---|---|---|---|---|---|---|
+| B1 | 1 | 63,54 | 39,68 | 89,38 | 1,790 | 46,02 | 67,81 | 1,60 | 3,05 |
+| B2 | 1 | 63,23 | 38,95 | 89,22 | 1,799 | 46,45 | 67,00 | 1,64 | 3,28 |
+| B3 | 1 | 65,82 | 43,89 | 89,95 | 1,694 | 45,24 | 66,70 | 1,69 | 2,89 |
+| B4 | 3 | 62,91 ± 0,32 | 38,39 ± 0,61 | 88,46 ± 0,18 | 1,903 ± 0,028 | 47,11 ± 0,13 | 62,69 ± 0,26 | 1,83 ± 0,01 | 2,07 ± 0,03 |
+| B5 | 3 | 61,93 ± 0,31 | 36,22 ± 0,49 | 88,04 ± 0,17 | 1,836 ± 0,018 | 37,30 ± 0,13 | 73,87 ± 0,10 | 1,27 ± 0,01 | 2,05 ± 0,06 |
+| FULL-P0 | 3 | 61,94 ± 0,68 | 36,22 ± 1,19 | 88,01 ± 0,35 | 1,823 ± 0,044 | 36,34 ± 0,24 | 74,55 ± 0,64 | 1,26 ± 0,03 | 1,96 ± 0,20 |
+| FULL-P1 | 3 | 62,10 ± 0,83 | 36,41 ± 1,48 | 88,04 ± 0,38 | 1,801 ± 0,053 | 36,22 ± 0,20 | 74,35 ± 0,87 | 1,27 ± 0,03 | 1,96 ± 0,11 |
+| FULL-P2 | 3 | 61,86 ± 0,66 | 36,16 ± 1,29 | 87,99 ± 0,38 | 1,815 ± 0,045 | 36,22 ± 0,23 | 74,22 ± 0,85 | 1,27 ± 0,03 | 2,09 ± 0,30 |
+
+**Rantai B1 → B4, eksploratif (§8 poin 7):** selisih berpasangan seed 0, CI 95% bootstrap per citra, 1000 replikasi. Skrip ad hoc
+`densepoly-work/phase7_chain_steps.py`, output `densepoly-work/logs/phase7_chain_steps.json`.
+
+| Tile | Langkah | AP | AP_b | merge rate | split rate | recall@0,5 | `PoLiS_paired` | `MTA_inst` |
+|---|---|---|---|---|---|---|---|---|
+| semua | B1 → B2 (U-Net → U-Net++) | −0,30 [−0,67; −0,09] | −0,73 [−1,21; −0,60] | +0,23 [−0,02; +0,47] | −0,12 [−0,25; +0,01] | −0,12 [−0,41; +0,14] | +0,020 [+0,009; +0,030] | +0,46 [+0,33; +0,61] |
+| semua | B2 → B3 (bobot tepi) | +2,59 [+2,37; +2,97] | +4,94 [+4,65; +5,38] | −0,39 [−0,65; −0,15] | +1,06 [+0,91; +1,24] | +1,96 [+1,66; +2,25] | −0,115 [−0,125; −0,104] | −1,13 [−1,28; −0,99] |
+| semua | B3 → B4 (kelas kontak + watershed) | −2,58 [−2,90; −2,30] | −4,88 [−5,25; −4,55] | −0,78 [−1,02; −0,54] | +1,03 [+0,78; +1,25] | −0,64 [−0,93; −0,35] | +0,168 [+0,158; +0,179] | +1,67 [+1,52; +1,82] |
+| padat | B1 → B2 (U-Net → U-Net++) | −0,32 [−0,74; +0,02] | −0,78 [−1,20; −0,37] | +0,35 [−0,02; +0,69] | −0,18 [−0,36; +0,00] | +0,03 [−0,36; +0,41] | +0,015 [+0,003; +0,025] | +0,50 [+0,30; +0,72] |
+| padat | B2 → B3 (bobot tepi) | +2,82 [+2,45; +3,26] | +4,91 [+4,42; +5,43] | −0,43 [−0,78; −0,03] | +1,17 [+0,93; +1,39] | +2,13 [+1,71; +2,52] | −0,107 [−0,119; −0,095] | −1,16 [−1,37; −0,96] |
+| padat | B3 → B4 (kelas kontak + watershed) | −2,55 [−2,95; −2,12] | −4,43 [−4,98; −3,99] | −1,00 [−1,33; −0,65] | +0,70 [+0,41; +0,98] | −0,79 [−1,18; −0,37] | +0,151 [+0,138; +0,163] | +1,74 [+1,54; +1,95] |
+
+- U-Net++ tidak lebih baik dari U-Net pada data ini. Bobot tepi adalah kenaikan terbesar di rantai.
+- Kelas kontak + watershed menurunkan merge rate sesuai tujuannya, tetapi AP, AP_b, split rate, PoLiS, dan MTA memburuk.
+- Model biner B3 punya AP tertinggi di seluruh tabel, tetapi poligonnya lebih kompleks dan sudutnya lebih buruk daripada FULL-P0
+  (C-IoU 66,70 vs 74,55; N-ratio 1,69 vs 1,26; MTA 45,24 vs 36,34).
+- Batas tafsir: B1–B3 satu seed, jadi variasi antar-seed B3 belum terukur. SD AP B4 antar-seed 0,32. Langkah B3 → B4 mengubah
+  pelatihan dan post-processing sekaligus, jadi penyebabnya belum bisa dipisahkan.
+- N1 dan N3 tidak terpengaruh, karena keduanya dibandingkan sesama model 3 kelas.
+
+**Atribusi prior, strata padat `test`** (857 tile, 3 seed, 1000 replikasi; `outputs/tables/crowdai/attribution.md`):
+
+| Langkah | merge rate | split rate | recall@0,5 | AP |
+|---|---|---|---|---|
+| FULL-P0 → FULL-P1 (MBI, deskriptif) | +0,03 [−0,11; +0,18] | +0,24 [+0,07; +0,43] | −0,04 [−0,26; +0,16] | −0,11 [−0,25; +0,14] |
+| FULL-P1 → FULL-P2 (peta celah) | +0,12 [−0,04; +0,28] | −0,07 [−0,25; +0,11] | −0,15 [−0,35; +0,04] | +0,03 [−0,22; +0,15] |
+| FULL-P0 → FULL-P2 (N3) | +0,15 [+0,02; +0,30] | +0,17 [−0,01; +0,35] | −0,19 [−0,40; −0,00] | −0,08 [−0,27; +0,08] |
+
+- §8 poin 3: klaim "peta celah membantu" **tidak didukung**. `merge_rate` tidak turun terhadap FULL-P0 maupun FULL-P1.
+- MBI tidak menurunkan `merge_rate`; `split_rate` naik di ketiga seed (+0,33, +0,27, +0,13).
+- FULL-P1 bukan kandidat FULL final (§8 poin 6), jadi FULL final tetap FULL-P0.
+
+**Pemeriksaan independen** (tanpa `eval/stats.py` dan `eval/tables.py`):
+- AP dan AP50 B1, B2, B3, dan FULL-P1 ×3 dari prediksi mentah lewat pycocotools sama dengan laporan evaluasi (selisih < 10⁻⁶).
+- 100 sel `ablation.md` cocok dengan laporan per run, tanpa selisih.
+- Angka strata padat dan Δ per seed atribusi cocok. CI bootstrap dengan generator sendiri berbeda paling banyak 0,02 poin.
+- Tabel N1, N3, dan FULL final yang dibuat ulang sama dengan Fase 6.
+
+**Kode WHU digabung** setelah antrean selesai (`a870169`): `TileDataset` membaca patch WHU dari tile resmi memakai `patches.csv`.
+`pytest -q`: 656 lolos.
+
+**WHU belum dimulai.** Citra WHU belum ada di server. Laptop mengirimnya sebagai `whu_fase7.tar`, lalu `densepoly-work/whu_arrival.sh`
+mengekstrak dan memeriksanya. Skrip pembuat tar hanya memakai pustaka standar, karena laptop tidak punya `.venv` di folder repo.
+E dan biayanya ditetapkan setelah diukur, lalu disetujui dulu.
+
+`scripts/pack_colab.py` belum berlaku untuk WHU: skrip itu mencari peta instance per tile, padahal peta WHU per patch. Tidak
+diperbaiki, karena training WHU berjalan di server lab.
