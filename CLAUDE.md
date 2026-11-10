@@ -61,8 +61,9 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   Fase 6 (Tier 1) selesai dan disetujui (9 Nov 2026): FULL final = FULL-P0 (`val_select`); N1 didukung di strata padat
   `test` (`PoLiS_paired` −0,037 px, `MTA_inst` −0,94°, AP +0,35); N3 tidak didukung (`merge_rate` +0,15 poin, arah tidak konsisten).
   Fase 7 (Tier 2) berjalan sejak 9 Nov 2026. Bagian CrowdAI selesai 10 Nov 2026 (`test`, AP): B1 63,54; B2 63,23; B3 65,74 ± 0,07
-  (3 seed); FULL-P1 62,10 ± 0,83. Klaim "peta celah membantu" tidak didukung (§8 poin 3). Data WHU sudah di server; FULL-P0 WHU (E = 17, 8 worker)
-  dilatih sejak 10 Nov 2026.
+  (3 seed); FULL-P1 62,10 ± 0,83. Klaim "peta celah membantu" tidak didukung (§8 poin 3). FULL-P0 WHU (seed 0, E = 17, 8 worker) selesai 10 Nov 2026:
+  `fg_iou` `val_select` 0,905. Semua run Tier 2 selesai, menunggu persetujuan untuk menutup Fase 7. Temuan: kelas kontak tidak aktif (F1 0) di model WHU
+  dan di 6 dari 9 run FULL CrowdAI (seed 0 dan 2), lihat `docs/progress.md`; keputusan N1 dan N3 tidak berubah.
 
 ## Cara bekerja di proyek ini
 

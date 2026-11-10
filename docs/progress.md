@@ -1436,7 +1436,7 @@ Tabel baru dibuat 9 Nov: pemantau ikut mati saat sesi editor terputus, dan pembu
 **Persetujuan:** Fase 6 disetujui pemilik proyek pada 9 Nov 2026, pukul 22.30 ("lanjut sesuai rekomendasimu"). FULL final
 = FULL-P0 dipakai untuk Fase 7 dan seterusnya.
 
-## Fase 7 — Tier 2: atribusi prior, rantai ablasi lengkap, WHU (sedang berjalan)
+## Fase 7 — Tier 2: atribusi prior, rantai ablasi lengkap, WHU (semua run selesai, menunggu persetujuan)
 
 **Rencana dan biayanya disetujui pemilik proyek pada 9 Nov 2026, pukul 22.40 ("ya"),** termasuk training CrowdAI ±11 jam
 GPU, FULL-P1, dan aturan tunggu GPU yang baru.
@@ -1586,3 +1586,49 @@ proses CPU: 21 ms per sampel, 15 ms di antaranya membaca TIFF). Dengan 8 worker 
 
 `scripts/pack_colab.py` belum berlaku untuk WHU: skrip itu mencari peta instance per tile, padahal peta WHU per patch. Tidak
 diperbaiki, karena training WHU berjalan di server lab.
+
+**Training WHU FULL-P0 selesai** (10 Nov 2026, 21.33–23.21 WIB; `PHASE7_WHU_DONE`, commit `94a7e83`, `outputs/runs/whu/full_p0/seed0`):
+17 epoch, 90.049 langkah, 6.456 s termasuk validasi (1,79 jam; perkiraan ±1,8 jam), satu percobaan tanpa gagal. `fg_iou` `val_select`
+terbaik **0,9050** di epoch 12 (dihitung dari 0, `best.pt`); epoch terakhir 0,9040. Evaluasinya masuk Fase 8.
+
+**Temuan: kelas kontak tidak aktif di model WHU dan di 6 dari 9 run FULL CrowdAI** (10 Nov 2026; eksploratif, `docs/EXPERIMENTS.md` §8
+poin 7). F1 kontak WHU bernilai 0 di ke-17 epoch (`val_log.csv`), sehingga log CrowdAI ikut diperiksa. Pemeriksaan memakai 1.500 tile/patch
+`val_select` per run, GPU, 23 detik (`densepoly-work/phase7_contact_probe.py`, `logs/phase7_contact_probe.json`):
+
+| Run | Piksel kontak GT (% foreground) | `P_k` tertinggi di semua piksel | Rata-rata `P_k` di piksel kontak GT | Piksel kontak dengan `P_k` > 0,5 | Piksel kontak yang memotong marker (τ = 0,4) |
+|---|---|---|---|---|---|
+| WHU FULL-P0 seed 0 | 889 (0,0073%), di 32 dari 1.500 patch | 0,015 | 0,0011 | 0% | 0% |
+| CrowdAI FULL-P0 seed 0 | 2.725 (0,0092%) | 0,007 | 0,0009 | 0% | 0% |
+| CrowdAI FULL-P0 seed 1 | 2.725 (0,0092%) | 0,602 | 0,197 | 27,6% | 52,7% |
+| CrowdAI B4 seed 0 | 2.725 (0,0092%) | 1,000 | 0,264 | 26,5% | 38,4% |
+
+Status kelas kontak per seed di CrowdAI, dengan metrik `test` yang sudah ada, tanpa perhitungan baru (`densepoly-work/phase7_contact_per_seed.py`,
+`logs/phase7_contact_per_seed.json`):
+
+| Run | Seed | F1 kontak (`best.pt`, `val_select`) | Epoch pertama F1 > 0,01 | AP | merge rate | split rate |
+|---|---|---|---|---|---|---|
+| B4 | 0 | 0,418 | 17 | 63,24 | 2,11 | 3,34 |
+| B4 | 1 | 0,283 | 15 | 62,88 | 2,04 | 3,46 |
+| B4 | 2 | 0,392 | 14 | 62,61 | 2,06 | 3,48 |
+| FULL-P0 | 0 | 0 | tidak pernah | 62,73 | 2,18 | 3,32 |
+| FULL-P0 | 1 | 0,364 | 29 | 61,51 | 1,92 | 3,93 |
+| FULL-P0 | 2 | 0 | tidak pernah | 61,58 | 1,79 | 4,00 |
+
+FULL-P1 dan FULL-P2 berpola sama: seed 1 aktif (F1 0,365 dan 0,387, mulai epoch 30 dan 28), seed 0 dan 2 tidak (F1 paling tinggi 0,0005).
+
+- **Bukan bug metrik.** Kode yang sama memberi F1 0,28–0,42 pada B4 dan pada seed 1 FULL, dan pemeriksaan di atas membaca probabilitasnya langsung.
+- **Arti bagi model yang kontaknya tidak aktif.** `P_k` hampir nol di semua piksel, jadi marker `P_b − P_k > τ` hanya bergantung pada
+  keyakinan foreground. Pada τ = 0,4, marker sama dengan foreground. Rumah terpisah oleh celah latar yang diprediksi, bukan oleh kelas kontak.
+- **Penyebab belum bisa dipisahkan.** Kelas kontak di B4 mulai aktif di epoch 14–17, di seed 1 FULL baru di epoch 28–30, dan di seed 0 dan 2 FULL
+  tidak aktif dalam 60 epoch. Head θ mungkin memperlambatnya, tetapi tiga seed tidak cukup untuk memastikannya. Jumlah langkah WHU (90.049) setara
+  dengan CrowdAI (87.840).
+- **Dampak pada keputusan CrowdAI: tidak ada.** §8 tidak menyebut kelas kontak, dan N1 tetap didukung, N3 tetap tidak.
+  - N3 selalu membandingkan run dengan status kontak yang sama per seed.
+  - B5′ → FULL-P0 memakai mask yang sama, jadi tidak terpengaruh (Δ `PoLiS_paired` −0,016, −0,016, −0,018).
+  - B5 → FULL-P0 berbeda status kontak di seed 0 dan 2. Di seed 1 keduanya aktif, dan arah klaimnya sama (`PoLiS_paired` −0,018,
+    `MTA_inst` −0,98°, AP +0,02).
+  - B5 → B5′ ("efek pelatihan θ") ikut membawa perbedaan status kontak, jadi harus dibaca sebagai efek pelatihan θ termasuk dampaknya pada kelas kontak.
+- **`merge_rate` tidak mengikuti status kontak.** Di FULL-P0, seed 2 (tidak aktif) 1,79%, seed 1 (aktif) 1,92%, seed 0 (tidak aktif) 2,18%. Ini
+  sejalan dengan temuan Fase 5: deteksi kontak yang lebih baik tidak otomatis memisahkan rumah lebih baik.
+- **Dampak pada Fase 8.** Klaim WHU tentang rumah berdempetan (GT utama) akan diuji pada model tanpa sinyal kontak, dan itu harus ditulis apa adanya.
+- **Tidak ada yang diubah.** Tidak ada training ulang, aturan, atau parameter post-processing yang berubah. Temuan ini perlu masuk bagian keterbatasan paper.
