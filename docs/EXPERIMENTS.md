@@ -102,7 +102,7 @@ Biaya GPU diisi setelah it/s diukur di Fase 5: `jam GPU = E × (iterasi per epoc
 | U-Net EffB4 (B1), CrowdAI 320², bs 16 | RTX 5090 (server lab) | 17,74 | 1.464 | 60 | ±1,38 | 1 (Tier 2) | ±1,4 |
 | U-Net++ EffB4 biner (B2, B3), CrowdAI 320², bs 16 | RTX 5090 (server lab) | 13,30–13,38 | 1.464 | 60 | ±1,83 | 2 (Tier 2) | ±3,7 |
 | FULL-P1, CrowdAI 320², bs 16 | RTX 5090 (server lab) | 13,01 | 1.464 | 60 | ±1,88 | 3 (Tier 2) | ±5,6 |
-| U-Net++ EffB4, WHU 224², bs 16 | `TODO` | `TODO` | `TODO` | `TODO` | `TODO` | 1 | `TODO` |
+| U-Net++ EffB4 (FULL-P0), WHU 224², bs 16 | RTX 5090 (server lab) | 15,86 (8 worker; 8,63 dengan 4 worker, loader menjadi hambatan) | 5.297 | `TODO` | 0,093 per epoch, tanpa validasi | 1 | `TODO` |
 
 Biaya CPU (diukur di CPU sandbox saat dokumen disusun; ukur ulang di mesinmu dengan 50 tile/citra):
 

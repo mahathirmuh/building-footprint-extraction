@@ -1538,9 +1538,39 @@ selama menunggu data WHU. Alasannya: B3 → B4 adalah temuan eksploratif terbesa
 Test memakai tuning beku seed 0 (`configs/postproc/crowdai/b3.yaml`). Antrean: `densepoly-work/phase7_b3.sh`. Perbandingan ini tetap
 eksploratif (§8 poin 7).
 
-**WHU belum dimulai.** Citra WHU belum ada di server. Laptop mengirimnya sebagai `whu_fase7.tar`, lalu `densepoly-work/whu_arrival.sh`
-mengekstrak dan memeriksanya. Skrip pembuat tar hanya memakai pustaka standar, karena laptop tidak punya `.venv` di folder repo.
-E dan biayanya ditetapkan setelah diukur, lalu disetujui dulu.
+**B3 seed 1 dan 2 selesai** (10 Nov 2026, 16.36 WIB, tanpa kegagalan, commit `e9f65dc`). fg-IoU validasi terbaik: seed 1 0,8966;
+seed 2 0,8973. Di `crowdai/test`, B3 tiga seed (`outputs/tables/crowdai/ablation.md`; baris B3 di tabel ablasi di atas masih satu seed):
+AP 65,74 ± 0,07; AP50 87,21 ± 0,05; AP_b 43,64 ± 0,22; IoU 89,89 ± 0,06; PoLiS 1,697 ± 0,008; MTA 45,51 ± 0,25; C-IoU 66,51 ± 0,33;
+C-IoU_p2p 66,70 ± 0,39; N-ratio 1,70 ± 0,02; merge rate 2,84 ± 0,15.
+
+**B3 → B4 dengan tiga seed, eksploratif (§8 poin 7):** B3 seed k dipasangkan dengan B4 seed k, Δ dirata-ratakan antar-seed, CI 95%
+bootstrap per citra, 1000 replikasi. Skrip ad hoc `densepoly-work/phase7_b3_steps.py`, output `densepoly-work/logs/phase7_b3_steps.json`.
+
+| Tile | AP | AP_b | IoU | merge rate | split rate | recall@0,5 | `PoLiS_paired` | `MTA_inst` |
+|---|---|---|---|---|---|---|---|---|
+| semua | −2,83 [−3,10; −2,66] | −5,25 [−5,49; −5,01] | −1,42 [−1,49; −1,36] | −0,77 [−0,94; −0,60] | +1,20 [+1,06; +1,34] | −0,82 [−1,02; −0,62] | +0,186 [+0,179; +0,194] | +1,50 [+1,42; +1,59] |
+| padat | −2,89 [−3,14; −2,52] | −4,87 [−5,22; −4,51] | −1,50 [−1,59; −1,41] | −0,97 [−1,24; −0,71] | +0,98 [+0,80; +1,19] | −0,74 [−1,00; −0,44] | +0,163 [+0,153; +0,172] | +1,60 [+1,48; +1,73] |
+
+- Semua metrik di kedua kelompok tile searah di ketiga seed, jadi selisih B3 → B4 bukan kebetulan satu seed.
+- Penyebabnya tetap belum bisa dipisahkan antara pelatihan 3 kelas dan post-processing.
+- Pemeriksaan independen: AP B3 seed 1–2 dari prediksi mentah sama dengan laporan (selisih < 10⁻⁶); Δ AP, merge rate, split rate, dan
+  recall per seed cocok; CI bootstrap dengan generator sendiri berbeda paling banyak 0,03 poin.
+
+**Data WHU tiba** (10 Nov 2026, 13.09 WIB; `whu_fase7.tar` 12,9 GB, `WHU_DATA_OK`): 84.762 / 13.761 / 35.487 patch, 2.604 / 490 / 1.173
+tile, dan 98.523 peta instance, tanpa ada yang hilang. GT evaluasi WHU (`outputs/gt/whu/`) sudah ada di server. Skrip pembuat tar hanya
+memakai pustaka standar, karena laptop tidak punya `.venv` di folder repo.
+
+**Biaya WHU** (FULL-P0, benchmark 200 langkah di tile asli, 10 Nov 2026, commit `e9f65dc`; `densepoly-work/logs/benchmark_whu_full_p0_w{4,8}.json`):
+
+| Worker | Langkah/s | Fraksi waktu menunggu data | Memori GPU dicadangkan | Jam per epoch (tanpa validasi) |
+|---|---|---|---|---|
+| 4 | 8,63 | 0,547 | 3,32 GB | 0,171 |
+| 8 | 15,86 | 0,001 | 3,34 GB | 0,093 |
+
+5.297 langkah per epoch. Dengan 4 worker, loader menjadi hambatan, karena setiap patch membaca satu tile TIFF LZW 1024² (ukuran ad hoc satu
+proses CPU: 21 ms per sampel, 15 ms di antaranya membaca TIFF). Dengan 8 worker GPU yang menjadi batas, jadi cache TIFF tidak diperlukan.
+
+**WHU belum dilatih.** E dan biayanya menunggu persetujuan pemilik proyek.
 
 `scripts/pack_colab.py` belum berlaku untuk WHU: skrip itu mencari peta instance per tile, padahal peta WHU per patch. Tidak
 diperbaiki, karena training WHU berjalan di server lab.
