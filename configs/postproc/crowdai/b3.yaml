@@ -1,0 +1,29 @@
+# Frozen post-processing of b3 on crowdai (docs/EXPERIMENTS.md §4), tuned on val_tune_sub and
+# written by scripts/tune_postproc.py; do not edit. load_config merges the postproc section only.
+postproc:
+  instance_min_px: 5
+tuning:
+  split: val_tune_sub
+  images: 1000
+  created: '2026-11-10T04:19:36+07:00'
+  git: 1c7480e160fd4d1995c3fb63aad08b85bf02c4f8
+  grid:
+    file: configs/postproc/grid.yaml
+    sha256: 8c2f5528c9fbf8d04f55fcef803996cb6f92862dc4e3fbaf4ebeaf44cd28d5b8
+  score:
+    AP: 0.658626877121196
+    PoLiS_paired: 1.519777821883695
+  stage1:
+  - instance_min_px: 5
+    AP: 0.658626877121196
+    PoLiS_paired: 1.519777821883695
+  - instance_min_px: 10
+    AP: 0.658626877121196
+    PoLiS_paired: 1.519777821883695
+  - instance_min_px: 20
+    AP: 0.6586205205972712
+    PoLiS_paired: 1.52042193949197
+  stage2: []
+  seconds:
+    stage1: 23.1
+  workers: 8
