@@ -1530,7 +1530,13 @@ muncul-hilang di GPU, sehingga aturan "GPU harus benar-benar kosong" bisa menaha
 - Tabel N1, N3, dan FULL final yang dibuat ulang sama dengan Fase 6.
 
 **Kode WHU digabung** setelah antrean selesai (`a870169`): `TileDataset` membaca patch WHU dari tile resmi memakai `patches.csv`.
-`pytest -q`: 656 lolos.
+`pytest -q`: 656 lolos. Sampel CrowdAI dari kode sebelum dan sesudah penggabungan identik per bit (mode train, val, dan predict,
+13 sampel).
+
+**B3 seed 1 dan 2 ditambahkan** (disetujui pemilik proyek 10 Nov 2026, ±4 jam GPU; Tier 3 yang dimajukan), memakai GPU yang kosong
+selama menunggu data WHU. Alasannya: B3 → B4 adalah temuan eksploratif terbesar di rantai, dan variasi antar-seed B3 belum terukur.
+Test memakai tuning beku seed 0 (`configs/postproc/crowdai/b3.yaml`). Antrean: `densepoly-work/phase7_b3.sh`. Perbandingan ini tetap
+eksploratif (§8 poin 7).
 
 **WHU belum dimulai.** Citra WHU belum ada di server. Laptop mengirimnya sebagai `whu_fase7.tar`, lalu `densepoly-work/whu_arrival.sh`
 mengekstrak dan memeriksanya. Skrip pembuat tar hanya memakai pustaka standar, karena laptop tidak punya `.venv` di folder repo.
