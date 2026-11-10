@@ -61,8 +61,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   Fase 6 (Tier 1) selesai dan disetujui (9 Nov 2026): FULL final = FULL-P0 (`val_select`); N1 didukung di strata padat
   `test` (`PoLiS_paired` −0,037 px, `MTA_inst` −0,94°, AP +0,35); N3 tidak didukung (`merge_rate` +0,15 poin, arah tidak konsisten).
   Fase 7 (Tier 2) berjalan sejak 9 Nov 2026. Bagian CrowdAI selesai 10 Nov 2026 (`test`, AP): B1 63,54; B2 63,23; B3 65,74 ± 0,07
-  (3 seed); FULL-P1 62,10 ± 0,83. Klaim "peta celah membantu" tidak didukung (§8 poin 3). Data WHU sudah di server; E dan training WHU
-  menunggu persetujuan.
+  (3 seed); FULL-P1 62,10 ± 0,83. Klaim "peta celah membantu" tidak didukung (§8 poin 3). Data WHU sudah di server; FULL-P0 WHU (E = 17, 8 worker)
+  dilatih sejak 10 Nov 2026.
 
 ## Cara bekerja di proyek ini
 
@@ -297,7 +297,7 @@ python scripts/tables.py && python scripts/figures.py
   sekali di Fase 5 dengan pilot r = 2 lawan r = 5 di `val_select`, karena kontak hanya ±0,01% piksel bangunan di kedua
   dataset. Aturannya dibekukan 31 Okt 2026, sebelum ada model (`docs/EXPERIMENTS.md` §4.1). Hasil pilot (7 Nov 2026):
   **r = 2, bobot kontak 1** untuk semua model 3 kelas CrowdAI. Budget **E = 60** untuk semua run CrowdAI (aturan E
-  dibekukan 6 Nov 2026 sebelum run E = 60; AP `val_select` +0,89). Server memakai `train.num_workers=4`.
+  dibekukan 6 Nov 2026 sebelum run E = 60; AP `val_select` +0,89). Server memakai `train.num_workers=4` (WHU: 8, E = 17, disetujui 10 Nov 2026).
 - Kriteria keputusan di `docs/EXPERIMENTS.md` §8 (termasuk ambang "mendekati SOTA" ≤ 3 AP dan aturan pemilihan FULL
   final) dibekukan, lalu dikonfirmasi tanpa perubahan saat Fase 3 dimulai (30 Okt 2026). Sejak itu terkunci.
 - Sitasi yang perlu dicek: Dahatonde dkk. (2024) [lengkapi]; Huang & Zhang (2011) halaman/DOI; halaman Pix2Poly

@@ -1570,7 +1570,14 @@ memakai pustaka standar, karena laptop tidak punya `.venv` di folder repo.
 5.297 langkah per epoch. Dengan 4 worker, loader menjadi hambatan, karena setiap patch membaca satu tile TIFF LZW 1024² (ukuran ad hoc satu
 proses CPU: 21 ms per sampel, 15 ms di antaranya membaca TIFF). Dengan 8 worker GPU yang menjadi batas, jadi cache TIFF tidak diperlukan.
 
-**WHU belum dilatih.** E dan biayanya menunggu persetujuan pemilik proyek.
+**Training WHU disetujui pemilik proyek (10 Nov 2026, ±21.30 WIB, "ya"):** FULL-P0, seed 0, **E = 17**, `train.num_workers=8`, r = 3
+(§4.1 poin 5), bobot kontak 1, λ = 1; ±1,8 jam GPU termasuk validasi (perkiraan).
+- E = 17 membuat jumlah langkah latih setara run CrowdAI: 17 × 5.297 = 90.049, lawan 87.840. Alternatif E = 34, yang menyamakan
+  jumlah piksel, tidak dipilih.
+- Jumlah worker tidak mengubah isi batch, karena augmentasi adalah fungsi dari (seed, epoch, index).
+- Jalur `val` dan `predict` WHU diperiksa di data asli sebelum mulai: 12.744 dan 35.487 sampel, kelas 0, 1, 2.
+- Antrean: `densepoly-work/phase7_whu.sh`, log `densepoly-work/logs/phase7_whu.log`. Isinya hanya training. Tuning dan evaluasi WHU
+  masuk Fase 8.
 
 `scripts/pack_colab.py` belum berlaku untuk WHU: skrip itu mencari peta instance per tile, padahal peta WHU per patch. Tidak
 diperbaiki, karena training WHU berjalan di server lab.

@@ -47,12 +47,12 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 | Jadwal lr | warmup linear 1 epoch → cosine ke 1e-6 |
 | Batch | 16 (CrowdAI 320²; WHU 224²). **Micro-batch minimal 8**: gradient accumulation hanya memperbesar batch efektif untuk optimizer, tidak untuk statistik BatchNorm |
 | Presisi | AMP fp16 + GradScaler (T4 tidak cocok untuk bf16); loss dalam float32 |
-| Budget | E epoch yang sama untuk semua run satu dataset; E ditetapkan setelah it/s diukur (§5). CrowdAI: **E = 60** (7 Nov 2026, aturan E di `docs/progress.md` Fase 5) |
+| Budget | E epoch yang sama untuk semua run satu dataset; E ditetapkan setelah it/s diukur (§5). CrowdAI: **E = 60** (7 Nov 2026, aturan E di `docs/progress.md` Fase 5). WHU: **E = 17** (10 Nov 2026, jumlah langkah latih setara CrowdAI, `docs/progress.md` Fase 7) |
 | Augmentasi | flip H/V, rot90, transpose (p 0,5 masing-masing); brightness/contrast ±0,1 hanya di RGB (p 0,5) |
 | Seleksi checkpoint | IoU foreground di `val_select` tiap epoch (sama untuk model biner dan 3 kelas); simpan `best.pt` dan `last.pt`. `val_tune_sub` tidak dipakai selama training |
 | Early stopping | tidak ada (budget tetap) |
 | Seed | 0, 1, 2; `cudnn.benchmark=True` (variasi antar-seed dilaporkan) |
-| Loader | `num_workers=4` di server lab (`num_workers=2` di Colab), `pin_memory=True`, label diturunkan on-the-fly dari cache instance |
+| Loader | `num_workers=4` di server lab untuk CrowdAI, 8 untuk WHU karena tiap patch membaca satu tile TIFF 1024² (`num_workers=2` di Colab), `pin_memory=True`, label diturunkan on-the-fly dari cache instance |
 
 ## 4. Split validasi dan protokol tuning post-processing
 
@@ -102,7 +102,7 @@ Biaya GPU diisi setelah it/s diukur di Fase 5: `jam GPU = E × (iterasi per epoc
 | U-Net EffB4 (B1), CrowdAI 320², bs 16 | RTX 5090 (server lab) | 17,74 | 1.464 | 60 | ±1,38 | 1 (Tier 2) | ±1,4 |
 | U-Net++ EffB4 biner (B2, B3), CrowdAI 320², bs 16 | RTX 5090 (server lab) | 13,30–13,38 | 1.464 | 60 | ±1,83 | 2 (Tier 2) | ±3,7 |
 | FULL-P1, CrowdAI 320², bs 16 | RTX 5090 (server lab) | 13,01 | 1.464 | 60 | ±1,88 | 3 (Tier 2) | ±5,6 |
-| U-Net++ EffB4 (FULL-P0), WHU 224², bs 16 | RTX 5090 (server lab) | 15,86 (8 worker; 8,63 dengan 4 worker, loader menjadi hambatan) | 5.297 | `TODO` | 0,093 per epoch, tanpa validasi | 1 | `TODO` |
+| U-Net++ EffB4 (FULL-P0), WHU 224², bs 16 | RTX 5090 (server lab) | 15,86 (8 worker; 8,63 dengan 4 worker, loader menjadi hambatan) | 5.297 | 17 | ±1,8 (perkiraan, dengan validasi) | 1 (Tier 2) | ±1,8 |
 
 Biaya CPU (diukur di CPU sandbox saat dokumen disusun; ukur ulang di mesinmu dengan 50 tile/citra):
 
