@@ -1579,5 +1579,8 @@ proses CPU: 21 ms per sampel, 15 ms di antaranya membaca TIFF). Dengan 8 worker 
 - Antrean: `densepoly-work/phase7_whu.sh`, log `densepoly-work/logs/phase7_whu.log`. Isinya hanya training. Tuning dan evaluasi WHU
   masuk Fase 8.
 
+**Permintaan baru pemilik proyek (10 Nov 2026): notebook penuh** yang menjalankan seluruh alur termasuk training dari awal, di samping
+notebook demo. Dicatat di `PLAN.md` Fase 10 sebagai `notebooks/full_pipeline.ipynb`.
+
 `scripts/pack_colab.py` belum berlaku untuk WHU: skrip itu mencari peta instance per tile, padahal peta WHU per patch. Tidak
 diperbaiki, karena training WHU berjalan di server lab.

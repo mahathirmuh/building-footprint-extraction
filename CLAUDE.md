@@ -182,8 +182,9 @@ densepoly/
 ├── third_party/pix2poly_metrics/            # polis.py, angle_eval.py, cIoU.py (MIT, dengan catatan perbaikan)
 ├── scripts/         # CLI: prepare_*, dedup_crowdai, make_density, precompute_priors, train, predict, evaluate,
 │                    #      tune_postproc, pack_colab, benchmark, tables, figures
-├── notebooks/       # colab_train.ipynb (menjalankan skrip di Colab), demo_hasil.ipynb (demo untuk dosen, Fase 10);
-│                    # keduanya tipis: logika tetap di src/, notebook hanya memanggil dan memplot
+├── notebooks/       # colab_train.ipynb (menjalankan skrip di Colab), demo_hasil.ipynb (demo untuk dosen, Fase 10),
+│                    # full_pipeline.ipynb (seluruh alur termasuk training, Fase 10);
+│                    # semuanya tipis: logika tetap di src/, notebook hanya memanggil dan memplot
 ├── tests/           # fixtures/ sintetis + test_*.py
 ├── reference/       # demo/ (kode demo ETS) dan prototypes/ (uji spesifikasi); hanya referensi
 ├── docs/            # METHOD, DATA, EXPERIMENTS, EVALUATION, COLAB, progress

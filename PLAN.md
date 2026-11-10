@@ -236,6 +236,11 @@ B5 (seed 0) di `crowdai/test` tersedia, total dan per strata.
 - Di git, notebook disimpan **tanpa output**. Versi berisi output diekspor dengan
   `jupyter nbconvert --execute --to html` ke `outputs/report/demo_hasil.html`, dan juga ke `.ipynb` ter-eksekusi bila
   dosen memintanya.
+- `notebooks/full_pipeline.ipynb` (diminta pemilik proyek, 10 Nov 2026): notebook penuh yang menjalankan seluruh alur dari data
+  sampai tabel, **termasuk training dari awal**. Tetap tipis: setiap sel memanggil `scripts/`, logika tetap di `src/`. Keluarannya
+  ditulis ke `DENSEPOLY_OUT` tersendiri, supaya run yang sudah dibekukan dan checkpoint-nya tidak tertimpa. Eksperimen dan seed dipilih
+  di sel pertama. Melatih semua run butuh ±33 jam GPU, satu run FULL-P0 seed 0 ±2 jam; cakupan eksekusinya disepakati sebelum dijalankan.
+  Di git disimpan tanpa output; versi berisi output diekspor ke `outputs/report/`.
 - Opsional lebih awal: setelah Fase 4, bagian 1–4 (tanpa model) sudah bisa dibuat sebagai bahan laporan kemajuan.
 - Tulis temuan dan keterbatasan di `docs/progress.md`: test WHU direkonstruksi (banding angka Pix2Poly hanya
   kira-kira), GT `p2p` WHU dari CC, deduplikasi berbasis kesamaan p-hash,
@@ -243,7 +248,8 @@ B5 (seed 0) di `crowdai/test` tersedia, total dan per strata.
   berprediksi, PoLiS cocok via bbox, MTA menggabungkan poligon per citra).
 
 **Selesai jika:** satu perintah membuat ulang semua tabel dan gambar; `notebooks/demo_hasil.ipynb` lolos "Restart &
-Run all" di runtime baru dan ekspor HTML-nya ada; `docs/progress.md` lengkap.
+Run all" di runtime baru dan ekspor HTML-nya ada; `notebooks/full_pipeline.ipynb` selesai dieksekusi sesuai cakupan yang disepakati dan
+ekspornya ada; `docs/progress.md` lengkap.
 
 ---
 
