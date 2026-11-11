@@ -1436,7 +1436,7 @@ Tabel baru dibuat 9 Nov: pemantau ikut mati saat sesi editor terputus, dan pembu
 **Persetujuan:** Fase 6 disetujui pemilik proyek pada 9 Nov 2026, pukul 22.30 ("lanjut sesuai rekomendasimu"). FULL final
 = FULL-P0 dipakai untuk Fase 7 dan seterusnya.
 
-## Fase 7 — Tier 2: atribusi prior, rantai ablasi lengkap, WHU (semua run selesai, menunggu persetujuan)
+## Fase 7 — Tier 2: atribusi prior, rantai ablasi lengkap, WHU (selesai dan disetujui 11 November 2026)
 
 **Rencana dan biayanya disetujui pemilik proyek pada 9 Nov 2026, pukul 22.40 ("ya"),** termasuk training CrowdAI ±11 jam
 GPU, FULL-P1, dan aturan tunggu GPU yang baru.
@@ -1632,3 +1632,11 @@ FULL-P1 dan FULL-P2 berpola sama: seed 1 aktif (F1 0,365 dan 0,387, mulai epoch 
   sejalan dengan temuan Fase 5: deteksi kontak yang lebih baik tidak otomatis memisahkan rumah lebih baik.
 - **Dampak pada Fase 8.** Klaim WHU tentang rumah berdempetan (GT utama) akan diuji pada model tanpa sinyal kontak, dan itu harus ditulis apa adanya.
 - **Tidak ada yang diubah.** Tidak ada training ulang, aturan, atau parameter post-processing yang berubah. Temuan ini perlu masuk bagian keterbatasan paper.
+
+**Cek "Selesai jika" Fase 7:**
+- Semua run Tier 2 selesai, tidak ada yang dibatalkan: FULL-P1 ×3 seed, B1 dan B2 ×1, B3 ×3 (seed 1–2 disetujui 10 Nov), FULL-P0 WHU ×1.
+- Tabel ablasi lengkap dan tabel atribusi prior ada di `outputs/tables/crowdai/`. Checkpoint WHU ada di `outputs/runs/whu/full_p0/seed0`.
+- `pytest -q`: 656 lolos.
+
+**Persetujuan:** Fase 7 disetujui pemilik proyek pada 11 Nov 2026, ±07.20 WIB ("lanjut"). Checkpoint WHU dipakai apa adanya tanpa training
+ulang, dan kelas kontak yang tidak aktif dilaporkan sebagai keterbatasan.
