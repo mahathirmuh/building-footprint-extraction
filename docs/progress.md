@@ -1897,7 +1897,7 @@ Pengukuran awal 2 epoch di 2.000 tile: 25 s. Training penuh dimulai 12 Nov 18.13
 FULL+Y dan B3m+Y, commit dan push file beku, kotak `test`, prediksi dan evaluasi 3 seed, tabel, selisih berpasangan, benchmark).
 
 **Detektor** (12 Nov 2026, 18.13–19.00 WIB): YOLOv8n-OBB, 100 epoch, 2.820 s. Di `val_select` (epoch 100): presisi 0,932, recall 0,849, mAP50 0,917.
-3,09 juta parameter. Kotak (confidence ≥ 0,05): 10.226 di `val_tune_sub`, 30.362 di `test`; pada `c_y` terpilih tersisa 7.339 dan 21.763 (GT `test`: 25.145 bangunan).
+3,08 juta parameter (3.082.710). Kotak (confidence ≥ 0,05): 10.226 di `val_tune_sub`, 30.362 di `test`; pada `c_y` terpilih tersisa 7.339 dan 21.763 (GT `test`: 25.145 bangunan).
 
 **Tuning `c_y`** (`val_tune_sub`, 29 s per model; parameter lain diwarisi dari file beku FULL-P0 dan B3m), dibekukan dan di-push (`c6b3edb`) sebelum test:
 
@@ -1938,11 +1938,11 @@ Arah merge rate, split rate, dan recall sama di ketiga seed pada kedua model.
 - **Peringkat keseluruhan tidak berubah.** B3m+Y tetap mengungguli FULL+Y di AP (+2,92), AP_b, C-IoU, PoLiS, dan split rate. FULL+Y tetap
   unggul di merge rate (1,52% lawan 2,14%; di tile bersentuhan 6,41% lawan 8,92%). Seed YOLO memperkecil selisih merge rate itu, tetapi
   tidak menutupnya.
-- **Biaya** (RTX 5090, `outputs/tables/crowdai/efficiency.md`): detektor menambah 3,09 juta parameter dan 2,2 ms per tile (batch 32), dan
-  penggabungan seed menambah ±1,3 ms post-processing (17,17 ms lawan 15,89 ms; satu thread CPU). FPS alur penuh tanpa detektor 39,6 (FULL-P0
-  42,3); dengan waktu detektor ±36.
+- **Biaya** (RTX 5090, `outputs/tables/crowdai/efficiency.md`): detektor menambah 3,08 juta parameter dan 2,23 ms per tile (batch 32, termasuk membaca citra), dan
+  penggabungan seed menambah ±1,3 ms post-processing (17,17 ms lawan 15,89 ms; satu thread CPU). FPS alur penuh dengan detektor 36,4 (FULL-P0
+  42,3); tabel efisiensi kini memuat kolom waktu detektor (`6e6380c`).
 - **Keterbatasan:** satu detektor (seed 0) untuk ketiga seed jaringan, jadi SD tidak memuat variasi detektor; `c_y` di ujung grid; B3m+Y
   eksploratif dan cara pemecahannya (watershed peta jarak) tidak disetel.
 
-**Cek "Selesai jika" Fase 9:** baris FULL+Y ada di tabel ablasi, per strata, dan efisiensi beserta biayanya. `pytest -q`: 713 lolos.
+**Cek "Selesai jika" Fase 9:** baris FULL+Y ada di tabel ablasi, per strata, dan efisiensi beserta biayanya. `pytest -q`: 714 lolos.
 Keputusan "masuk laporan atau tidak" menunggu pemilik proyek; saran: masuk, sebagai varian yang menurunkan merge rate dengan AP setara.
