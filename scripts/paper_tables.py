@@ -18,7 +18,7 @@ from pathlib import Path
 
 from densepoly import paths
 from densepoly.eval import latex
-from densepoly.utils.io import read_json, write_lines
+from densepoly.utils.io import read_json, write_json, write_lines
 
 N1_NAMES = {"b5->b5p": "training $\\theta$", "b5p->full_p0": "guiding by $\\theta$", "b5->full_p0": "total"}
 PRIOR_NAMES = {"full_p0->full_p1": "MBI", "full_p1->full_p2": "gap map", "full_p0->full_p2": "both priors"}
@@ -226,6 +226,9 @@ def main(argv: list[str] | None = None) -> None:
             shutil.copyfile(source, paper / "figures" / name)
         else:
             print(f"skip figure {name}: run scripts/figures.py first", file=sys.stderr)
+    slides = paths.REPO_ROOT / "slides"
+    if slides.exists():  # the slide deck quotes the same numbers (slides/build.js)
+        write_json(slides / "numbers.json", dict(sorted(macros.items())))
     if (paper / "main.tex").exists():
         problems = check(paper, macros)
         print("main.tex:", "every number, table, figure and citation it uses exists" if not problems else "; ".join(problems))

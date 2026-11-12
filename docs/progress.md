@@ -1948,3 +1948,39 @@ Arah merge rate, split rate, dan recall sama di ketiga seed pada kedua model.
 
 **Persetujuan:** Fase 9 disetujui pemilik proyek pada 12 Nov 2026 ("lanjut"). **FULL+Y masuk laporan**, sebagai varian yang menurunkan merge
 rate dengan AP setara; B3m dan B3m+Y masuk sebagai hasil eksploratif yang ditandai.
+
+---
+
+## Fase 10 — Bahan laporan dan notebook demo (sedang berjalan sejak 12 November 2026)
+
+Bingkai laporan (disetujui bersama Fase 8): studi evaluasi. Paper berbahasa Inggris, PPT berbahasa Indonesia.
+
+**Sudah dibuat (12 Nov 2026):**
+- `notebooks/full_pipeline.ipynb`: alur penuh dari pemeriksaan data sampai tabel, termasuk training dari awal, dengan folder keluaran
+  sendiri. Cakupan eksekusi yang disepakati: satu run FULL-P0 seed 0 (E = 60). Dijalankan sejak 20.02 WIB lewat
+  `densepoly-work/phase10_full_nb.sh` ke `densepoly-work/outputs_full/` (log `logs/phase10_full_nb.log`).
+  - Anotasi mentah CrowdAI tidak ada di server (yang dikirim dari laptop hanya cache dan GT), jadi sel ground truth menyalin file GT
+    dari keluaran beku. Di mesin yang punya anotasi mentah, sel itu memanggil `scripts/prepare_gt.py`.
+- `scripts/figures.py --qualitative`: GT dan poligon B4, FULL-P0, FULL+Y, B3m pada tiga tile padat acak dan satu contoh kegagalan
+  (tile bersentuhan dengan rumah tergabung terbanyak pada FULL-P0).
+- Tabel `exploratory` (`eval/reports.py`): lima perbandingan di luar daftar beku (B3 → B3m, B3m → FULL-P0, FULL-P0 → FULL+Y,
+  B3m → B3m+Y, B3m+Y → FULL+Y) di semua tile, strata padat, dan tile bersentuhan. Angkanya sama dengan hitungan ad hoc Fase 8–9.
+- `src/densepoly/eval/latex.py` dan `scripts/paper_tables.py`: tabel LaTeX (`paper/tables/*.tex`) dan makro untuk setiap angka yang
+  dikutip di kalimat (`paper/tables/numbers.tex`, 282 angka), semuanya dari file tabel. Skrip itu juga memeriksa bahwa semua angka,
+  tabel, gambar, dan sitasi yang dipakai `paper/main.tex` memang ada.
+- `paper/main.tex` (IEEEtran, konferensi) dan `paper/refs.bib`. Judul di naskah adalah judul kerja berbahasa Inggris; judul terdaftar
+  belum diubah.
+- `slides/densepoly.pptx` (18 slide, gaya template ITS Teknik Informatika, dibangun `slides/build.js` dari `slides/numbers.json`).
+
+**Sitasi diverifikasi** (Crossref atau halaman abstrak arXiv, 12 Nov 2026): Huang & Zhang 2011, PE&RS 77(7): 721–732,
+doi 10.14358/PERS.77.7.721; Avbelj dkk. 2015, IEEE GRSL 12(1): 170–174; Ji, Wei & Lu 2019, IEEE TGRS 57(1): 574–586; Pix2Poly, WACV 2025
+hlm. **8484–8493** (README repo yang menulis 8473–8482 keliru); Adimoolam dkk., "Data Leakage Detection and De-duplication in Large Scale
+Geospatial Image Datasets", arXiv:2304.02296 (2023). Dahatonde dkk. (2024) tidak dipakai di paper.
+
+**Belum selesai:**
+- **PDF paper belum dikompilasi.** Server tidak punya LaTeX, dan pengunduhan mesin LaTeX (Tectonic) ditolak pengaman otomatis karena berupa
+  berkas biner dari luar. Naskah sudah diperiksa konsistensinya, tetapi belum pernah dikompilasi.
+- **PPT belum diperiksa secara visual.** Server tidak punya LibreOffice untuk merender slide; yang diperiksa baru strukturnya (18 slide,
+  tabel, gambar). Logo resmi ITS belum ada, jadi header dan footer memakai teks.
+- `notebooks/demo_hasil.ipynb` dan paket `data/demo/`.
+- Hasil eksekusi `full_pipeline.ipynb` (training selesai sekitar 22.00 WIB).

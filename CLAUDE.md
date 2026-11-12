@@ -71,6 +71,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   Eksploratif (12 Nov 2026): B3m (mask B3 + `mar`) AP 64,89, C-IoU 76,97, mengungguli FULL-P0 di semua metrik kecuali merge rate (2,81% lawan 1,96%).
   Fase 9 selesai dan disetujui (12 Nov 2026; FULL+Y masuk laporan): seed YOLOv8n-OBB menurunkan merge rate FULL-P0 1,96% → 1,52% (Δ −0,45 [−0,56; −0,35]) dan B3m
   2,81% → 2,14%, dengan AP setara dan split rate naik (+0,24 dan +0,37 poin). B3m+Y tetap di atas FULL+Y di AP (64,79 lawan 61,87).
+  Fase 10 berjalan sejak 12 Nov 2026: `notebooks/full_pipeline.ipynb`, `paper/` (naskah IEEEtran, belum dikompilasi ke PDF), dan
+  `slides/densepoly.pptx` sudah ada; `notebooks/demo_hasil.ipynb` belum. Rinciannya di `docs/progress.md`.
 
 ## Cara bekerja di proyek ini
 
@@ -195,8 +197,8 @@ densepoly/
 ├── notebooks/       # colab_train.ipynb (menjalankan skrip di Colab), demo_hasil.ipynb (demo untuk dosen, Fase 10),
 │                    # full_pipeline.ipynb (seluruh alur termasuk training, Fase 10);
 │                    # semuanya tipis: logika tetap di src/, notebook hanya memanggil dan memplot
-├── paper/           # naskah template IEEE (IEEEtran): sumber LaTeX dan PDF (Fase 10)
-├── slides/          # PPT presentasi (Fase 10)
+├── paper/           # naskah template IEEE (IEEEtran): main.tex, refs.bib; tables/ dan figures/ dibuat scripts/paper_tables.py
+├── slides/          # PPT presentasi gaya template ITS: build.js, numbers.json (dibuat skrip), densepoly.pptx
 ├── tests/           # fixtures/ sintetis + test_*.py
 ├── reference/       # demo/ (kode demo ETS) dan prototypes/ (uji spesifikasi); hanya referensi
 ├── docs/            # METHOD, DATA, EXPERIMENTS, EVALUATION, COLAB, progress
@@ -226,7 +228,8 @@ python scripts/benchmark.py --data crowdai --exp full_p0 --seed 0             # 
 python scripts/prepare_yolo.py --data crowdai                                 # FULL+Y: label OBB → outputs/yolo/
 python scripts/train_yolo.py --data crowdai --weights yolov8n-obb.pt          # lingkungan Ultralytics tersendiri
 python scripts/predict_yolo.py --data crowdai --split val_tune_sub            # kotak per citra, dipakai --exp full_y
-python scripts/tables.py --data crowdai && python scripts/figures.py --data crowdai --results
+python scripts/tables.py --data crowdai && python scripts/figures.py --data crowdai --results --qualitative
+python scripts/paper_tables.py                                                # paper/tables/, paper/figures/, slides/numbers.json
 ```
 
 ## Jebakan teknis (baca sebelum menulis kode)
