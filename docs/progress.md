@@ -1640,3 +1640,37 @@ FULL-P1 dan FULL-P2 berpola sama: seed 1 aktif (F1 0,365 dan 0,387, mulai epoch 
 
 **Persetujuan:** Fase 7 disetujui pemilik proyek pada 11 Nov 2026, ±07.20 WIB ("lanjut"). Checkpoint WHU dipakai apa adanya tanpa training
 ulang, dan kelas kontak yang tidak aktif dilaporkan sebagai keterbatasan.
+
+---
+
+## Fase 8 — Perbandingan SOTA dan analisis kepadatan (N2) (sedang berjalan)
+
+**Rencana, diajukan 11 Nov 2026 dan disetujui pemilik proyek 12 Nov 2026, ±13.10 WIB ("lanjut"):**
+- **SOTA di `crowdai/val_clean` (212 tile):** FULL-P0 3 seed lawan prediksi rilisan HiSup (sudah dievaluasi di Fase 3), total dan per
+  strata, dengan CI bootstrap. Keputusan mengikuti §8 poin 5.
+- **WHU:** tuning FULL-P0 dan B5′ di `val_tune_sub` dengan grid yang sama, dibekukan dan di-commit sebelum test. Lalu prediksi test
+  (35.487 patch), evaluasi FULL-P0 terhadap GT utama dan GT `p2p`, dan B5′ terhadap GT utama.
+  - Angka `p2p` dibandingkan dengan angka paper Pix2Poly, ditandai "kira-kira".
+  - B5′ → FULL-P0 di WHU (efek pemanduan θ) hanya deskriptif, karena WHU cuma 1 seed.
+- **N2:** selisih per strata dan Δpadat − Δjarang (bootstrap berstrata) untuk metrik utama N1 dan N3. Keputusan mengikuti §8 poin 4.
+- **Efisiensi:** jumlah parameter, FPS (batch 1, 320², AMP, 20 warmup + 200 iterasi), waktu post-processing per citra (CPU 1 thread).
+- **Angka paper pembanding** disalin dari PDF asli ke `configs/paper_numbers.yaml`, dengan nomor tabel dan halaman.
+- **Dilewati:** reproduksi Pix2Poly di WHU (`docs/EVALUATION.md` §6.5, opsional). Langkah itu butuh kode dan bobot Pix2Poly, padahal
+  perbandingannya tetap hanya kira-kira.
+- **Aturan GPU diperluas** (melengkapi aturan 9 Nov): proses lain yang memakai lebih dari 2 GB boleh dipakai bersama bila antrean aksara
+  tidak berjalan, utilisasi GPU ≤ 5%, dan sisa memori GPU ≥ 16 GB, pada dua cek berjarak 60 s. Alasannya: server web milik proyek lain
+  bisa menahan ±10 GB berjam-jam tanpa menghitung apa pun, sedangkan inferensi kita hanya butuh ±0,7 GB.
+
+**Pengukuran biaya di sampel** (11 Nov 2026, 08.25–08.28 WIB, commit `c6bd271`; `densepoly-work/logs/phase8_measure.{log,json}`).
+Sampelnya dari `val_select` dan `val_tune_sub`, bukan test. Post-processing masih default, jadi angkanya hanya waktu, bukan hasil.
+
+| Langkah | Terukur di sampel | Proyeksi |
+|---|---|---|
+| Prediksi FULL-P0 WHU, 1.000 patch | 15,0 s; per patch: jaringan 6,5 ms, instance 2,1 ms, poligon 5,5 ms; memori GPU puncak 0,67 GB | test (35.487 patch): ±8,9 menit |
+| Evaluasi 1.000 patch itu, GT utama | 18,0 s (12 worker) | test: ±10,6 menit |
+| Evaluasi 1.000 patch itu, GT `p2p` | 13,8 s (12 worker) | test: ±8,1 menit |
+| Tuning FULL-P0, 100 patch (dry-run, 12 worker) | 37 s | `val_tune_sub` (1.017 patch): ±6,2 menit |
+| Tuning B5′, 100 patch (dry-run, 12 worker) | 38 s | `val_tune_sub`: ±6,5 menit |
+| Kanal FULL-P0 di `val_tune_sub` (1.017 patch, disimpan untuk tuning) | 16,2 s | — |
+
+Pengukuran menunggu GPU 62 menit (07.23–08.25), karena server web proyek lain menahan ±10 GB.
