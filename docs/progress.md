@@ -1836,7 +1836,7 @@ JSON sumbernya (`--trace`). `pytest -q`: 684 lolos.
    dengan efek kecil tetapi konsisten; prior morfologi dan kelas kontak tidak membantu. Paper berbahasa Inggris, PPT berbahasa Indonesia,
    notebook penuh dijalankan untuk satu run FULL-P0 seed 0. Judul kerja belum diubah; menunggu keputusan pemilik proyek.
 
-**Eksperimen eksploratif B3m** (12 Nov 2026, 16.12–16.4x WIB; §8 poin 7, di luar klaim N1–N3): regularisasi `mar` (minAreaRect per instance,
+**Eksperimen eksploratif B3m** (12 Nov 2026, 16.12–16.47 WIB; §8 poin 7, di luar klaim N1–N3): regularisasi `mar` (minAreaRect per instance,
 seperti B5) di atas mask B3, tanpa training. Tuning di `val_tune_sub` (150 s): A_min 5, ρ 0,93, k 0,02, δ 10; AP 65,00, `PoLiS_paired` 1,481;
 dibekukan dan di-commit (`b80f254`) sebelum test. Prediksi dan evaluasi `test` 3 seed; selisih berpasangan dengan bootstrap yang sama
 (`densepoly-work/phase8_b3m_steps.py`, `logs/phase8_b3m_steps.json`).
