@@ -4,6 +4,7 @@ predict.py, scripts/tune_postproc.py, scripts/evaluate.py; docs/EVALUATION.md §
 import importlib.util
 import shutil
 
+import cv2
 import numpy as np
 import pytest
 import torch
@@ -222,6 +223,38 @@ def test_the_tune_script_freezes_a_network_and_predict_uses_it(trained):
     meta = read_json(paths.pred_file("crowdai", "b5", "seed0", "val_tune_sub").with_name("val_tune_sub.meta.json"))
     assert meta["tuned_file"] == "configs/postproc/crowdai/b5.yaml" and meta["postproc"]["tau"] == frozen.postproc.tau
     postproc_file("crowdai", "b5", configs).unlink()
+
+
+@pytest.fixture
+def thread_settings(monkeypatch):
+    """The benchmark limits this process to one thread; the other tests get their threads back."""
+    for variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        monkeypatch.setenv(variable, "1")  # restored by monkeypatch after the script overwrote them
+    torch_threads, cv_threads = torch.get_num_threads(), cv2.getNumThreads()
+    yield
+    torch.set_num_threads(torch_threads)
+    cv2.setNumThreads(cv_threads)
+
+
+def test_the_benchmark_script_needs_a_frozen_tuning_and_writes_the_cost(trained, thread_settings):
+    folder, configs = trained
+    arguments = ["--data", "crowdai", "--exp", "full_p0", "--seed", "0", "--split", "val_tune_sub", "--images", "2",
+                 "--loader-workers", "0", "--configs-dir", str(configs), "--splits-dir", str(folder), *SMALL[:4]]  # fmt: skip
+    with pytest.raises(SystemExit):
+        load_script("benchmark").main(arguments)
+    frozen = postproc_file("crowdai", "full_p0", configs)
+    frozen.parent.mkdir(parents=True, exist_ok=True)
+    frozen.write_text("postproc: {tau: 0.5}\n", encoding="utf-8")
+    load_script("benchmark").main(arguments)
+    record = read_json(paths.efficiency_file("crowdai", "full_p0", "seed0"))
+    model = infer.load_network(load_config("crowdai", "full_p0", SMALL[:4]), paths.checkpoint_file("crowdai", "full_p0", "seed0"),
+                               torch.device("cpu"))[0]  # fmt: skip
+    assert record["parameters"] == sum(p.numel() for p in model.parameters())
+    assert record["input"] == [1, 3, 128, 128] and record["fps"] > 0 and record["iterations"] == 200
+    assert record["postproc"]["images"] == 2 and record["postproc"]["threads"] == 1
+    assert record["postproc"]["total_ms"] == pytest.approx(record["postproc"]["instances_ms"] + record["postproc"]["polygons_ms"])
+    assert record["postproc_config"] == {"instance": "watershed", "polygon": "theta"} and record["cpu"]
+    frozen.unlink()
 
 
 def test_evaluate_reads_a_named_run(trained, monkeypatch):
