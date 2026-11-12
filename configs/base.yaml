@@ -66,7 +66,8 @@ augment:                      # geometric: RGB + priors + instance map; photomet
 
 postproc:                     # docs/METHOD.md §6-§8, CrowdAI defaults of §10; a frozen tuning in
                               # configs/postproc/<dataset>/<exp>.yaml overrides them (docs/EXPERIMENTS.md §4)
-  instance: ???               # classical | cc | watershed | watershed_yolo
+  instance: ???               # classical | cc | watershed | watershed_yolo | cc_yolo (the _yolo modes add seeds, §8)
+  base_exp: null              # _yolo modes: the experiment whose frozen post-processing they keep, c_y being the one change
   polygon: ???                # raw | mar | theta
   tau: 0.4                    # τ: markers where P_b − P_k > τ
   marker_min_px: 8            # m_min: smaller marker components are dropped

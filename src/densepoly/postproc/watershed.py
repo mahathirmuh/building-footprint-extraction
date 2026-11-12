@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy import ndimage as ndi
 from skimage.measure import label
 from skimage.segmentation import watershed
 
@@ -68,7 +69,16 @@ def three_class_instances(
     return Instances(instance_map, mean_per_instance(instance_map, 1.0 - p_bg))
 
 
-def binary_instances(probability: np.ndarray, min_area: int) -> Instances:
-    """§6.3: 4-connected components of probability > 0.5; score = mean probability."""
-    instance_map = drop_small(label4(probability > 0.5), min_area)
+def binary_instances(probability: np.ndarray, min_area: int, seeds: np.ndarray | None = None) -> Instances:
+    """§6.3: 4-connected components of probability > 0.5; score = mean probability.
+    seeds (exploratory, B3m+Y): (n, 2) centres (x, y) of a detector's boxes. Every component is its own marker, so by the
+    rule of §8 a component with two or more seeds is split, here by a watershed of the distance to the background,
+    which cuts at the neck between the seeds; the other components stay as they are."""
+    fg = probability > 0.5
+    components = label4(fg)
+    if seeds is None or not len(seeds):
+        instance_map = drop_small(components, min_area)
+    else:
+        marker_labels = merge_seeds(components, fg, seeds)
+        instance_map = watershed_instances(-ndi.distance_transform_edt(fg), marker_labels, fg, min_area)
     return Instances(instance_map, mean_per_instance(instance_map, probability))

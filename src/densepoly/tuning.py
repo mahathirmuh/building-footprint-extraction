@@ -27,6 +27,7 @@ from densepoly.infer import (
     NetworkJob,
     cached_mbi,
     chunks,
+    image_seeds,
     network_instances,
     network_polygons,
     saved_channels,
@@ -102,7 +103,7 @@ def _network_stage_chunk(args) -> list[list[dict]]:
         instances = {}
         for k, (instance, polygon) in enumerate(settings):
             if instance not in instances:
-                instances[instance] = network_instances(channels, instance)
+                instances[instance] = network_instances(channels, instance, image_seeds(job, image_id, instance))
             found = instances[instance]
             polygons = network_polygons(found, channels, polygon)
             out[k] += to_results(polygons, found.scores, image_id, job.category)
@@ -180,4 +181,27 @@ def tune_network(job: NetworkJob, gt: dict, grid: dict, binary: bool, workers: i
         "chosen": {**stage1_points[first], **stage2_points[second]},
         "score": stage2[second],
         "stage2": [{**point, **score} for point, score in zip(stage2_points, stage2, strict=True)],
+    }
+
+
+def tune_seeds(job: NetworkJob, gt: dict, grid: dict, workers: int = 1) -> dict:
+    """FULL+Y (docs/EXPERIMENTS.md §7): only the confidence c_y of the detector's seeds is tuned, on the saved channels of
+    the network and the detector's boxes of the job; the instance and polygon parameters of the job are those frozen
+    for the experiment without seeds, so that the seeds are the one change. The highest AP wins."""
+    if job.boxes is None:
+        raise ValueError("tune_seeds needs a job with the detector's boxes")
+    image_ids = [image["id"] for image in gt["images"]]
+    tic = time.perf_counter()
+    points = grid_points(grid["yolo"])
+    settings = [(replace(job.instance, **point), job.polygon) for point in points]
+    scores = score_all(gt, stage_results(_network_stage_chunk, job, settings, image_ids, workers), workers)
+    chosen = choose(scores)
+    return {
+        "chosen": points[chosen],
+        "score": scores[chosen],
+        "stage1": [],
+        "stage2": [],
+        "seeds": [{**point, **score} for point, score in zip(points, scores, strict=True)],
+        "seconds": {"seeds": round(time.perf_counter() - tic, 1)},
+        "images": len(image_ids),
     }

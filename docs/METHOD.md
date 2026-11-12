@@ -304,6 +304,16 @@ Penggabungan dilakukan **setelah** langkah 3 §6.2 (marker sudah dipotong ke `F`
 Label OBB dibuat dari peta instance: `cv2.boxPoints(cv2.minAreaRect(...))` → 4 titik dinormalisasi →
 `0 x1 y1 x2 y2 x3 y3 x4 y4` per baris. Tetap tanpa anotasi poligon.
 
+Rincian FULL+Y (diperjelas 12 Nov 2026, saat Fase 9 dikerjakan):
+- **Hanya `c_y` yang disetel.** τ, m_min, A_min, ρ, k, dan δ memakai nilai beku FULL final (FULL-P0), supaya seed YOLO menjadi
+  satu-satunya perubahan terhadap FULL. `c_y` dipilih dari grid {0,15; 0,25; 0,4} dengan AP tertinggi di `val_tune_sub`.
+- Seed adalah disk radius 2 px yang dipotong ke `F`. Seed tidak menimpa marker yang dipertahankan maupun seed sebelumnya.
+- Seed di luar marker pada komponen `F` yang sudah punya marker tidak mengubah apa pun (kasus yang tidak disebut aturan 1–4).
+- Detektor dilatih sekali (seed 0) dan dipakai untuk ketiga seed jaringan. Ultralytics (AGPL-3.0) hanya diimpor oleh
+  `scripts/train_yolo.py` dan `scripts/predict_yolo.py`, dari lingkungan tersendiri; paket `densepoly` hanya membaca file kotaknya.
+- **B3m+Y (eksploratif):** seed yang sama pada model biner. Setiap komponen `p > 0,5` dianggap satu marker, sehingga komponen
+  berisi ≥ 2 seed dipecah dengan `watershed(−jarak ke latar, seed)`, yang memotong di leher antar-seed. Komponen lain tidak berubah.
+
 ## 9. Ringkasan alasan desain
 
 - **Kontak ⊂ bangunan:** foreground tetap sama dengan gabungan bangunan, sehingga celah tidak ikut ke poligon.

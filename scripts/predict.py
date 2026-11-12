@@ -20,6 +20,7 @@ import argparse
 import json
 import os
 import time
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -65,9 +66,14 @@ def predict_with_network(args, cfg, gt: dict, run: str) -> tuple[list[dict], lis
         gt["categories"][0]["id"],
     )
     checkpoint = paths.checkpoint_file(args.data, source, run)
+    detector = {}
+    if str(cfg.postproc.instance) in infer.SEEDED:  # FULL+Y: the detector's boxes of this split become seeds
+        boxes, about = infer.load_boxes(args.data, args.split)
+        job = replace(job, boxes=boxes)
+        detector = {"yolo": about}
     if args.from_channels:
         results, timings = infer.predict_saved(job, [image["id"] for image in gt["images"]], args.workers)
-        return results, timings, {"checkpoint": None, "channels_of": f"{source}/{run}", "efficiency": None}
+        return results, timings, {"checkpoint": None, "channels_of": f"{source}/{run}", "efficiency": None, **detector}
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model, state = infer.load_network(cfg, checkpoint, device)
     dataset = TileDataset(cfg, args.split, "predict", splits_dir=args.splits_dir)
@@ -79,7 +85,7 @@ def predict_with_network(args, cfg, gt: dict, run: str) -> tuple[list[dict], lis
     )
     results, timings = infer.predict_network(job, model, loader, device, int(cfg.data.tile_size), args.save_channels)
     meta = {"checkpoint": f"{source}/{run}/best.pt", "selected": state, "device": str(device), "efficiency": None}
-    return results, timings, meta
+    return results, timings, {**meta, **detector}
 
 
 def main(argv: list[str] | None = None) -> None:

@@ -16,6 +16,7 @@ for variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"): 
     os.environ[variable] = "1"
 
 import argparse  # noqa: E402
+from dataclasses import replace  # noqa: E402
 import json  # noqa: E402
 import subprocess  # noqa: E402
 from pathlib import Path  # noqa: E402
@@ -86,6 +87,10 @@ def main(argv: list[str] | None = None) -> None:
         PolygonParams.from_config(cfg.postproc),
         category,
     )
+    detector = None
+    if str(cfg.postproc.instance) in infer.SEEDED:  # FULL+Y: the seeds are merged in the timed post-processing
+        boxes, detector = infer.load_boxes(args.data, args.split)
+        job = replace(job, boxes=boxes)
     channels = [(image_id, tile) for image_id, tile, _ in infer.network_channels(model, loader, device, int(cfg.data.tile_size))]
     postproc = {**efficiency.postproc_time(job, channels), "split": args.split, "threads": 1}
     record = {
@@ -98,6 +103,7 @@ def main(argv: list[str] | None = None) -> None:
         "parameters": efficiency.count_parameters(model),
         **speed,
         "postproc": postproc,
+        "detector": detector,
         "postproc_config": {"instance": str(cfg.postproc.instance), "polygon": str(cfg.postproc.polygon)},
         "gpu": torch.cuda.get_device_name(0) if device.type == "cuda" else "none (CPU)",
         "cpu": efficiency.cpu_name(),

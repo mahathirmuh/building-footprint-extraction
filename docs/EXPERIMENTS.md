@@ -34,6 +34,7 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 | FULL-P1 | `exp/full_p1` | U-Net++ | RGB + MBI | 5 | sama | watershed | `theta` | ya |
 | FULL-P2 | `exp/full_p2` | U-Net++ | RGB + MBI + celah | 5 | sama | watershed | `theta` | ya |
 | FULL+Y | `exp/full_y` | FULL final + YOLOv8n-OBB | sama dengan FULL final | 5 | — | watershed + seed YOLO | `theta` | YOLO saja |
+| B3m+Y | `exp/b3my` | model B3 + YOLOv8n-OBB | RGB | 1 | — | CC + seed YOLO | `mar` | tidak (YOLO yang sama) |
 
 - **FULL final** = FULL-P0 atau FULL-P2, dipilih dengan aturan §8 poin 6 (dipakai untuk SOTA, WHU, dan FULL+Y).
 - **B5′ adalah tambahan** dari slide. Fungsinya memisahkan efek pelatihan dan efek pemanduan head θ.
@@ -146,6 +147,11 @@ citra (CPU 1 thread). Catat nama GPU/CPU. Angka efisiensi pembanding dari paper 
 - Data: label OBB dari peta instance train dedup (`docs/METHOD.md` §8), dataset YAML Ultralytics.
 - Model `yolov8n-obb.pt`, `imgsz` = 320 (CrowdAI) / 224 (WHU), 100 epoch, batch 32, seed 0, augmentasi bawaan.
 - `c_y` disetel di `val_tune_sub`. Laporkan tambahan waktu inferensi (YOLO + penggabungan seed).
+- Parameter post-processing lain memakai nilai beku FULL final; hanya `c_y` yang disetel (`docs/METHOD.md` §8).
+- Perintah: `scripts/prepare_yolo.py` (label OBB dari peta instance `train_dedup` dan `val_select`), `scripts/train_yolo.py`,
+  `scripts/predict_yolo.py --split <split>` (kotak per citra), lalu `tune_postproc.py`/`predict.py`/`evaluate.py` dengan `--exp full_y`.
+- **B3m+Y eksploratif** (ditambahkan 12 Nov 2026; §8 poin 7): seed yang sama di atas B3m, karena kelemahan B3m terhadap FULL-P0 adalah
+  merge rate.
 
 ## 8. Kriteria keputusan (dibekukan 28 Okt 2026; poin 6 diperjelas dan split poin 5 diubah 28 Okt 2026, lihat `docs/progress.md`)
 

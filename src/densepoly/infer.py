@@ -31,8 +31,10 @@ from densepoly.postproc.polygonize import (
     to_results,
 )
 from densepoly.postproc.watershed import Instances, binary_instances, three_class_instances
+from densepoly.postproc.yolo_seeds import seed_centres
 from densepoly.priors.cache import load_stats, quantize, read_prior, read_rgb
 from densepoly.priors.mbi import brightness, mbi
+from densepoly.utils.io import read_json
 
 
 def cached_mbi(dataset: str, split: str, image_id: int) -> np.ndarray:
@@ -65,15 +67,21 @@ def _b0_chunk(args) -> list[tuple[list[dict], dict]]:
     return [b0_image(job, image_id) for image_id in image_ids]
 
 
+SEEDED = ("watershed_yolo", "cc_yolo")  # instance modes that merge a detector's seeds into the markers (FULL+Y)
+
+
 @dataclass(frozen=True)
 class InstanceParams:
     tau: float = 0.4  # τ
     marker_min_px: int = 8  # m_min
     instance_min_px: int = 10  # A_min
+    yolo_conf: float = 0.25  # c_y, used only by a job that carries boxes
 
     @classmethod
     def from_config(cls, postproc) -> InstanceParams:
-        return cls(float(postproc.tau), int(postproc.marker_min_px), int(postproc.instance_min_px))
+        return cls(
+            float(postproc.tau), int(postproc.marker_min_px), int(postproc.instance_min_px), float(postproc.yolo_conf)
+        )
 
 
 @dataclass(frozen=True)
@@ -85,6 +93,24 @@ class NetworkJob:
     instance: InstanceParams
     polygon: PolygonParams
     category: int
+    boxes: dict | None = None  # FULL+Y: {str(image id): [[x, y, confidence, ...], ...]} of the detector on the split
+
+
+def load_boxes(dataset: str, split: str) -> tuple[dict, dict]:
+    """(boxes per image, what the file says about itself) of the detector on a split (scripts/predict_yolo.py)."""
+    file = paths.yolo_boxes_file(dataset, split)
+    if not file.exists():
+        raise FileNotFoundError(f"{file} does not exist: run scripts/predict_yolo.py --data {dataset} --split {split}")
+    record = read_json(file)
+    about = {key: record.get(key) for key in ("weights", "min_conf", "seconds_per_image", "n_boxes", "git", "created")}
+    return record["boxes"], about
+
+
+def image_seeds(job: NetworkJob, image_id: int, params: InstanceParams) -> np.ndarray | None:
+    """Seed centres of one image for these parameters; None for a job without a detector."""
+    if job.boxes is None:
+        return None
+    return seed_centres(job.boxes.get(str(image_id), []), params.yolo_conf)
 
 
 def network_source(cfg) -> str:
@@ -119,11 +145,11 @@ def network_channels(
             yield image_id, tile, seconds
 
 
-def network_instances(channels: np.ndarray, params: InstanceParams) -> Instances:
-    """§6.3 on one channel (binary models), §6.2 on the three class probabilities otherwise."""
+def network_instances(channels: np.ndarray, params: InstanceParams, seeds: np.ndarray | None = None) -> Instances:
+    """§6.3 on one channel (binary models), §6.2 on the three class probabilities otherwise; seeds as in §8."""
     if channels.shape[0] == 1:
-        return binary_instances(channels[0], params.instance_min_px)
-    return three_class_instances(*channels[:3], params.tau, params.marker_min_px, params.instance_min_px)
+        return binary_instances(channels[0], params.instance_min_px, seeds)
+    return three_class_instances(*channels[:3], params.tau, params.marker_min_px, params.instance_min_px, seeds)
 
 
 def network_polygons(instances: Instances, channels: np.ndarray, params: PolygonParams) -> list[InstancePolygon]:
@@ -137,7 +163,7 @@ def network_polygons(instances: Instances, channels: np.ndarray, params: Polygon
 def network_image(job: NetworkJob, channels: np.ndarray, image_id: int) -> tuple[list[dict], dict]:
     """Results of one image from its float32 channels, and the seconds of the instance and polygon stages."""
     tic = time.perf_counter()
-    instances = network_instances(channels, job.instance)
+    instances = network_instances(channels, job.instance, image_seeds(job, image_id, job.instance))
     mid = time.perf_counter()
     polygons = network_polygons(instances, channels, job.polygon)
     results = to_results(polygons, instances.scores, image_id, job.category)

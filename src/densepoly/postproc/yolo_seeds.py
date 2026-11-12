@@ -43,8 +43,8 @@ def obb_label_lines(instance_map: np.ndarray, min_area: int = 1) -> list[str]:
 
 
 def seed_centres(boxes: list, confidence: float) -> np.ndarray:
-    """(n, 2) centres (x, y) of the predicted boxes [x, y, confidence] whose confidence is at least `confidence`."""
-    kept = [(x, y) for x, y, score in boxes if score >= confidence]
+    """(n, 2) centres (x, y) of the predicted boxes [x, y, confidence, ...] whose confidence is at least `confidence`."""
+    kept = [(x, y) for x, y, score, *_ in boxes if score >= confidence]
     return np.asarray(kept, float).reshape(-1, 2)
 
 

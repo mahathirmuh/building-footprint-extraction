@@ -38,6 +38,8 @@ LABELS = {
     "full_p0": "FULL-P0",
     "full_p1": "FULL-P1",
     "full_p2": "FULL-P2",
+    "full_y": "FULL+Y",
+    "b3my": "B3m+Y",
 }
 ABLATION_METRICS = ("AP", "AP50", "AP_boundary", "IoU", "PoLiS", "MTA", "CIoU", "CIoU_p2p", "N_ratio", "merge_rate")
 ABLATION_HEADER = (

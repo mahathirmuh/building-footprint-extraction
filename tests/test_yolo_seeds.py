@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from densepoly.postproc.markers import label4
-from densepoly.postproc.watershed import three_class_instances
+from densepoly.postproc.watershed import binary_instances, three_class_instances
 from densepoly.postproc.yolo_seeds import instance_boxes, merge_seeds, obb_label_lines, seed_centres
 from tests.fixtures.synthetic import instance_map_from_polygons, rect_polygon
 
@@ -46,6 +46,8 @@ def test_seed_centres_keep_the_confident_boxes():
     boxes = [[10.0, 5.0, 0.9], [20.0, 6.0, 0.2], [30.0, 7.0, 0.4]]
     assert seed_centres(boxes, 0.4).tolist() == [[10.0, 5.0], [30.0, 7.0]]
     assert seed_centres([], 0.4).shape == (0, 2)
+    with_sizes = [[10.0, 5.0, 0.9, 30.0, 12.0, 0.1], [20.0, 6.0, 0.2, 8.0, 8.0, 0.0]]  # as scripts/predict_yolo.py writes
+    assert seed_centres(with_sizes, 0.4).tolist() == [[10.0, 5.0]]
 
 
 def scene():
@@ -113,3 +115,31 @@ def test_seeds_split_a_fused_pair_in_the_watershed():
     assert seeded.count == 2
     assert seeded.instance_map[15, 18] != seeded.instance_map[15, 42]
     assert np.array_equal(seeded.instance_map > 0, plain.instance_map > 0)  # the foreground is the same
+
+
+def test_seeds_split_a_binary_component_at_its_neck():
+    """Two houses joined by a 2-pixel bridge: one component without seeds; with a seed in each, cut at the bridge."""
+    probability = np.zeros((30, 70), np.float32)
+    probability[5:25, 5:30] = 0.9  # 25 columns
+    probability[5:25, 38:65] = 0.9  # 27 columns
+    probability[14:16, 30:38] = 0.9  # the bridge
+    plain = binary_instances(probability, 10)
+    assert plain.count == 1
+    seeded = binary_instances(probability, 10, seeds=np.array([[17.0, 15.0], [51.0, 15.0]]))
+    assert seeded.count == 2
+    left, right = seeded.instance_map[15, 17], seeded.instance_map[15, 51]
+    assert left != right
+    assert (seeded.instance_map[5:25, 5:30] == left).all() and (seeded.instance_map[5:25, 38:65] == right).all()
+    assert np.array_equal(seeded.instance_map > 0, plain.instance_map > 0)
+    assert seeded.scores == pytest.approx([0.9, 0.9])
+
+
+def test_binary_components_with_one_seed_or_none_are_unchanged():
+    probability = np.zeros((30, 70), np.float32)
+    probability[5:25, 5:30] = 0.9
+    probability[5:25, 40:65] = 0.8
+    plain = binary_instances(probability, 10)
+    for seeds in (np.zeros((0, 2)), np.array([[17.0, 15.0]]), np.array([[17.0, 15.0], [52.0, 15.0], [35.0, 2.0]])):
+        seeded = binary_instances(probability, 10, seeds=seeds)
+        assert np.array_equal(seeded.instance_map, plain.instance_map)
+        assert seeded.scores == pytest.approx(plain.scores)

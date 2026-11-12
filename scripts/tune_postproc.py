@@ -40,9 +40,11 @@ def first_images(gt: dict, n: int) -> dict:
 
 def frozen_document(args, report: dict, grid_path: Path) -> dict:
     grid_sha256 = hashlib.sha256(grid_path.read_bytes()).hexdigest()
+    extra = {key: report[key] for key in ("seeds", "inherited_from", "detector") if key in report}
     return {
-        "postproc": report["chosen"],
+        "postproc": {**report.get("inherited", {}), **report["chosen"]},
         "tuning": {
+            **extra,
             "split": SPLIT,
             "images": report["images"],
             "created": timestamp(),
@@ -76,6 +78,14 @@ def main(argv: list[str] | None = None) -> None:
         if args.limit:
             parser.error("--limit is for timing with --dry-run; the frozen tuning uses every image of val_tune_sub")
     cfg = load_config(args.data, args.exp, root=args.configs_dir, tuned=False)
+    seeded = str(cfg.postproc.instance) in infer.SEEDED
+    inherited = {}
+    if seeded:  # FULL+Y: the frozen post-processing of the experiment without seeds is kept; only c_y is tuned
+        base_file = postproc_file(args.data, str(cfg.postproc.base_exp), args.configs_dir)
+        if not base_file.exists():
+            parser.error(f"{base_file} does not exist: tune {cfg.postproc.base_exp} first")
+        inherited = OmegaConf.to_container(OmegaConf.load(base_file))["postproc"]
+        cfg = OmegaConf.merge(cfg, {"postproc": inherited})
     gt = coco_io.load_gt(args.data, SPLIT)
     total_images = len(gt["images"])
     if args.limit:
@@ -87,6 +97,7 @@ def main(argv: list[str] | None = None) -> None:
         job = infer.B0Job(args.data, SPLIT, B0Params.from_config(cfg.postproc.b0), polygon, category)
         report = tuning.tune_b0(job, gt, grid, args.workers)
     else:
+        boxes, detector = infer.load_boxes(args.data, SPLIT) if seeded else (None, None)
         job = infer.NetworkJob(
             args.data,
             infer.network_source(cfg),
@@ -95,8 +106,13 @@ def main(argv: list[str] | None = None) -> None:
             infer.InstanceParams.from_config(cfg.postproc),
             polygon,
             category,
+            boxes,
         )
-        report = tuning.tune_network(job, gt, grid, int(cfg.model.classes) == 1, args.workers)
+        if seeded:
+            report = tuning.tune_seeds(job, gt, grid, args.workers)
+            report |= {"inherited": inherited, "inherited_from": str(cfg.postproc.base_exp), "detector": detector}
+        else:
+            report = tuning.tune_network(job, gt, grid, int(cfg.model.classes) == 1, args.workers)
     wall = time.perf_counter() - tic
     summary = {"chosen": report["chosen"], "score": report["score"], "seconds": report["seconds"], "wall": round(wall)}
     if args.limit:

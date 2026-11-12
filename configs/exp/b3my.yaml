@@ -1,0 +1,8 @@
+# B3m+Y (exploratory, added 12 Nov 2026; docs/EXPERIMENTS.md §8 point 7): B3m + the seeds of the FULL+Y detector. A
+# component of the binary mask with two or more seeds is split by a watershed of its distance map (docs/METHOD.md §8).
+exp: b3my
+input: {priors: []}
+model: {arch: unetplusplus, classes: 1, source_exp: b3}
+loss: {type: none, edge_weight: false}
+train: {enabled: false}
+postproc: {instance: cc_yolo, polygon: mar, base_exp: b3m}

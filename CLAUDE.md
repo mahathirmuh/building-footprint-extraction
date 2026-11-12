@@ -172,7 +172,7 @@ densepoly/
 ├── configs/
 │   ├── base.yaml
 │   ├── data/{crowdai,whu}.yaml
-│   ├── exp/{b0,b1,b2,b3,b3m,b4,b5,b5p,full_p0,full_p1,full_p2,full_y}.yaml   # b3m: eksploratif
+│   ├── exp/{b0,b1,b2,b3,b3m,b3my,b4,b5,b5p,full_p0,full_p1,full_p2,full_y}.yaml   # b3m, b3my: eksploratif
 │   ├── postproc/<dataset>/<exp>.yaml        # hasil tuning di val_tune (dibekukan)
 │   └── paper_numbers.yaml                   # angka dari paper lain + sumber (tabel, halaman)
 ├── src/densepoly/
@@ -188,7 +188,8 @@ densepoly/
 │                    # reports.py (tabel Fase 8), efficiency.py
 ├── third_party/pix2poly_metrics/            # polis.py, angle_eval.py, cIoU.py (MIT, dengan catatan perbaikan)
 ├── scripts/         # CLI: prepare_*, dedup_crowdai, make_density, precompute_priors, train, predict, evaluate,
-│                    #      tune_postproc, pack_colab, benchmark, tables, figures
+│                    #      tune_postproc, pack_colab, benchmark, tables, figures;
+│                    #      FULL+Y: prepare_yolo, train_yolo, predict_yolo (dua terakhir mengimpor Ultralytics)
 ├── notebooks/       # colab_train.ipynb (menjalankan skrip di Colab), demo_hasil.ipynb (demo untuk dosen, Fase 10),
 │                    # full_pipeline.ipynb (seluruh alur termasuk training, Fase 10);
 │                    # semuanya tipis: logika tetap di src/, notebook hanya memanggil dan memplot
@@ -220,6 +221,9 @@ python scripts/predict.py --data crowdai --exp b5 --seed 0 --split test --from-c
 python scripts/predict.py --data crowdai --exp full_p2 --seed 0 --split test
 python scripts/evaluate.py --data crowdai --exp full_p2 --seed 0 --split test
 python scripts/benchmark.py --data crowdai --exp full_p0 --seed 0             # parameter, FPS, waktu post-processing
+python scripts/prepare_yolo.py --data crowdai                                 # FULL+Y: label OBB → outputs/yolo/
+python scripts/train_yolo.py --data crowdai --weights yolov8n-obb.pt          # lingkungan Ultralytics tersendiri
+python scripts/predict_yolo.py --data crowdai --split val_tune_sub            # kotak per citra, dipakai --exp full_y
 python scripts/tables.py --data crowdai && python scripts/figures.py --data crowdai --results
 ```
 

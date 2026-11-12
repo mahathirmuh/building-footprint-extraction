@@ -15,13 +15,14 @@ MATRIX = {
     "b2": ("unetplusplus", 1, [], "bce_dice", False, "cc", "raw", True),
     "b3": ("unetplusplus", 1, [], "bce_dice", True, "cc", "raw", True),
     "b3m": ("unetplusplus", 1, [], "none", False, "cc", "mar", False),  # exploratory, not in the frozen comparisons
+    "b3my": ("unetplusplus", 1, [], "none", False, "cc_yolo", "mar", False),  # exploratory
     "b4": ("unetplusplus", 3, [], "ce_dice", True, "watershed", "raw", True),
     "b5": ("unetplusplus", 3, [], "none", False, "watershed", "mar", False),
     "b5p": ("unetplusplus", 5, [], "none", False, "watershed", "mar", False),
     "full_p0": ("unetplusplus", 5, [], "ce_dice_theta", True, "watershed", "theta", True),
     "full_p1": ("unetplusplus", 5, ["mbi"], "ce_dice_theta", True, "watershed", "theta", True),
     "full_p2": ("unetplusplus", 5, ["mbi", "gap"], "ce_dice_theta", True, "watershed", "theta", True),
-    "full_y": ("unetplusplus", 5, None, "none", False, "watershed_yolo", "theta", False),
+    "full_y": ("unetplusplus", 5, [], "none", False, "watershed_yolo", "theta", False),
 }
 
 
@@ -54,7 +55,7 @@ def test_configs_encode_the_scenario_matrix(exp):
     assert row == MATRIX[exp]
 
 
-@pytest.mark.parametrize("exp", ["b3m", "b5", "b5p"])
+@pytest.mark.parametrize("exp", ["b3m", "b3my", "b5", "b5p", "full_y"])
 def test_inference_only_configs_mirror_their_source(exp):
     cfg = load_config("crowdai", exp)
     src = load_config("crowdai", cfg.model.source_exp)
@@ -143,3 +144,12 @@ def test_saved_config_round_trips(tmp_path):
     path = save_config(cfg, tmp_path / "run")
     assert path.name == "config.yaml"
     assert OmegaConf.load(path) == cfg
+
+
+@pytest.mark.parametrize(("exp", "base"), [("full_y", "full_p0"), ("b3my", "b3m")])
+def test_seeded_configs_keep_the_polygons_of_their_base(exp, base):
+    """FULL+Y changes the markers only (docs/METHOD.md §8): same checkpoint and same polygon mode as its base."""
+    cfg, src = load_config("crowdai", exp), load_config("crowdai", base)
+    assert cfg.postproc.base_exp == base and cfg.postproc.instance.endswith("_yolo")
+    assert cfg.postproc.polygon == src.postproc.polygon
+    assert cfg.model.source_exp == (src.model.source_exp or base)

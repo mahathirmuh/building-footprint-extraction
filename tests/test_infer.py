@@ -24,7 +24,14 @@ SMALL = ["model.encoder_weights=null", "model.encoder=efficientnet-b0", f"data.t
          "train.batch_size=2", "train.min_micro_batch=2", "train.num_workers=0", "train.epochs=1"]  # fmt: skip
 SMALL_GRID = {"tie_ap": 0.2, "instance": {"tau": [0.3, 0.5], "marker_min_px": [8], "instance_min_px": [10]},
               "binary": {"instance_min_px": [10, 20]},
-              "polygon": {"rect_iou": [0.85, 0.93], "dp_k": [0.04], "snap_deg": [15]}}  # fmt: skip
+              "polygon": {"rect_iou": [0.85, 0.93], "dp_k": [0.04], "snap_deg": [15]},
+              "yolo": {"yolo_conf": [0.15, 0.4]}}  # fmt: skip
+
+
+def read_yaml(path):
+    from omegaconf import OmegaConf
+
+    return OmegaConf.to_container(OmegaConf.load(path))
 
 
 def load_script(name):
@@ -255,6 +262,57 @@ def test_the_benchmark_script_needs_a_frozen_tuning_and_writes_the_cost(trained,
     assert record["postproc"]["total_ms"] == pytest.approx(record["postproc"]["instances_ms"] + record["postproc"]["polygons_ms"])
     assert record["postproc_config"] == {"instance": "watershed", "polygon": "theta"} and record["cpu"]
     frozen.unlink()
+
+
+def fake_boxes(split="val_tune_sub", confidence=0.3):
+    """A detector that finds the centre of every GT building of the split with this confidence."""
+    gt = read_json(paths.gt_file("crowdai", split))
+    boxes = {str(image["id"]): [] for image in gt["images"]}
+    for ann in gt["annotations"]:
+        x, y, w, h = ann["bbox"]
+        boxes[str(ann["image_id"])].append([x + w / 2, y + h / 2, confidence, w, h, 0.0])
+    record = {"weights": "yolo/crowdai/runs/seed0/weights/best.pt", "min_conf": 0.05, "seconds_per_image": 0.001,
+              "n_boxes": sum(map(len, boxes.values())), "boxes": boxes}  # fmt: skip
+    write_json(paths.yolo_boxes_file("crowdai", split), record, indent=None)
+    return boxes
+
+
+def test_seeded_experiments_keep_the_frozen_base_and_tune_only_the_confidence(trained):
+    folder, configs = trained
+    predict(trained, "full_p0", "--save-channels")
+    arguments = ["--data", "crowdai", "--exp", "full_y", "--workers", "1", "--configs-dir", str(configs)]
+    with pytest.raises(SystemExit):  # the base experiment has no frozen tuning yet
+        load_script("tune_postproc").main(arguments)
+    base = postproc_file("crowdai", "full_p0", configs)
+    base.parent.mkdir(parents=True, exist_ok=True)
+    base.write_text("postproc: {tau: 0.5, rect_iou: 0.85}\n", encoding="utf-8")
+    with pytest.raises(FileNotFoundError, match="predict_yolo"):  # nor does the detector have boxes
+        load_script("tune_postproc").main(arguments)
+    boxes = fake_boxes()
+    load_script("tune_postproc").main(arguments)
+    frozen = read_yaml(postproc_file("crowdai", "full_y", configs))
+    assert frozen["postproc"]["tau"] == 0.5 and frozen["postproc"]["rect_iou"] == 0.85  # inherited
+    assert frozen["postproc"]["yolo_conf"] in (0.15, 0.4)
+    assert frozen["tuning"]["inherited_from"] == "full_p0" and len(frozen["tuning"]["seeds"]) == 2
+    assert frozen["tuning"]["detector"]["weights"].endswith("best.pt")
+    cfg = load_config("crowdai", "full_y", root=configs)
+    assert (cfg.postproc.tau, cfg.postproc.instance, cfg.model.source_exp) == (0.5, "watershed_yolo", "full_p0")
+
+    predict(trained, "full_y", "--from-channels")
+    meta = read_json(paths.pred_file("crowdai", "full_y", "seed0", "val_tune_sub").with_name("val_tune_sub.meta.json"))
+    assert meta["yolo"]["seconds_per_image"] == 0.001 and meta["postproc"]["yolo_conf"] == frozen["postproc"]["yolo_conf"]
+
+    gt = read_json(paths.gt_file("crowdai", "val_tune_sub"))
+    job = infer.NetworkJob("crowdai", "full_p0", "seed0", "val_tune_sub", infer.InstanceParams(yolo_conf=0.4),
+                           PolygonParams("raw"), gt["categories"][0]["id"], boxes)  # fmt: skip
+    image_id = gt["images"][0]["id"]
+    assert infer.image_seeds(job, image_id, job.instance).shape == (0, 2)  # confidence 0.3 is under 0.4
+    low = infer.image_seeds(job, image_id, infer.InstanceParams(yolo_conf=0.15))
+    assert len(low) == len(boxes[str(image_id)]) > 0
+    assert infer.image_seeds(infer.NetworkJob("crowdai", "b4", "seed0", "val_tune_sub", infer.InstanceParams(),
+                                              PolygonParams("raw"), 100), image_id, job.instance) is None  # fmt: skip
+    for file in (base, postproc_file("crowdai", "full_y", configs)):
+        file.unlink()
 
 
 def test_evaluate_reads_a_named_run(trained, monkeypatch):
