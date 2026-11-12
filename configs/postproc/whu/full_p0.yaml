@@ -1,0 +1,386 @@
+# Frozen post-processing of full_p0 on whu (docs/EXPERIMENTS.md §4), tuned on val_tune_sub and
+# written by scripts/tune_postproc.py; do not edit. load_config merges the postproc section only.
+postproc:
+  tau: 0.6
+  marker_min_px: 16
+  instance_min_px: 20
+  rect_iou: 0.93
+  dp_k: 0.02
+  snap_deg: 10
+tuning:
+  split: val_tune_sub
+  images: 1017
+  created: '2026-11-12T13:25:55+07:00'
+  git: 990354715fc89daeb15153ace01882abcbcb043d
+  grid:
+    file: configs/postproc/grid.yaml
+    sha256: 8c2f5528c9fbf8d04f55fcef803996cb6f92862dc4e3fbaf4ebeaf44cd28d5b8
+  score:
+    AP: 0.6690857225631002
+    PoLiS_paired: 1.4117855025360189
+  stage1:
+  - tau: 0.3
+    marker_min_px: 4
+    instance_min_px: 5
+    AP: 0.6810940397034645
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.3
+    marker_min_px: 4
+    instance_min_px: 10
+    AP: 0.6810943102730884
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.3
+    marker_min_px: 4
+    instance_min_px: 20
+    AP: 0.6811011911538425
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.3
+    marker_min_px: 8
+    instance_min_px: 5
+    AP: 0.6810940397034645
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.3
+    marker_min_px: 8
+    instance_min_px: 10
+    AP: 0.6810943102730884
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.3
+    marker_min_px: 8
+    instance_min_px: 20
+    AP: 0.6811011911538425
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.3
+    marker_min_px: 16
+    instance_min_px: 5
+    AP: 0.6810940397034645
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.3
+    marker_min_px: 16
+    instance_min_px: 10
+    AP: 0.6810943102730884
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.3
+    marker_min_px: 16
+    instance_min_px: 20
+    AP: 0.6811011911538425
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.4
+    marker_min_px: 4
+    instance_min_px: 5
+    AP: 0.6810940397034645
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.4
+    marker_min_px: 4
+    instance_min_px: 10
+    AP: 0.6810943102730884
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.4
+    marker_min_px: 4
+    instance_min_px: 20
+    AP: 0.6811011911538425
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.4
+    marker_min_px: 8
+    instance_min_px: 5
+    AP: 0.6810940397034645
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.4
+    marker_min_px: 8
+    instance_min_px: 10
+    AP: 0.6810943102730884
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.4
+    marker_min_px: 8
+    instance_min_px: 20
+    AP: 0.6811011911538425
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.4
+    marker_min_px: 16
+    instance_min_px: 5
+    AP: 0.6810940397034645
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.4
+    marker_min_px: 16
+    instance_min_px: 10
+    AP: 0.6810943102730884
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.4
+    marker_min_px: 16
+    instance_min_px: 20
+    AP: 0.6811011911538425
+    PoLiS_paired: 1.4521357153316325
+  - tau: 0.5
+    marker_min_px: 4
+    instance_min_px: 5
+    AP: 0.6819143118217706
+    PoLiS_paired: 1.4514724157168324
+  - tau: 0.5
+    marker_min_px: 4
+    instance_min_px: 10
+    AP: 0.6819152269397767
+    PoLiS_paired: 1.4514724157168324
+  - tau: 0.5
+    marker_min_px: 4
+    instance_min_px: 20
+    AP: 0.6819248000327405
+    PoLiS_paired: 1.4514724157168324
+  - tau: 0.5
+    marker_min_px: 8
+    instance_min_px: 5
+    AP: 0.6819143118217706
+    PoLiS_paired: 1.4514724157168324
+  - tau: 0.5
+    marker_min_px: 8
+    instance_min_px: 10
+    AP: 0.6819152269397767
+    PoLiS_paired: 1.4514724157168324
+  - tau: 0.5
+    marker_min_px: 8
+    instance_min_px: 20
+    AP: 0.6819248000327405
+    PoLiS_paired: 1.4514724157168324
+  - tau: 0.5
+    marker_min_px: 16
+    instance_min_px: 5
+    AP: 0.6819143118217706
+    PoLiS_paired: 1.4514724157168324
+  - tau: 0.5
+    marker_min_px: 16
+    instance_min_px: 10
+    AP: 0.6819152269397767
+    PoLiS_paired: 1.4514724157168324
+  - tau: 0.5
+    marker_min_px: 16
+    instance_min_px: 20
+    AP: 0.6819248000327405
+    PoLiS_paired: 1.4514724157168324
+  - tau: 0.6
+    marker_min_px: 4
+    instance_min_px: 5
+    AP: 0.6829828235248433
+    PoLiS_paired: 1.4363548312757426
+  - tau: 0.6
+    marker_min_px: 4
+    instance_min_px: 10
+    AP: 0.6829830772634636
+    PoLiS_paired: 1.4363548312757426
+  - tau: 0.6
+    marker_min_px: 4
+    instance_min_px: 20
+    AP: 0.6829886648543305
+    PoLiS_paired: 1.4363548312757426
+  - tau: 0.6
+    marker_min_px: 8
+    instance_min_px: 5
+    AP: 0.6829827112443124
+    PoLiS_paired: 1.4364774005133132
+  - tau: 0.6
+    marker_min_px: 8
+    instance_min_px: 10
+    AP: 0.6829829649829328
+    PoLiS_paired: 1.4364774005133132
+  - tau: 0.6
+    marker_min_px: 8
+    instance_min_px: 20
+    AP: 0.682988582760083
+    PoLiS_paired: 1.4364774005133132
+  - tau: 0.6
+    marker_min_px: 16
+    instance_min_px: 5
+    AP: 0.6837116978389407
+    PoLiS_paired: 1.439495564207606
+  - tau: 0.6
+    marker_min_px: 16
+    instance_min_px: 10
+    AP: 0.6837128519385528
+    PoLiS_paired: 1.439495564207606
+  - tau: 0.6
+    marker_min_px: 16
+    instance_min_px: 20
+    AP: 0.6837213424483853
+    PoLiS_paired: 1.439495564207606
+  stage2:
+  - rect_iou: 0.85
+    dp_k: 0.02
+    snap_deg: 10
+    AP: 0.6587263129845142
+    PoLiS_paired: 1.5003471052951638
+  - rect_iou: 0.85
+    dp_k: 0.02
+    snap_deg: 15
+    AP: 0.6561425280569242
+    PoLiS_paired: 1.513444286465025
+  - rect_iou: 0.85
+    dp_k: 0.02
+    snap_deg: 20
+    AP: 0.6530246455730626
+    PoLiS_paired: 1.5201173953160545
+  - rect_iou: 0.85
+    dp_k: 0.03
+    snap_deg: 10
+    AP: 0.6585872649164964
+    PoLiS_paired: 1.516681233122238
+  - rect_iou: 0.85
+    dp_k: 0.03
+    snap_deg: 15
+    AP: 0.6548686680616262
+    PoLiS_paired: 1.5314171643331733
+  - rect_iou: 0.85
+    dp_k: 0.03
+    snap_deg: 20
+    AP: 0.6508350400603234
+    PoLiS_paired: 1.5461914525312719
+  - rect_iou: 0.85
+    dp_k: 0.04
+    snap_deg: 10
+    AP: 0.6551026458197406
+    PoLiS_paired: 1.5462266135666212
+  - rect_iou: 0.85
+    dp_k: 0.04
+    snap_deg: 15
+    AP: 0.6501480537144453
+    PoLiS_paired: 1.5653379942175683
+  - rect_iou: 0.85
+    dp_k: 0.04
+    snap_deg: 20
+    AP: 0.6455673211872867
+    PoLiS_paired: 1.5925121494160244
+  - rect_iou: 0.85
+    dp_k: 0.06
+    snap_deg: 10
+    AP: 0.645490721720899
+    PoLiS_paired: 1.5999573629334773
+  - rect_iou: 0.85
+    dp_k: 0.06
+    snap_deg: 15
+    AP: 0.6398159260785432
+    PoLiS_paired: 1.6315695343797576
+  - rect_iou: 0.85
+    dp_k: 0.06
+    snap_deg: 20
+    AP: 0.634297250861892
+    PoLiS_paired: 1.6711483427186196
+  - rect_iou: 0.9
+    dp_k: 0.02
+    snap_deg: 10
+    AP: 0.6672459283455189
+    PoLiS_paired: 1.4271348811517839
+  - rect_iou: 0.9
+    dp_k: 0.02
+    snap_deg: 15
+    AP: 0.664050539371972
+    PoLiS_paired: 1.4421979667365068
+  - rect_iou: 0.9
+    dp_k: 0.02
+    snap_deg: 20
+    AP: 0.6604054986079168
+    PoLiS_paired: 1.4493783113661445
+  - rect_iou: 0.9
+    dp_k: 0.03
+    snap_deg: 10
+    AP: 0.6670273196768196
+    PoLiS_paired: 1.4459683520636684
+  - rect_iou: 0.9
+    dp_k: 0.03
+    snap_deg: 15
+    AP: 0.6634995920578086
+    PoLiS_paired: 1.4630756426204437
+  - rect_iou: 0.9
+    dp_k: 0.03
+    snap_deg: 20
+    AP: 0.6583678404528497
+    PoLiS_paired: 1.478039275977773
+  - rect_iou: 0.9
+    dp_k: 0.04
+    snap_deg: 10
+    AP: 0.6628984887648228
+    PoLiS_paired: 1.4809838235695947
+  - rect_iou: 0.9
+    dp_k: 0.04
+    snap_deg: 15
+    AP: 0.6573853989821715
+    PoLiS_paired: 1.5016524546201568
+  - rect_iou: 0.9
+    dp_k: 0.04
+    snap_deg: 20
+    AP: 0.6523766715337821
+    PoLiS_paired: 1.5296227120378958
+  - rect_iou: 0.9
+    dp_k: 0.06
+    snap_deg: 10
+    AP: 0.6514032713076428
+    PoLiS_paired: 1.53997941641497
+  - rect_iou: 0.9
+    dp_k: 0.06
+    snap_deg: 15
+    AP: 0.6449657813911764
+    PoLiS_paired: 1.5779729573005572
+  - rect_iou: 0.9
+    dp_k: 0.06
+    snap_deg: 20
+    AP: 0.6388902301614339
+    PoLiS_paired: 1.6203212083305283
+  - rect_iou: 0.93
+    dp_k: 0.02
+    snap_deg: 10
+    AP: 0.6690857225631002
+    PoLiS_paired: 1.4117855025360189
+  - rect_iou: 0.93
+    dp_k: 0.02
+    snap_deg: 15
+    AP: 0.6663806233343208
+    PoLiS_paired: 1.427845768384202
+  - rect_iou: 0.93
+    dp_k: 0.02
+    snap_deg: 20
+    AP: 0.6614281390812894
+    PoLiS_paired: 1.4349932539158963
+  - rect_iou: 0.93
+    dp_k: 0.03
+    snap_deg: 10
+    AP: 0.6692594949842242
+    PoLiS_paired: 1.4331773515833164
+  - rect_iou: 0.93
+    dp_k: 0.03
+    snap_deg: 15
+    AP: 0.6641040681130743
+    PoLiS_paired: 1.4513514974943416
+  - rect_iou: 0.93
+    dp_k: 0.03
+    snap_deg: 20
+    AP: 0.6595952513071206
+    PoLiS_paired: 1.4657398593079618
+  - rect_iou: 0.93
+    dp_k: 0.04
+    snap_deg: 10
+    AP: 0.6640898959313379
+    PoLiS_paired: 1.4690895537846378
+  - rect_iou: 0.93
+    dp_k: 0.04
+    snap_deg: 15
+    AP: 0.6579720000252236
+    PoLiS_paired: 1.4907016220459797
+  - rect_iou: 0.93
+    dp_k: 0.04
+    snap_deg: 20
+    AP: 0.6535954916383906
+    PoLiS_paired: 1.5188664088062014
+  - rect_iou: 0.93
+    dp_k: 0.06
+    snap_deg: 10
+    AP: 0.6520049134350935
+    PoLiS_paired: 1.5337249099614294
+  - rect_iou: 0.93
+    dp_k: 0.06
+    snap_deg: 15
+    AP: 0.6448873120501044
+    PoLiS_paired: 1.571924321273526
+  - rect_iou: 0.93
+    dp_k: 0.06
+    snap_deg: 20
+    AP: 0.6371283108532935
+    PoLiS_paired: 1.6144420240565338
+  seconds:
+    stage1: 68.1
+    stage2: 72.4
+  workers: 12
