@@ -64,7 +64,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   (3 seed); FULL-P1 62,10 ± 0,83. Klaim "peta celah membantu" tidak didukung (§8 poin 3). FULL-P0 WHU (seed 0, E = 17, 8 worker):
   `fg_iou` `val_select` 0,905, dipakai apa adanya. Temuan: kelas kontak tidak aktif (F1 0) di model WHU
   dan di 6 dari 9 run FULL CrowdAI (seed 0 dan 2), lihat `docs/progress.md`; keputusan N1 dan N3 tidak berubah.
-  Fase 8 (SOTA, WHU, N2, efisiensi) selesai dan disetujui (12 Nov 2026); Fase 9 dilewati. Di `val_clean` FULL-P0 AP 61,14 ± 0,98
+  Fase 8 (SOTA, WHU, N2, efisiensi) selesai dan disetujui (12 Nov 2026); Fase 9 (FULL+Y) dikerjakan sejak 12 Nov 2026. Di `val_clean` FULL-P0 AP 61,14 ± 0,98
   lawan HiSup 65,60 (Δ −4,45 [−5,73; −3,44]): "mendekati SOTA" tidak didukung (§8 poin 5). WHU `test` (GT utama): AP 66,97, C-IoU 72,07;
   aturan Pix2Poly: C-IoU 66,83 (paper: HiSup 79,62, Pix2Poly 81,63; kira-kira). "Efek N1 terbesar di area padat" tidak didukung (§8 poin 4:
   `MTA_inst` ya, `PoLiS_paired` tidak). FULL-P0: 20,81 juta parameter, 42 FPS alur penuh.
@@ -171,7 +171,7 @@ densepoly/
 ├── configs/
 │   ├── base.yaml
 │   ├── data/{crowdai,whu}.yaml
-│   ├── exp/{b0,b1,b2,b3,b4,b5,b5p,full_p0,full_p1,full_p2,full_y}.yaml
+│   ├── exp/{b0,b1,b2,b3,b3m,b4,b5,b5p,full_p0,full_p1,full_p2,full_y}.yaml   # b3m: eksploratif
 │   ├── postproc/<dataset>/<exp>.yaml        # hasil tuning di val_tune (dibekukan)
 │   └── paper_numbers.yaml                   # angka dari paper lain + sumber (tabel, halaman)
 ├── src/densepoly/

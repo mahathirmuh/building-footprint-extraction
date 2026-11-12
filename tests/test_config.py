@@ -14,6 +14,7 @@ MATRIX = {
     "b1": ("unet", 1, [], "bce_dice", False, "cc", "raw", True),
     "b2": ("unetplusplus", 1, [], "bce_dice", False, "cc", "raw", True),
     "b3": ("unetplusplus", 1, [], "bce_dice", True, "cc", "raw", True),
+    "b3m": ("unetplusplus", 1, [], "none", False, "cc", "mar", False),  # exploratory, not in the frozen comparisons
     "b4": ("unetplusplus", 3, [], "ce_dice", True, "watershed", "raw", True),
     "b5": ("unetplusplus", 3, [], "none", False, "watershed", "mar", False),
     "b5p": ("unetplusplus", 5, [], "none", False, "watershed", "mar", False),
@@ -53,7 +54,7 @@ def test_configs_encode_the_scenario_matrix(exp):
     assert row == MATRIX[exp]
 
 
-@pytest.mark.parametrize("exp", ["b5", "b5p"])
+@pytest.mark.parametrize("exp", ["b3m", "b5", "b5p"])
 def test_inference_only_configs_mirror_their_source(exp):
     cfg = load_config("crowdai", exp)
     src = load_config("crowdai", cfg.model.source_exp)

@@ -1,0 +1,8 @@
+# B3m (exploratory, added 12 Nov 2026 after the results; docs/EXPERIMENTS.md §8 point 7): inference only; B3 checkpoint
+# (binary, connected components) + regularization guided by the minAreaRect θ of each instance, as B5 does on B4.
+exp: b3m
+input: {priors: []}
+model: {arch: unetplusplus, classes: 1, source_exp: b3}
+loss: {type: none, edge_weight: false}
+train: {enabled: false}
+postproc: {instance: cc, polygon: mar}

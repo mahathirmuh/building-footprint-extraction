@@ -69,6 +69,7 @@ def test_expansion_refuses_a_smaller_or_equal_channel_count():
         ("b1", "Unet", 3, 1),
         ("b2", "UnetPlusPlus", 3, 1),
         ("b3", "UnetPlusPlus", 3, 1),
+        ("b3m", "UnetPlusPlus", 3, 1),
         ("b4", "UnetPlusPlus", 3, 3),
         ("b5", "UnetPlusPlus", 3, 3),
         ("b5p", "UnetPlusPlus", 3, 5),

@@ -26,6 +26,7 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 | B1 | `exp/b1` | U-Net EffB4 | RGB | 1 (biner) | BCE + Dice | CC | `raw` | ya |
 | B2 | `exp/b2` | U-Net++ EffB4 | RGB | 1 | BCE + Dice | CC | `raw` | ya |
 | B3 | `exp/b3` | U-Net++ | RGB | 1 | w·BCE + Dice | CC | `raw` | ya |
+| B3m | `exp/b3m` | model B3 | RGB | 1 | — | CC | `mar` | tidak |
 | B4 | `exp/b4` | U-Net++ | RGB | 3 | w·CE + Dice | watershed | `raw` | ya |
 | B5 | `exp/b5` | model B4 | RGB | 3 | — | watershed | `mar` | tidak |
 | B5′ | `exp/b5p` | model FULL-P0 | RGB | 5 | — | watershed | `mar` | tidak |
@@ -36,6 +37,8 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 
 - **FULL final** = FULL-P0 atau FULL-P2, dipilih dengan aturan §8 poin 6 (dipakai untuk SOTA, WHU, dan FULL+Y).
 - **B5′ adalah tambahan** dari slide. Fungsinya memisahkan efek pelatihan dan efek pemanduan head θ.
+- **B3m eksploratif** (ditambahkan 12 Nov 2026, setelah hasil Fase 8; §8 poin 7): regularisasi `mar` di atas mask B3, tanpa training.
+  Pertanyaannya: apakah AP tertinggi (B3) dan poligon rapi bisa didapat sekaligus, tanpa pipeline 3 kelas. Bukan bagian dari klaim N1–N3.
 - Config inferensi saja (`b5`, `b5p`, `full_y`) menunjuk ke checkpoint run sumbernya dengan seed yang sama; jangan
   menyalin bobot.
 

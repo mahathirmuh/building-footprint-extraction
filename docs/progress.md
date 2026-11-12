@@ -1831,16 +1831,14 @@ JSON sumbernya (`--trace`). `pytest -q`: 684 lolos.
 
 **Persetujuan:** Fase 8 disetujui pemilik proyek pada 12 Nov 2026 ("lanjut"), bersama urutan berikutnya:
 1. Satu eksperimen eksploratif, regularisasi `mar` di atas mask B3 (lihat bagian di bawah).
-2. Fase 9 dilewati.
+2. Fase 9 semula disarankan dilewati; pemilik proyek memutuskan fase itu tetap dikerjakan (lihat Fase 9).
 3. Fase 10 dengan bingkai studi evaluasi: kebocoran data menggelembungkan angka literatur; head θ merapikan poligon tanpa anotasi poligon
    dengan efek kecil tetapi konsisten; prior morfologi dan kelas kontak tidak membantu. Paper berbahasa Inggris, PPT berbahasa Indonesia,
    notebook penuh dijalankan untuk satu run FULL-P0 seed 0. Judul kerja belum diubah; menunggu keputusan pemilik proyek.
 
 ---
 
-## Fase 9 — (Opsional) FULL+Y: dilewati (12 November 2026)
+## Fase 9 — (Opsional) FULL+Y: YOLOv8n-OBB sebagai seed (dikerjakan sejak 12 November 2026)
 
-Tidak dikerjakan, dengan persetujuan pemilik proyek. Alasannya: fase ini butuh kode baru (label OBB, penggabungan seed), training YOLOv8n-OBB,
-dan tuning `c_y`, sedangkan klaim N1–N3 tidak bergantung padanya, dan waktunya lebih berguna untuk bahan Fase 10. Baris FULL+Y tidak ada di
-tabel. Yang tetap terbuka sebagai saran lanjutan: rumah bersentuhan masih titik lemah (merge rate 7,8% di CrowdAI dan 14,7% di WHU pada
-tile/patch bersentuhan), dan seed dari detektor adalah salah satu cara untuk mengatasinya.
+Pada 12 Nov 2026 fase ini sempat dicatat "dilewati" atas saran saya. Pemilik proyek lalu memutuskan fase ini **tetap dikerjakan**
+("fase 9 tetap dikerjakan"), jadi catatan itu dicabut. Urutan kerja: eksperimen eksploratif B3m (berjalan sendiri), Fase 9, lalu Fase 10.
