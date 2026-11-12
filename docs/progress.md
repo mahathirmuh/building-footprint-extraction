@@ -1753,3 +1753,78 @@ tercatat di bagian `docs/progress.md` sebelum catatan ini, di field `git` file t
 
 Riwayat lama masih bisa dibuka di server ini lewat `refs/backup/pre-trailer-strip` (lokal, tidak ikut di-push). Hash lama dengan akhiran
 `-dirty` mengikuti padanan yang sama.
+
+**Aturan GPU diperluas lagi** (pemilik proyek, 12 Nov 2026, 13.43 WIB, "mau"): inferensi kita berbagi GPU dengan proses lain yang sedang
+menghitung, asal antrean aksara tidak berjalan dan sisa memori GPU ≥ 8 GB. Pengukuran FPS tetap menunggu GPU kosong.
+
+**Run Fase 8** (12 Nov 2026, 13.44–14.44 WIB, commit `521cba5`; `densepoly-work/logs/phase8.log` dan `phase8_after.log`), tanpa gagal:
+- `crowdai/val_clean`: prediksi dan evaluasi FULL-P0 seed 0–2, ±17 s per seed.
+- `whu/test` (35.487 patch): prediksi FULL-P0 666 s (168.421 poligon, kanal disimpan), B5′ dari kanal yang sama 76 s; evaluasi
+  ±4 menit per GT (GT utama dan `p2p` untuk FULL-P0, GT utama untuk B5′).
+- Benchmark 14.26–14.31 saat GPU kosong (utilisasi 0–2% sebelum dan sesudah, tercatat di tiap `efficiency.json`).
+- Semua tabel dan grafik dibuat ulang oleh `scripts/tables.py` dan `scripts/figures.py --results` (`outputs/tables/`, `outputs/figures/results/`).
+
+**SOTA di `crowdai/val_clean`** (212 tile; `outputs/tables/crowdai/sota.md`). HiSup dari prediksi rilisannya, dievaluasi dengan pipeline yang sama.
+
+| Metode | AP | AP50 | AP_b | IoU | PoLiS ↓ | MTA ↓ | C-IoU | N-ratio |
+|---|---|---|---|---|---|---|---|---|
+| HiSup (dengan anotasi poligon) | 65,60 | 87,29 | 43,97 | 89,92 | 1,364 | 34,54 | 81,25 | 1,06 |
+| FULL-P0 (kita, 3 seed) | 61,14 ± 0,98 | 86,15 ± 0,10 | 35,19 ± 1,79 | 87,54 ± 0,37 | 1,825 ± 0,073 | 36,18 ± 0,48 | 73,29 ± 0,63 | 1,29 ± 0,04 |
+
+- Selisih AP (FULL-P0 − HiSup): −4,45 poin, CI 95% [−5,73; −3,44]; per seed −3,33, −5,14, −4,89. Batas §8 poin 5 adalah −3,00.
+  **"Mendekati SOTA" tidak didukung.**
+- Selisih per strata: jarang −4,25 [−6,42; −2,20], sedang −6,10 [−8,12; −4,20], padat −3,95 [−5,92; −2,10]. HiSup lebih baik di semua strata dan
+  semua metrik. Selisih AP50 kecil (−1,14), jadi jaraknya terutama di ketepatan batas (AP_b −8,79; PoLiS +0,461 px).
+- **HiSup sendiri turun dari AP 79,43 di val penuh yang bocor menjadi 65,60 di 212 tile bersih.** Angka di literatur CrowdAI menggelembung
+  karena kebocoran. Catatan: 212 tile itu bukan sampel acak dari val (tile yang tidak punya kembaran di train), jadi sebagian selisih bisa
+  berasal dari tingkat kesulitan tile, bukan hanya dari kebocoran.
+
+**WHU `test`** (35.487 patch, FULL-P0 seed 0; `outputs/tables/whu/`):
+
+| GT | AP | AP_b | IoU | C-IoU | PoLiS ↓ | MTA ↓ | merge rate | split rate | recall@0,5 |
+|---|---|---|---|---|---|---|---|---|---|
+| utama (bangunan resmi) | 66,97 | 39,43 | 88,32 | 72,07 | 1,496 | 39,10 | 3,04 | 3,55 | 92,46 |
+| `p2p` (cara Pix2Poly) | 65,95 | 37,55 | 88,02 | 71,88 | 1,575 | 39,74 | 2,06 | 4,15 | 92,32 |
+
+- **Banding paper, kira-kira** (aturan Pix2Poly, GT `p2p`; `p2p.md`): FULL-P0 IoU 83,92, C-IoU 66,83, N-ratio 1,72, PoLiS 1,575, MTA 39,74°.
+  Dilaporkan di paper Pix2Poly (Tabel 1): Pix2Poly 89,15 / 81,63 / 1,15 / 1,082 / 31,64°; HiSup 87,12 / 79,62 / 1,15 / 1,158 / 34,75°;
+  FFL (ε = 1,0) 77,64 / 54,52 / 2,31 / 1,747 / 35,79°. FULL-P0 berada di antara FFL dan HiSup, ±13 poin C-IoU di bawah HiSup. N-ratio 1,72 berarti
+  poligon kita punya ±70% lebih banyak verteks daripada GT.
+- **Pemanduan θ di WHU, B5′ → FULL-P0** (deskriptif, 1 seed; `n2.md`): `MTA_inst` −0,47° / −0,62° / −0,68° dan `PoLiS_paired`
+  +0,001 / −0,009 / −0,014 px di strata jarang / sedang / padat. Δpadat − Δjarang: `PoLiS_paired` −0,015 [−0,019; −0,011], `MTA_inst` −0,22
+  [−0,37; −0,08]. Arah dan polanya sama dengan CrowdAI; AP hampir tidak berubah (66,97 lawan 67,21).
+- **Rumah bersentuhan tetap titik lemah:** merge rate 14,73% di 1.371 patch bersentuhan (2,09% di patch lain). Kelas kontak model ini tidak
+  aktif (temuan Fase 7).
+
+**N2 di `crowdai/test`** (`outputs/tables/crowdai/n2.md`, `strata.md`; grafik `outputs/figures/results/crowdai_n2.png`):
+
+| Strata | Tile | N1: Δ `PoLiS_paired` | N1: Δ `MTA_inst` | N3: Δ merge rate |
+|---|---|---|---|---|
+| jarang | 1.158 | −0,012 [−0,043; +0,016] | −0,42 [−0,71; −0,14] | +0,12 [−0,11; +0,38] |
+| sedang | 909 | −0,021 [−0,032; −0,012] | −0,73 [−0,91; −0,52] | +0,10 [−0,07; +0,28] |
+| padat | 857 | −0,037 [−0,044; −0,030] | −0,94 [−1,10; −0,78] | +0,15 [+0,02; +0,30] |
+| bersentuhan | 146 | −0,025 [−0,049; +0,001] | −0,90 [−1,34; −0,47] | +0,51 [−0,07; +1,03] |
+| tidak bersentuhan | 2.778 | −0,028 [−0,035; −0,022] | −0,78 [−0,90; −0,67] | +0,10 [−0,01; +0,20] |
+
+- Efek N1 membesar dari jarang ke padat pada kedua metrik. Δpadat − Δjarang: `MTA_inst` −0,51 [−0,85; −0,19] (CI di bawah 0), `PoLiS_paired`
+  −0,025 [−0,054; +0,006] (CI memuat 0). Aturan kita menuntut semua metrik utama klaim, jadi **"efek N1 terbesar di area padat" tidak
+  didukung** (§8 poin 4); yang bisa dikatakan: terbukti untuk `MTA_inst`, searah tetapi tidak signifikan untuk `PoLiS_paired`.
+- N3 tidak didukung di strata mana pun; Δpadat − Δjarang +0,03 [−0,27; +0,31].
+- Deskriptif (`strata.md`): B3 unggul AP di semua strata (65,3 / 66,8 / 65,3) tetapi merge rate-nya tertinggi di tile bersentuhan
+  (12,13% lawan 7,81% FULL-P0).
+
+**Efisiensi** (`outputs/tables/{crowdai,whu}/efficiency.md`; RTX 5090, i7-12700; jaringan batch 1 AMP, post-processing 1 thread CPU, 200 tile `test`):
+
+| Model | Parameter (juta) | Input | FPS jaringan | Post-processing (ms) | FPS alur penuh |
+|---|---|---|---|---|---|
+| B3 | 20,81 | 320² | 124,6 | 5,48 | 74,0 |
+| B4 | 20,81 | 320² | 125,1 | 8,59 | 60,3 |
+| FULL-P0 | 20,81 | 320² | 128,9 | 15,89 | 42,3 |
+| FULL-P2 | 20,81 | 320² | 128,7 | 16,11 | 41,9 |
+| FULL-P0 (WHU) | 20,81 | 224² | 125,6 | 8,87 | 59,4 |
+
+Regularisasi berpandu θ menambah ±7 ms per tile di atas B4. Pembanding dari paper: PolyR-CNN (Swin-Base) 20,50 FPS di Tesla V100
+(dilaporkan di paper, perangkat berbeda); paper HiSup tidak melaporkan FPS atau jumlah parameter.
+
+**Cek "Selesai jika" Fase 8:** semua tabel dibuat ulang oleh skrip (`scripts/tables.py --data crowdai|whu`), dan setiap tabel mencatat file
+JSON sumbernya (`--trace`). `pytest -q`: 684 lolos. Menunggu persetujuan pemilik proyek.
