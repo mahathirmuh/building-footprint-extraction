@@ -250,9 +250,25 @@ def test_efficiency_table_shows_the_benchmark(splits):
     write_json(paths.efficiency_file("crowdai", "full_p0", "seed0"), record)
     assert tables.missing_for("crowdai", "efficiency") == []
     payload, lines = reports.efficiency("crowdai")
-    assert "| FULL-P0 | 20,81 | 320×320 | 100,0 | 10,00 | 15,00 | 40,0 |" in lines
+    assert "| FULL-P0 | 20,81 | 320×320 | 100,0 | 10,00 | – | 15,00 | 40,0 |" in lines
     assert "- Perangkat: GPU GPU X; CPU CPU Y" in lines
     assert tables.trace(payload) == ["metrics/crowdai/full_p0/seed0/efficiency.json"]
+
+
+def test_efficiency_table_adds_the_detector_time_of_seeded_experiments(splits):
+    record = {
+        "parameters": 20_812_345,
+        "input": [1, 3, 320, 320],
+        "fps": 100.0,
+        "network_ms": 10.0,
+        "postproc": {"total_ms": 15.0, "instances_ms": 4.0, "polygons_ms": 11.0},
+        "detector": {"seconds_per_image": 0.025},
+        "gpu": "GPU X",
+        "cpu": "CPU Y",
+    }
+    write_json(paths.efficiency_file("crowdai", "full_y", "seed0"), record)
+    _, lines = reports.efficiency("crowdai")
+    assert "| FULL+Y | 20,81 | 320×320 | 100,0 | 10,00 | 25,00 | 15,00 | 20,0 |" in lines
 
 
 def script():

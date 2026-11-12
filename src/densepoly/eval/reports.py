@@ -472,7 +472,10 @@ def _missing_p2p(dataset: str) -> list[str]:
 
 
 def efficiency(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> tuple[dict, list[str]]:
-    """Parameters, network speed (batch 1, AMP) and post-processing time (one CPU thread) of the benchmarked models."""
+    """Parameters, network speed (batch 1, AMP) and post-processing time (one CPU thread) of the benchmarked models.
+
+    Seeded experiments (FULL+Y) also carry the detector's time per image, which enters the full-pipeline FPS.
+    """
     rows, table = {}, []
     for exp, label in LABELS.items():
         record = _efficiency(dataset, exp)
@@ -480,7 +483,9 @@ def efficiency(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None
             continue
         rows[exp] = record
         post = record["postproc"]
-        total_ms = record["network_ms"] + post["total_ms"]
+        detector = record.get("detector")
+        detector_ms = 1000 * detector["seconds_per_image"] if detector else 0.0
+        total_ms = record["network_ms"] + detector_ms + post["total_ms"]
         table.append(
             [
                 label,
@@ -488,6 +493,7 @@ def efficiency(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None
                 "×".join(str(n) for n in record["input"][2:]),
                 f"{record['fps']:.1f}".replace(".", ","),
                 f"{record['network_ms']:.2f}".replace(".", ","),
+                f"{detector_ms:.2f}".replace(".", ",") if detector else "–",
                 f"{post['total_ms']:.2f}".replace(".", ","),
                 f"{1000 / total_ms:.1f}".replace(".", ","),
             ]
@@ -497,10 +503,21 @@ def efficiency(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None
         f"# Efisiensi: {dataset}",
         "",
         "Jaringan: batch 1, AMP, 20 iterasi pemanasan lalu 200 iterasi terukur. Post-processing: satu thread CPU, rata-rata",
-        "per citra (pemisahan instance dan poligonisasi). FPS alur penuh = 1000 / (ms jaringan + ms post-processing).",
+        "per citra (pemisahan instance dan poligonisasi). Detektor (hanya skenario +Y): YOLOv8n-OBB, waktu `predict` per citra",
+        "di GPU dengan batch 32, termasuk membaca citra dari disk; parameternya tidak termasuk kolom Parameter.",
+        "FPS alur penuh = 1000 / (ms jaringan + ms detektor + ms post-processing).",
         "",
         *tables._markdown_table(
-            ("Kode", "Parameter (juta)", "Input", "FPS jaringan", "Jaringan (ms)", "Post-processing (ms)", "FPS alur penuh"),
+            (
+                "Kode",
+                "Parameter (juta)",
+                "Input",
+                "FPS jaringan",
+                "Jaringan (ms)",
+                "Detektor (ms)",
+                "Post-processing (ms)",
+                "FPS alur penuh",
+            ),
             table,
         ),
         "",
