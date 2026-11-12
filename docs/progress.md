@@ -1674,3 +1674,39 @@ Sampelnya dari `val_select` dan `val_tune_sub`, bukan test. Post-processing masi
 | Kanal FULL-P0 di `val_tune_sub` (1.017 patch, disimpan untuk tuning) | 16,2 s | — |
 
 Pengukuran menunggu GPU 62 menit (07.23–08.25), karena server web proyek lain menahan ±10 GB.
+
+**Tuning WHU** (12 Nov 2026, 13.23–13.28 WIB; `val_tune_sub`, 1.017 patch, 12 worker, 140 s per model; grid `configs/postproc/grid.yaml`
+sha256 `8c2f5528…`, sama dengan CrowdAI). Dibekukan ke `configs/postproc/whu/{full_p0,b5p}.yaml` dan di-commit (`cb02497`) sebelum test disentuh.
+
+| Model | τ | m_min | A_min | ρ | k | δ | AP `val_tune_sub` | `PoLiS_paired` |
+|---|---|---|---|---|---|---|---|---|
+| FULL-P0 (`theta`) | 0,6 | 16 | 20 | 0,93 | 0,02 | 10 | 66,91 | 1,412 |
+| B5′ (`mar`) | 0,6 | 16 | 20 | 0,93 | 0,02 | 10 | 66,96 | 1,438 |
+
+**Kode Fase 8** (12 Nov 2026; `pytest -q` 684 lolos):
+- `src/densepoly/eval/reports.py`: enam tabel baru, dibuat dari evaluasi tersimpan seperti tabel Fase 6–7.
+  - `sota`: FULL final lawan HiSup di `val_clean`, total dan per strata, Δ dengan CI, keputusan §8 poin 5. HiSup dipakai tiga kali sebagai
+    pasangan tiap seed, sehingga `stats.compare` tidak perlu diubah.
+  - `paper`: angka paper lain dari `configs/paper_numbers.yaml`, dicetak seperti aslinya dan tidak dicampur dengan angka kita.
+  - `strata`: semua eksperimen per strata `test`.
+  - `n2`: Δ per strata dan Δpadat − Δjarang (bootstrap berstrata) untuk N1 (B5 → FULL-P0) dan N3 (FULL-P0 → FULL-P2); di WHU hanya
+    B5′ → FULL-P0, deskriptif. Keputusan §8 poin 4 butuh klaim dasarnya didukung dan CI di bawah 0 pada **semua** metrik utama klaim itu.
+  - `p2p`: WHU `test` dengan aturan dan GT Pix2Poly di samping angka paper, ditandai kira-kira.
+  - `efficiency`: hasil `scripts/benchmark.py`.
+- `scripts/tables.py --trace` mencetak file sumber tiap tabel.
+- `src/densepoly/eval/efficiency.py` dan `scripts/benchmark.py`: jumlah parameter, FPS jaringan (batch 1, AMP, 20 + 200 iterasi), dan
+  waktu post-processing per citra pada satu thread CPU (200 tile `test`, post-processing beku).
+- `scripts/figures.py --results`: grafik Δ per strata dengan CI dan grafik metrik per strata, dibaca dari tabel JSON; label Inggris atau
+  Indonesia (`--lang`). Warna dari palet yang lolos uji buta warna, maksimal tiga seri per panel.
+
+**Angka paper pembanding** (`configs/paper_numbers.yaml`, disalin 12 Nov 2026 dari PDF arXiv masing-masing, dengan nomor tabel, halaman,
+dan sha256 PDF): FFL (arXiv 2004.14875v2, Tabel 1–2), PolyWorld (2111.15491v3, Tabel 1–2), PolyR-CNN (2407.14912v1, Tabel 4.1–4.2),
+Pix2Poly (2412.07899v1, Tabel 5–6 untuk CrowdAI dan Tabel 1 untuk WHU, termasuk baris HiSup dan FFL yang dievaluasi Pix2Poly).
+- Kolom "ARboundary" di Tabel 4.1 PolyR-CNN berisi AP_boundary: nilainya sama dengan kolom APboundary di Tabel 4.4 (63,3).
+- Paper HiSup tidak melaporkan jumlah parameter atau FPS, jadi kolom efisiensi HiSup dikosongkan.
+- Versi jurnal PolyR-CNN tidak tersedia; angkanya dari versi arXiv.
+
+**Antrean** (lepas dari sesi): `densepoly-work/phase8.sh` (prediksi dan evaluasi `val_clean` dan `test` WHU), lalu `phase8_after.sh`
+(benchmark, semua tabel, grafik). Sampai 12 Nov 13.36 WIB keduanya menunggu GPU, yang dipakai kernel Jupyter proyek lain (utilisasi ±70%).
+
+**Aturan commit** (pemilik proyek, 12 Nov 2026): commit hanya atas nama `mahathirmuh`, tanpa baris co-author. Berlaku sejak `cb02497`.
