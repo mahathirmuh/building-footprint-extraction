@@ -2,6 +2,7 @@
 # the src/densepoly/data/ package is still tracked.
 /data/
 /outputs/
+/outputs_full_pipeline/
 *.pt
 *.npz
 .env
