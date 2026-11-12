@@ -1984,3 +1984,11 @@ Geospatial Image Datasets", arXiv:2304.02296 (2023). Dahatonde dkk. (2024) tidak
   tabel, gambar). Logo resmi ITS belum ada, jadi header dan footer memakai teks.
 - `notebooks/demo_hasil.ipynb` dan paket `data/demo/`.
 - Hasil eksekusi `full_pipeline.ipynb` (training selesai sekitar 22.00 WIB).
+
+**Keputusan pemilik proyek untuk Fase 10** (12 Nov 2026, ±20.45 WIB, "kamu saja yang kerjakan", mengikuti saran yang diajukan):
+1. PDF paper dikompilasi dengan Tectonic di `mahathir/tools/tectonic`. Pengunduhannya dua kali ditolak pengaman otomatis, jadi berkas itu
+   diunduh sendiri oleh pemilik proyek; cadangannya Overleaf.
+2. Logo resmi ITS dilewati dulu; PPT memakai header dan footer teks.
+3. Paper memakai judul kerja berbahasa Inggris (`\papertitle` di `paper/main.tex`); judul terdaftar tidak diubah.
+4. Notebook demo dijalankan dan diekspor di server ini; tidak ada paket untuk Colab.
+5. Sisa Fase 10 dikerjakan sesi Claude Code latar belakang (`claude --bg`), supaya tetap berjalan setelah sesi SSH ditutup.
