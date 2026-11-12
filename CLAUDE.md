@@ -64,12 +64,12 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   (3 seed); FULL-P1 62,10 ± 0,83. Klaim "peta celah membantu" tidak didukung (§8 poin 3). FULL-P0 WHU (seed 0, E = 17, 8 worker):
   `fg_iou` `val_select` 0,905, dipakai apa adanya. Temuan: kelas kontak tidak aktif (F1 0) di model WHU
   dan di 6 dari 9 run FULL CrowdAI (seed 0 dan 2), lihat `docs/progress.md`; keputusan N1 dan N3 tidak berubah.
-  Fase 8 (SOTA, WHU, N2, efisiensi) selesai dan disetujui (12 Nov 2026); Fase 9 (FULL+Y) dikerjakan sejak 12 Nov 2026. Di `val_clean` FULL-P0 AP 61,14 ± 0,98
+  Fase 8 (SOTA, WHU, N2, efisiensi) selesai dan disetujui (12 Nov 2026). Di `val_clean` FULL-P0 AP 61,14 ± 0,98
   lawan HiSup 65,60 (Δ −4,45 [−5,73; −3,44]): "mendekati SOTA" tidak didukung (§8 poin 5). WHU `test` (GT utama): AP 66,97, C-IoU 72,07;
   aturan Pix2Poly: C-IoU 66,83 (paper: HiSup 79,62, Pix2Poly 81,63; kira-kira). "Efek N1 terbesar di area padat" tidak didukung (§8 poin 4:
   `MTA_inst` ya, `PoLiS_paired` tidak). FULL-P0: 20,81 juta parameter, 42 FPS alur penuh.
   Eksploratif (12 Nov 2026): B3m (mask B3 + `mar`) AP 64,89, C-IoU 76,97, mengungguli FULL-P0 di semua metrik kecuali merge rate (2,81% lawan 1,96%).
-  Fase 9 (12 Nov 2026, menunggu persetujuan): seed YOLOv8n-OBB menurunkan merge rate FULL-P0 1,96% → 1,52% (Δ −0,45 [−0,56; −0,35]) dan B3m
+  Fase 9 selesai dan disetujui (12 Nov 2026; FULL+Y masuk laporan): seed YOLOv8n-OBB menurunkan merge rate FULL-P0 1,96% → 1,52% (Δ −0,45 [−0,56; −0,35]) dan B3m
   2,81% → 2,14%, dengan AP setara dan split rate naik (+0,24 dan +0,37 poin). B3m+Y tetap di atas FULL+Y di AP (64,79 lawan 61,87).
 
 ## Cara bekerja di proyek ini

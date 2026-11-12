@@ -1869,7 +1869,7 @@ Semua selisih searah di ketiga seed. Di strata padat polanya sama (B3m → FULL-
 
 ---
 
-## Fase 9 — (Opsional) FULL+Y: YOLOv8n-OBB sebagai seed (semua run selesai 12 November 2026, menunggu persetujuan)
+## Fase 9 — (Opsional) FULL+Y: YOLOv8n-OBB sebagai seed (selesai dan disetujui 12 November 2026)
 
 Pada 12 Nov 2026 fase ini sempat dicatat "dilewati" atas saran saya. Pemilik proyek lalu memutuskan fase ini **tetap dikerjakan**
 ("fase 9 tetap dikerjakan"), jadi catatan itu dicabut. Urutan kerja: eksperimen eksploratif B3m (berjalan sendiri), Fase 9, lalu Fase 10.
@@ -1945,4 +1945,6 @@ Arah merge rate, split rate, dan recall sama di ketiga seed pada kedua model.
   eksploratif dan cara pemecahannya (watershed peta jarak) tidak disetel.
 
 **Cek "Selesai jika" Fase 9:** baris FULL+Y ada di tabel ablasi, per strata, dan efisiensi beserta biayanya. `pytest -q`: 714 lolos.
-Keputusan "masuk laporan atau tidak" menunggu pemilik proyek; saran: masuk, sebagai varian yang menurunkan merge rate dengan AP setara.
+
+**Persetujuan:** Fase 9 disetujui pemilik proyek pada 12 Nov 2026 ("lanjut"). **FULL+Y masuk laporan**, sebagai varian yang menurunkan merge
+rate dengan AP setara; B3m dan B3m+Y masuk sebagai hasil eksploratif yang ditandai.
