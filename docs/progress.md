@@ -1992,3 +1992,60 @@ Geospatial Image Datasets", arXiv:2304.02296 (2023). Dahatonde dkk. (2024) tidak
 3. Paper memakai judul kerja berbahasa Inggris (`\papertitle` di `paper/main.tex`); judul terdaftar tidak diubah.
 4. Notebook demo dijalankan dan diekspor di server ini; tidak ada paket untuk Colab.
 5. Sisa Fase 10 dikerjakan sesi Claude Code latar belakang (`claude --bg`), supaya tetap berjalan setelah sesi SSH ditutup.
+
+**Notebook demo** (12 Nov 2026, 21.28 WIB, commit `5e851e5`): `notebooks/demo_hasil.ipynb`, 36 sel, tanpa output di git. Isinya mengikuti
+urutan `PLAN.md`: masalah dan alur, data dan strata, pengolahan klasik (brightness, MBI, peta celah, B0), label dari mask, inferensi
+FULL-P0 beku pada tiga tile padat `test` (P bangunan, P kontak, θ, marker, instance, kontur mentah lawan poligon teregularisasi),
+beberapa model pada tile yang sama, lalu tabel dan grafik yang dibaca dari `outputs/tables` dan `outputs/figures`. Dieksekusi di server
+dalam 12 detik tanpa galat; ekspornya `outputs/report/demo_hasil.html` dan `demo_hasil.executed.ipynb`. Sesuai keputusan pemilik proyek,
+tidak ada paket `data/demo/` untuk Colab: notebook membaca data dan keluaran yang ada di server.
+
+**Satu perintah untuk semua tabel dan gambar:** `python scripts/build_report.py` menjalankan `tables.py` (kedua dataset), `figures.py`
+(`--results`, `--qualitative`, label Inggris dan Indonesia), dan `paper_tables.py --strict`. PDF gambar kini ditulis tanpa tanggal
+pembuatan, jadi isinya sama per bit setiap kali dibuat.
+
+**Pemeriksaan statis naskah** (karena belum bisa dikompilasi): `paper/main.tex` dan semua `paper/tables/*.tex` punya lingkungan, kurung
+kurawal, dan tanda `$` yang seimbang; setiap `\ref` punya `\label`; setiap makro angka, tabel, gambar, dan kunci sitasi yang dipakai ada.
+Ini tidak menggantikan kompilasi.
+
+### Temuan dan keterbatasan (ringkasan akhir proyek)
+
+**Temuan, dengan status klaimnya menurut aturan beku `docs/EXPERIMENTS.md` §8:**
+
+| Klaim | Status | Angka utama (`crowdai/test`, 3 seed) |
+|---|---|---|
+| N1: head θ dari mask memperbaiki geometri poligon di strata padat | **didukung** | B5 → FULL-P0: `PoLiS_paired` −0,037 px [−0,044; −0,030], `MTA_inst` −0,94° [−1,10; −0,78], AP +0,35 |
+| N3: prior morfologi mengurangi rumah tergabung | tidak didukung | FULL-P0 → FULL-P2: merge rate +0,15 poin [+0,02; +0,30] |
+| "Peta celah membantu" | tidak didukung | FULL-P1 → FULL-P2: merge rate +0,12 poin [−0,04; +0,28] |
+| "Efek terbesar di area padat" (N2) | tidak didukung sebagai klaim | Δpadat − Δjarang: `MTA_inst` −0,51° [−0,85; −0,19], `PoLiS_paired` −0,025 px [−0,054; +0,006] |
+| "Mendekati SOTA" (≤ 3 AP di belakang HiSup di `val_clean`) | tidak didukung | −4,45 AP [−5,73; −3,44] |
+
+Di luar daftar klaim (eksploratif, kecuali FULL+Y yang direncanakan di Fase 9):
+- HiSup turun dari AP 79,43 di val penuh yang bocor menjadi 65,60 di 212 tile val tanpa kembaran.
+- Regularisasi geometris sendiri menyumbang sebagian besar kerapian poligon: di atas mask biner B3, C-IoU naik 10,46 poin dan `MTA_inst`
+  turun 9,39° dengan biaya 0,85 AP. B3m mengungguli FULL-P0 di semua metrik kecuali merge rate.
+- Seed detektor YOLOv8n-OBB (dilatih dari mask) menurunkan merge rate FULL-P0 0,45 poin dan B3m 0,67 poin dengan AP setara.
+- Kelas kontak tidak aktif di 6 dari 9 run FULL CrowdAI dan di model WHU.
+
+**Keterbatasan:**
+1. **Data bersih kecil.** Banding dengan HiSup hanya memakai 212 tile `val_clean`, yang bukan sampel acak dari val. Sebagian penurunan AP
+   HiSup bisa berasal dari tingkat kesulitan tile itu, bukan hanya dari kebocoran.
+2. **Deduplikasi berbasis p-hash.** Tile dianggap kembar bila hash-nya sama setelah rotasi dan pencerminan. Kembaran yang berbeda lebih
+   dari itu (misalnya terpotong atau bergeser) tidak tertangkap, jadi "bebas duplikat" berarti bebas duplikat menurut definisi ini.
+3. **WHU.** Hanya satu seed dan satu model. Tile uji direkonstruksi dari rilisan resmi 1024², jadi daftarnya tidak sama persis dengan
+   test Pix2Poly, dan perbandingan dengan angka paper hanya kira-kira. GT `p2p` dibuat dari connected component label raster, sehingga
+   bangunan yang bersentuhan menyatu; klaim rumah berdempetan di WHU hanya memakai GT utama.
+4. **Efek N1 kecil dan baru diuji di jalur tiga kelas.** Apakah head θ juga membantu jalur biner yang lebih kuat (B3 + head θ) belum diuji,
+   karena butuh training baru.
+5. **Kelas kontak.** Mekanisme pemisah yang diadopsi (kelas kontak + watershed) hampir tidak bekerja lewat kelas kontaknya; pemisahan
+   datang dari celah latar. Penyebab tidak aktifnya kelas itu belum dipisahkan (kelangkaan piksel kontak, atau pengaruh head θ).
+6. **Detektor.** Dilatih sekali dan dipakai untuk ketiga seed jaringan, jadi SD tidak memuat variasi detektor. `c_y` terpilih di ujung
+   atas grid yang sudah dibekukan.
+7. **θ untuk bangunan non-siku.** Orientasi modulo 90° dari kotak terkecil hanya bermakna untuk bangunan bersiku. Pada bangunan melingkar
+   atau bersudut bebas, θ tidak punya arti yang jelas dan regularisasi jatuh ke penyederhanaan kontur.
+8. **Tanpa lubang.** Poligon hanya memuat cincin luar (format poligon COCO), jadi halaman dalam bangunan terisi.
+9. **Perilaku metrik vendor.** C-IoU aturan Pix2Poly hanya menghitung citra yang punya prediksi; PoLiS vendor mencocokkan lewat IoU kotak
+   pembatas dan melewati citra bernilai nol; MTA vendor menggabungkan semua poligon per citra sehingga dinding antar-rumah yang
+   bersentuhan hilang. Karena itu klaim memakai versi berpasangan per instance (`PoLiS_paired`, `MTA_inst`), dan angka vendor hanya dipakai
+   untuk kesebandingan dengan paper lain.
+10. **B3m dan B3m+Y eksploratif.** Keduanya ditambahkan setelah hasil ada, jadi tidak boleh dibaca sebagai klaim terencana.
