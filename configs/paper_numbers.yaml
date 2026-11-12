@@ -30,3 +30,175 @@ hisup:
       PoLiS: 0.726
       CIoU: 89.6
       IoU: 94.3
+
+ffl:
+  crowdai_val:
+    method: FFL, UResNet101 (with field), frame field polygonization
+    source:
+      paper: >-
+        Girard, Smirnov, Solomon & Tarabalka, "Polygonal Building Extraction by Frame Field Learning",
+        arXiv:2004.14875v2, 31 Mar 2021 (CVPR 2021)
+      tables: Table 2 (AP, AR; row "UResNet101 (with field), our poly.") and Table 1 (mean max tangent angle error)
+      page: 6-7 (pages of the arXiv PDF)
+      pdf_sha256: dedbe824f3b58e564b38e3fd4a4a268b35c941af89b3235975e33c4b3133b66f
+      copied: 2026-11-12
+    split_note: >-
+      Original validation set of CrowdAI (60,317 tiles), which leaks from train (docs/DATA.md §2.2). Not comparable
+      with our crowdai/test or crowdai/val_clean.
+    values:
+      AP: 61.3
+      AP50: 87.5
+      AP75: 70.6
+      AR: 65.0
+      AR50: 89.4
+      AR75: 73.9
+      MTA: 31.9
+
+polyworld:
+  crowdai_val:
+    method: PolyWorld (offset on), R2U-Net
+    source:
+      paper: >-
+        Zorzi, Bazrafkan, Habenschuss & Fraundorfer, "PolyWorld: Polygonal Building Extraction with Graph Neural
+        Networks in Satellite Images", arXiv:2111.15491v3, 6 Apr 2022 (CVPR 2022)
+      tables: Table 1 (MS COCO metrics) and Table 2 (IoU, C-IoU, MTA, N ratio); row "PolyWorld (offset on)"
+      page: 8 (page of the arXiv PDF)
+      pdf_sha256: f7cf3617df436852462aa0f9d1c8542524c9c6884d81db49e6ff937046fd815a
+      copied: 2026-11-12
+    split_note: >-
+      Original validation set of CrowdAI (60,317 tiles), which leaks from train (docs/DATA.md §2.2). Not comparable
+      with our crowdai/test or crowdai/val_clean.
+    values:
+      AP: 63.3
+      AP50: 88.6
+      AP75: 70.5
+      AP_S: 37.2
+      AP_M: 83.6
+      AP_L: 87.7
+      AR: 75.4
+      AR50: 93.5
+      AR75: 83.1
+      AR_S: 52.5
+      AR_M: 88.7
+      AR_L: 95.2
+      IoU: 91.3
+      CIoU: 88.2
+      N_ratio: 0.93
+      MTA: 32.9
+
+polyrcnn:
+  crowdai_val:
+    method: PolyR-CNN, Swin-Base
+    source:
+      paper: >-
+        Jiao, Persello & Vosselman, "PolyR-CNN: R-CNN for end-to-end polygonal building outline extraction",
+        arXiv:2407.14912v1, 20 Jul 2024 (ISPRS J. Photogramm. Remote Sens. 218:33-43, 2024; the journal version was
+        not available, so its numbers are not checked against these)
+      tables: >-
+        Table 4.1 (row "PolyR-CNN, Swin-Base"; its column headed "ARboundary" holds the AP_boundary of Table 4.4, same
+        value) and Table 4.2 (FPS, batch 1, one NVIDIA Tesla V100)
+      page: 12 (page of the arXiv PDF)
+      pdf_sha256: ac888ea937a533769b1e5b324db124148af76a1759f10f6a21714352a3681b94
+      copied: 2026-11-12
+    split_note: >-
+      Original validation set of CrowdAI (60,317 tiles), which leaks from train (docs/DATA.md §2.2). Not comparable
+      with our crowdai/test or crowdai/val_clean.
+    values:
+      AP: 79.2
+      AP50: 97.4
+      AP75: 90
+      AR: 85.2
+      AR50: 98.1
+      AR75: 93.5
+      AP_boundary: 63.3
+      IoU: 91.6
+      N_ratio: 1.66
+      PoLiS: 1.204
+      FPS: "20.50"
+
+pix2poly:
+  crowdai_val:
+    method: Pix2Poly
+    source: &pix2poly_source
+      paper: >-
+        Adimoolam, Poullis & Averkiou, "Pix2Poly: A Sequence Prediction Method for End-to-end Polygonal Building
+        Footprint Extraction from Remote Sensing Imagery", arXiv:2412.07899v1, 10 Dec 2024 (WACV 2025)
+      tables: Table 5 (MS COCO metrics) and Table 6 (polygon quality), supplementary material
+      page: 14 (page of the arXiv PDF)
+      pdf_sha256: 25eb13f111a3115ebac60c623abb282bf67f3e1114d2cbcc3d921be00fda979d
+      copied: 2026-11-12
+    split_note: >-
+      Original validation set of CrowdAI (60,317 tiles), which leaks from train (docs/DATA.md §2.2). Not comparable
+      with our crowdai/test or crowdai/val_clean.
+    values:
+      AP: 79.6
+      AP50: 91.6
+      AP75: 85.2
+      AP_S: 61.4
+      AP_M: 91.9
+      AP_L: 91.7
+      AR: 87.7
+      AR_S: 73.6
+      AR_M: 96.0
+      AR_L: 97.5
+      IoU: 95.03
+      CIoU: 89.85
+      N_ratio: 1.111
+      PoLiS: 0.479
+      MTA: 23.1
+  whu_test:
+    method: Pix2Poly
+    source: &pix2poly_whu_source
+      paper: >-
+        Adimoolam, Poullis & Averkiou, "Pix2Poly: A Sequence Prediction Method for End-to-end Polygonal Building
+        Footprint Extraction from Remote Sensing Imagery", arXiv:2412.07899v1, 10 Dec 2024 (WACV 2025)
+      tables: Table 1, rows "WHU Buildings test"
+      page: 7 (page of the arXiv PDF)
+      pdf_sha256: 25eb13f111a3115ebac60c623abb282bf67f3e1114d2cbcc3d921be00fda979d
+      copied: 2026-11-12
+    split_note: &pix2poly_whu_note >-
+      Pix2Poly's WHU test: 3,848 tiles of 512 x 512 px at 0.2 m, ground truth from the connected components of the
+      binary masks. Our test is rebuilt from the official 1024 x 1024 release (docs/DATA.md §3.2), so its tiles are
+      not exactly the same: the comparison is approximate.
+    values:
+      IoU: 89.15
+      CIoU: 81.63
+      N_ratio: 1.15
+      PoLiS: 1.082
+      MTA: 31.64
+
+hisup_by_pix2poly:
+  whu_test:
+    method: HiSup (as evaluated in the Pix2Poly paper)
+    source: *pix2poly_whu_source
+    split_note: *pix2poly_whu_note
+    values:
+      IoU: 87.12
+      CIoU: 79.62
+      N_ratio: 1.15
+      PoLiS: 1.158
+      MTA: 34.75
+
+ffl_simple_by_pix2poly:
+  whu_test:
+    method: FFL, eps = 1.0 (as evaluated in the Pix2Poly paper)
+    source: *pix2poly_whu_source
+    split_note: *pix2poly_whu_note
+    values:
+      IoU: 77.64
+      CIoU: 54.52
+      N_ratio: 2.31
+      PoLiS: 1.747
+      MTA: 35.79
+
+ffl_fine_by_pix2poly:
+  whu_test:
+    method: FFL, eps = 0.125 (as evaluated in the Pix2Poly paper)
+    source: *pix2poly_whu_source
+    split_note: *pix2poly_whu_note
+    values:
+      IoU: 77.61
+      CIoU: 32.19
+      N_ratio: 5.09
+      PoLiS: 1.783
+      MTA: 35.27

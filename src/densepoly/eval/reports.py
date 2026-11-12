@@ -37,7 +37,7 @@ SOTA_DELTAS = ("AP", "AP_boundary", "IoU", "CIoU", "PoLiS", "MTA")
 PAPER_BLOCKS = {"crowdai": "crowdai_val", "whu": "whu_test"}
 PAPER_COLUMNS = (
     "AP", "AP50", "AP75", "AP_S", "AP_M", "AP_L", "AR", "AR50", "AR75", "AR_S", "AR_M", "AR_L",
-    "AP_boundary", "IoU", "CIoU", "N_ratio", "PoLiS", "MTA",
+    "AP_boundary", "IoU", "CIoU", "N_ratio", "PoLiS", "MTA", "FPS",
 )  # fmt: skip
 PAPER_HEADER = {"AP_boundary": "AP_b", "CIoU": "C-IoU", "N_ratio": "N-ratio", "PoLiS": "PoLiS ↓", "MTA": "MTA ↓"}
 
