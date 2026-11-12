@@ -1873,3 +1873,25 @@ Semua selisih searah di ketiga seed. Di strata padat polanya sama (B3m → FULL-
 
 Pada 12 Nov 2026 fase ini sempat dicatat "dilewati" atas saran saya. Pemilik proyek lalu memutuskan fase ini **tetap dikerjakan**
 ("fase 9 tetap dikerjakan"), jadi catatan itu dicabut. Urutan kerja: eksperimen eksploratif B3m (berjalan sendiri), Fase 9, lalu Fase 10.
+
+**Rencana dan cakupan, disetujui pemilik proyek** (12 Nov 2026, ±18.10 WIB, "lanjut"): training YOLOv8n-OBB dengan pengaturan beku §7, lalu
+seed-nya dipasang di FULL-P0 (FULL+Y, perbandingan Fase 9) dan di B3m (B3m+Y, eksploratif, karena kelemahan B3m terhadap FULL-P0 adalah merge rate).
+
+**Lingkungan.** Ultralytics 8.4.211 dipasang di venv tersendiri (`.venv-densepoly-yolo`, di luar repo), yang memakai ulang paket venv utama
+lewat file `.pth`. Venv utama tidak berubah, dan paket `densepoly` tidak mengimpor Ultralytics (AGPL-3.0): ia hanya membaca file kotak.
+
+**Kode** (`pytest -q` 713 lolos):
+- `src/densepoly/postproc/yolo_seeds.py`: label OBB dari peta instance (minAreaRect atas sudut piksel, dinormalisasi), dan `merge_seeds`
+  yang menjalankan aturan 1–4 `docs/METHOD.md` §8 setelah filter m_min.
+- `postproc/watershed.py`: `three_class_instances(..., seeds)`; untuk model biner, komponen berisi ≥ 2 seed dipecah dengan watershed peta jarak.
+- `infer.py`, `tuning.py`, `scripts/{predict,tune_postproc,benchmark}.py`: mode instance `watershed_yolo` dan `cc_yolo` membaca kotak detektor
+  dari `outputs/yolo/<data>/boxes/<split>.json`. Tuning hanya menyetel `c_y`; parameter lain diwarisi dari file beku `base_exp`.
+- `scripts/prepare_yolo.py`, `train_yolo.py`, `predict_yolo.py`; config `exp/full_y` (sumber dan dasar: FULL-P0) dan `exp/b3my` (eksploratif).
+- Rincian yang tidak disebut spesifikasi dicatat di `docs/METHOD.md` §8 (seed di luar marker pada komponen bermarker diabaikan; seed tidak
+  menimpa marker yang dipertahankan; satu detektor untuk ketiga seed jaringan).
+
+**Data dan biaya detektor.** Ekspor label: 23.427 tile `train_dedup` (198.284 kotak, 18 tile tanpa kotak) dan 1.928 tile `val_select`, 50 s.
+Pengukuran awal 2 epoch di 2.000 tile: 25 s. Training penuh dimulai 12 Nov 18.13 WIB, ±31 s per epoch (±52 menit untuk 100 epoch).
+
+**Antrean** (lepas dari sesi): `densepoly-work/phase9_yolo.sh` (ekspor, training, kotak `val_tune_sub`), lalu `phase9_eval.sh` (tuning `c_y`
+FULL+Y dan B3m+Y, commit dan push file beku, kotak `test`, prediksi dan evaluasi 3 seed, tabel, selisih berpasangan, benchmark).
