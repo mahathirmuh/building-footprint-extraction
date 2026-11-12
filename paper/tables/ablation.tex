@@ -1,0 +1,24 @@
+% ablation: from tables/crowdai/ablation.json (git c6b3edbab38d, 2026-11-12T19:24:33+07:00); do not edit
+\begin{tabular}{l c ccccccccc}
+\toprule
+Code & Runs & AP & AP$_{50}$ & AP$_b$ & IoU & PoLiS$\downarrow$ & MTA$\downarrow$ & C-IoU & N-ratio & Merge$\downarrow$ \\
+\midrule
+B0 & 1 & 0.08 & 0.26 & 0.05 & 22.49 & 3.525 & 41.12 & 6.93 & 9.82 & 0.02 \\
+\midrule
+B1 & 1 & 63.54 & 85.44 & 39.68 & 89.38 & 1.790 & 46.02 & 67.81 & 1.60 & 3.05 \\
+B2 & 1 & 63.23 & 85.36 & 38.95 & 89.22 & 1.799 & 46.45 & 67.00 & 1.64 & 3.28 \\
+B3 & 3 & 65.74\,{\scriptsize$\pm$0.07} & 87.21\,{\scriptsize$\pm$0.05} & 43.64\,{\scriptsize$\pm$0.22} & 89.89\,{\scriptsize$\pm$0.06} & 1.697\,{\scriptsize$\pm$0.008} & 45.51\,{\scriptsize$\pm$0.25} & 66.51\,{\scriptsize$\pm$0.33} & 1.70\,{\scriptsize$\pm$0.02} & 2.84\,{\scriptsize$\pm$0.15} \\
+\midrule
+B4 & 3 & 62.91\,{\scriptsize$\pm$0.32} & 86.16\,{\scriptsize$\pm$0.06} & 38.39\,{\scriptsize$\pm$0.61} & 88.46\,{\scriptsize$\pm$0.18} & 1.903\,{\scriptsize$\pm$0.028} & 47.11\,{\scriptsize$\pm$0.13} & 62.69\,{\scriptsize$\pm$0.26} & 1.83\,{\scriptsize$\pm$0.01} & 2.07\,{\scriptsize$\pm$0.03} \\
+B5 & 3 & 61.93\,{\scriptsize$\pm$0.31} & 86.12\,{\scriptsize$\pm$0.06} & 36.22\,{\scriptsize$\pm$0.49} & 88.04\,{\scriptsize$\pm$0.17} & 1.836\,{\scriptsize$\pm$0.018} & 37.30\,{\scriptsize$\pm$0.13} & 73.87\,{\scriptsize$\pm$0.10} & 1.27\,{\scriptsize$\pm$0.01} & 2.05\,{\scriptsize$\pm$0.06} \\
+B5$'$ & 3 & 62.04\,{\scriptsize$\pm$0.67} & 86.12\,{\scriptsize$\pm$0.02} & 36.21\,{\scriptsize$\pm$1.21} & 88.03\,{\scriptsize$\pm$0.36} & 1.844\,{\scriptsize$\pm$0.042} & 36.63\,{\scriptsize$\pm$0.22} & 74.40\,{\scriptsize$\pm$0.67} & 1.25\,{\scriptsize$\pm$0.02} & 1.94\,{\scriptsize$\pm$0.21} \\
+\midrule
+FULL-P0 & 3 & 61.94\,{\scriptsize$\pm$0.68} & 86.12\,{\scriptsize$\pm$0.02} & 36.22\,{\scriptsize$\pm$1.19} & 88.01\,{\scriptsize$\pm$0.35} & 1.823\,{\scriptsize$\pm$0.044} & 36.34\,{\scriptsize$\pm$0.24} & 74.55\,{\scriptsize$\pm$0.64} & 1.26\,{\scriptsize$\pm$0.03} & 1.96\,{\scriptsize$\pm$0.20} \\
+FULL-P1 & 3 & 62.10\,{\scriptsize$\pm$0.83} & 86.42\,{\scriptsize$\pm$0.56} & 36.41\,{\scriptsize$\pm$1.48} & 88.04\,{\scriptsize$\pm$0.38} & 1.801\,{\scriptsize$\pm$0.053} & 36.22\,{\scriptsize$\pm$0.20} & 74.35\,{\scriptsize$\pm$0.87} & 1.27\,{\scriptsize$\pm$0.03} & 1.96\,{\scriptsize$\pm$0.11} \\
+FULL-P2 & 3 & 61.86\,{\scriptsize$\pm$0.66} & 86.13\,{\scriptsize$\pm$0.03} & 36.16\,{\scriptsize$\pm$1.29} & 87.99\,{\scriptsize$\pm$0.38} & 1.815\,{\scriptsize$\pm$0.045} & 36.22\,{\scriptsize$\pm$0.23} & 74.22\,{\scriptsize$\pm$0.85} & 1.27\,{\scriptsize$\pm$0.03} & 2.09\,{\scriptsize$\pm$0.30} \\
+\midrule
+FULL+Y & 3 & 61.87\,{\scriptsize$\pm$0.70} & 86.21\,{\scriptsize$\pm$0.49} & 36.18\,{\scriptsize$\pm$1.24} & 88.01\,{\scriptsize$\pm$0.35} & 1.850\,{\scriptsize$\pm$0.028} & 36.31\,{\scriptsize$\pm$0.24} & 74.48\,{\scriptsize$\pm$0.66} & 1.26\,{\scriptsize$\pm$0.03} & 1.52\,{\scriptsize$\pm$0.10} \\
+B3m & 3 & 64.89\,{\scriptsize$\pm$0.01} & 87.19\,{\scriptsize$\pm$0.03} & 41.35\,{\scriptsize$\pm$0.20} & 89.43\,{\scriptsize$\pm$0.05} & 1.657\,{\scriptsize$\pm$0.010} & 36.16\,{\scriptsize$\pm$0.09} & 76.97\,{\scriptsize$\pm$0.07} & 1.19\,{\scriptsize$\pm$0.01} & 2.81\,{\scriptsize$\pm$0.16} \\
+B3m+Y & 3 & 64.79\,{\scriptsize$\pm$0.09} & 86.91\,{\scriptsize$\pm$0.01} & 41.05\,{\scriptsize$\pm$0.37} & 89.43\,{\scriptsize$\pm$0.05} & 1.678\,{\scriptsize$\pm$0.004} & 36.14\,{\scriptsize$\pm$0.09} & 76.88\,{\scriptsize$\pm$0.06} & 1.20\,{\scriptsize$\pm$0.01} & 2.14\,{\scriptsize$\pm$0.12} \\
+\bottomrule
+\end{tabular}

@@ -1,0 +1,14 @@
+% whu: from tables/whu/p2p.json (git 521cba53c565, 2026-11-12T14:44:24+07:00); do not edit
+\begin{tabular}{l l ccccc}
+\toprule
+Method & Ground truth & IoU & C-IoU & N-ratio & PoLiS$\downarrow$ & MTA$\downarrow$ \\
+\midrule
+FULL-P0 (ours) & Pix2Poly-style & 83.92 & 66.83 & 1.72 & 1.575 & 39.74 \\
+FULL-P0 (ours) & official buildings & 84.22 & 67.01 & 1.72 & 1.496 & 39.10 \\
+\midrule
+Pix2Poly$^\dagger$ & Pix2Poly-style & 89.15 & 81.63 & 1.15 & 1.082 & 31.64 \\
+HiSup (as evaluated in the Pix2Poly paper)$^\dagger$ & Pix2Poly-style & 87.12 & 79.62 & 1.15 & 1.158 & 34.75 \\
+FFL, $\epsilon=$1.0 (as evaluated in the Pix2Poly paper)$^\dagger$ & Pix2Poly-style & 77.64 & 54.52 & 2.31 & 1.747 & 35.79 \\
+FFL, $\epsilon=$0.125 (as evaluated in the Pix2Poly paper)$^\dagger$ & Pix2Poly-style & 77.61 & 32.19 & 5.09 & 1.783 & 35.27 \\
+\bottomrule
+\end{tabular}

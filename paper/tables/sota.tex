@@ -1,0 +1,11 @@
+% sota: from tables/crowdai/sota.json (git 521cba53c565, 2026-11-12T14:39:44+07:00); do not edit
+\begin{tabular}{l c cccccccc}
+\toprule
+Method & Polygon labels & AP & AP$_{50}$ & AP$_b$ & IoU & PoLiS$\downarrow$ & MTA$\downarrow$ & C-IoU & N-ratio \\
+\midrule
+HiSup (released predictions) & yes & 65.60 & 87.29 & 43.97 & 89.92 & 1.364 & 34.54 & 81.25 & 1.06 \\
+FULL-P0 (ours) & no & 61.14\,{\scriptsize$\pm$0.98} & 86.15\,{\scriptsize$\pm$0.10} & 35.19\,{\scriptsize$\pm$1.79} & 87.54\,{\scriptsize$\pm$0.37} & 1.825\,{\scriptsize$\pm$0.073} & 36.18\,{\scriptsize$\pm$0.48} & 73.29\,{\scriptsize$\pm$0.63} & 1.29\,{\scriptsize$\pm$0.04} \\
+\midrule
+$\Delta$ (ours $-$ HiSup) &  & $-4.45$ {\scriptsize$[-5.73,\,-3.44]$} &  & $-8.79$ {\scriptsize$[-10.55,\,-7.41]$} & $-2.37$ {\scriptsize$[-2.74,\,-1.95]$} & $+0.461$ {\scriptsize$[+0.325,\,+0.587]$} & $+1.65$ {\scriptsize$[+0.97,\,+2.30]$} & $-7.95$ {\scriptsize$[-9.32,\,-6.55]$} &  \\
+\bottomrule
+\end{tabular}
