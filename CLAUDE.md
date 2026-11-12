@@ -68,6 +68,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   lawan HiSup 65,60 (Δ −4,45 [−5,73; −3,44]): "mendekati SOTA" tidak didukung (§8 poin 5). WHU `test` (GT utama): AP 66,97, C-IoU 72,07;
   aturan Pix2Poly: C-IoU 66,83 (paper: HiSup 79,62, Pix2Poly 81,63; kira-kira). "Efek N1 terbesar di area padat" tidak didukung (§8 poin 4:
   `MTA_inst` ya, `PoLiS_paired` tidak). FULL-P0: 20,81 juta parameter, 42 FPS alur penuh.
+  Eksploratif (12 Nov 2026): B3m (mask B3 + `mar`) AP 64,89, C-IoU 76,97, mengungguli FULL-P0 di semua metrik kecuali merge rate (2,81% lawan 1,96%).
 
 ## Cara bekerja di proyek ini
 

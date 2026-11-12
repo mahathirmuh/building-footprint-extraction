@@ -1836,6 +1836,37 @@ JSON sumbernya (`--trace`). `pytest -q`: 684 lolos.
    dengan efek kecil tetapi konsisten; prior morfologi dan kelas kontak tidak membantu. Paper berbahasa Inggris, PPT berbahasa Indonesia,
    notebook penuh dijalankan untuk satu run FULL-P0 seed 0. Judul kerja belum diubah; menunggu keputusan pemilik proyek.
 
+**Eksperimen eksploratif B3m** (12 Nov 2026, 16.12–16.4x WIB; §8 poin 7, di luar klaim N1–N3): regularisasi `mar` (minAreaRect per instance,
+seperti B5) di atas mask B3, tanpa training. Tuning di `val_tune_sub` (150 s): A_min 5, ρ 0,93, k 0,02, δ 10; AP 65,00, `PoLiS_paired` 1,481;
+dibekukan dan di-commit (`b80f254`) sebelum test. Prediksi dan evaluasi `test` 3 seed; selisih berpasangan dengan bootstrap yang sama
+(`densepoly-work/phase8_b3m_steps.py`, `logs/phase8_b3m_steps.json`).
+
+| `crowdai/test`, 3 seed | AP | AP_b | IoU | PoLiS ↓ | MTA ↓ | C-IoU | N-ratio | merge rate ↓ |
+|---|---|---|---|---|---|---|---|---|
+| B3 (biner, `raw`) | 65,74 ± 0,07 | 43,64 | 89,89 | 1,697 | 45,51 | 66,51 | 1,70 | 2,84 |
+| **B3m (biner, `mar`)** | 64,89 ± 0,01 | 41,35 | 89,43 | 1,657 | 36,16 | 76,97 | 1,19 | 2,81 |
+| B5 (3 kelas, `mar`) | 61,93 ± 0,31 | 36,22 | 88,04 | 1,836 | 37,30 | 73,87 | 1,27 | 2,05 |
+| FULL-P0 (3 kelas + θ, `theta`) | 61,94 ± 0,68 | 36,22 | 88,01 | 1,823 | 36,34 | 74,55 | 1,26 | 1,96 |
+
+| Selisih berpasangan, semua tile [CI 95%] | AP | AP_b | C-IoU | `PoLiS_paired` | `MTA_inst` | merge rate | split rate |
+|---|---|---|---|---|---|---|---|
+| B3 → B3m (efek regularisasi `mar`) | −0,85 [−1,01; −0,70] | −2,30 [−2,39; −2,08] | +10,46 [+10,09; +10,81] | −0,042 [−0,046; −0,038] | −9,39 [−9,55; −9,23] | −0,03 [−0,06; −0,00] | +0,01 [−0,01; +0,02] |
+| B3m → FULL-P0 | −2,95 [−3,15; −2,65] | −5,13 [−5,40; −4,87] | −2,42 [−2,67; −2,16] | +0,138 [+0,130; +0,147] | +0,39 [+0,27; +0,51] | −0,85 [−1,01; −0,67] | +1,52 [+1,37; +1,66] |
+| B5 → B3m | +2,97 [+2,74; +3,21] | +5,13 [+4,87; +5,36] | +3,10 [+2,88; +3,31] | −0,167 [−0,175; −0,159] | −1,17 [−1,29; −1,05] | +0,76 [+0,59; +0,93] | −1,18 [−1,32; −1,04] |
+
+Semua selisih searah di ketiga seed. Di strata padat polanya sama (B3m → FULL-P0: AP −2,61, C-IoU −1,70, `PoLiS_paired` +0,108,
+`MTA_inst` +0,33, merge rate −1,10, split rate +1,33).
+
+- **Regularisasi `mar` sendirilah yang merapikan poligon.** Di atas B3, ia menaikkan C-IoU 10,5 poin dan menurunkan `MTA_inst` 9,4°,
+  dengan biaya 0,85 AP.
+- **B3m mengungguli FULL-P0 di semua metrik kecuali merge rate.** AP +2,95, AP_b +5,13, C-IoU +2,42, PoLiS dan MTA lebih baik, rumah terbelah
+  lebih sedikit. Jalur 3 kelas + watershed hanya unggul dalam memisahkan rumah (merge rate 1,96% lawan 2,81%; di tile bersentuhan 7,81% lawan
+  11,86%), dan membayarnya dengan lebih banyak rumah terbelah dan batas yang kurang tepat.
+- **Dampak pada klaim.** N1 (FULL-P0 lawan B5, model 3 kelas yang sama jalurnya) tetap didukung apa adanya: head θ memperbaiki regularisasi
+  di jalur itu. Tetapi klaim yang lebih luas, bahwa pipeline FULL adalah cara terbaik menghasilkan poligon rapi tanpa anotasi poligon, **tidak
+  didukung**: baseline biner dengan regularisasi yang sama lebih baik. Ini harus ditulis terang di paper.
+- **Yang belum diuji:** head θ di atas model biner (B3 + head θ, lalu `theta`). Itu butuh training baru dan di luar rencana.
+
 ---
 
 ## Fase 9 — (Opsional) FULL+Y: YOLOv8n-OBB sebagai seed (dikerjakan sejak 12 November 2026)
