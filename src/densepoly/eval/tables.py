@@ -135,11 +135,11 @@ def missing_runs(dataset: str, exps: Iterable[str], split: str, seeds: Iterable[
     return [str(file) for file in files if not file.exists()]
 
 
-def _sources(dataset: str, exp: str, runs: Iterable[str], split: str) -> list[dict]:
+def _sources(dataset: str, exp: str, runs: Iterable[str], split: str, variant: str | None = None) -> list[dict]:
     """Which metric files a table read, with the commit that wrote each."""
     entries = []
     for run in runs:
-        file = paths.metrics_file(dataset, exp, run, split)
+        file = paths.metrics_file(dataset, exp, run, split, variant)
         record = read_json(file)
         entries.append(
             {
@@ -439,9 +439,28 @@ REQUIRED = {
 }
 
 
+MISSING = {}  # {table: function(dataset) -> what the table lacks}, for the tables whose needs are not just (exps, split)
+
+
 def missing_for(dataset: str, name: str) -> list[str]:
     """The metric files table `name` needs and that do not exist ([] for the ablation table, which shows what is there)."""
+    if name in MISSING:
+        return MISSING[name](dataset)
     return missing_runs(dataset, *REQUIRED[name]) if name in REQUIRED else []
+
+
+def trace(record) -> list[str]:
+    """Every file a written table (its JSON record) names as a source, in the order of the record."""
+    found = []
+    if isinstance(record, dict):
+        if isinstance(record.get("file"), str):
+            found.append(record["file"])
+        for value in record.values():
+            found += trace(value)
+    elif isinstance(record, list):
+        for value in record:
+            found += trace(value)
+    return list(dict.fromkeys(found))
 
 
 def write_table(dataset: str, name: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> Path:

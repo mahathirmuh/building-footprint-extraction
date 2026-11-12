@@ -173,6 +173,12 @@ def metrics_artifact(dataset: str, exp: str, run: str, split: str, suffix: str, 
     return out_root() / "metrics" / dataset / exp / run / f"{name}.{suffix}"
 
 
+def efficiency_file(dataset: str, exp: str, run: str) -> Path:
+    """Parameters, network speed and post-processing time of one run (scripts/benchmark.py, docs/EXPERIMENTS.md §6)."""
+    _check(dataset)
+    return out_root() / "metrics" / dataset / exp / run / "efficiency.json"
+
+
 def gt_file(dataset: str, split: str, variant: str | None = None) -> Path:
     """COCO ground truth restricted to one split (all of its images, including empty ones), as evaluated
     (densepoly.eval.coco_io); variant as in annotation_file."""
