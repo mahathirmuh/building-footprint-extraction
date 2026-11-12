@@ -1,0 +1,409 @@
+% IEEE conference template (IEEEtran). Every result number comes from tables/*.tex, which scripts/paper_tables.py
+% regenerates from the saved evaluations; none is typed here. Compile: pdflatex main && bibtex main && pdflatex main (x2).
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+
+\input{tables/numbers}
+
+% Working title of the paper; the registered title of the course project is in Indonesian (see README).
+\newcommand{\papertitle}{Building Polygon Extraction in Dense Settlements Without Polygon Annotations:
+A Leakage-Free, Density-Stratified Evaluation of Orientation-Guided Regularization}
+
+\begin{document}
+
+\title{\papertitle}
+
+\author{\IEEEauthorblockN{Mahathir Muhammad}
+\IEEEauthorblockA{Department of Informatics\\
+Institut Teknologi Sepuluh Nopember\\
+Surabaya, Indonesia}}
+
+\maketitle
+
+\begin{abstract}
+Polygonal building extraction is usually trained with polygon annotations and reported on the CrowdAI benchmark, whose
+validation set overlaps its training set. We study what can be had from instance masks alone, and how much of the
+reported accuracy survives a leakage-free protocol. Our pipeline segments buildings with a U-Net++, separates them with
+a contact class and a watershed, predicts a per-pixel orientation whose labels are derived from the masks, and uses it
+to regularize each contour into a polygon. On a deduplicated CrowdAI split with decision rules fixed before any result,
+three seeds and paired bootstrap intervals, the orientation head lowers the paired PoLiS by $\NNoneTotalPolis$\,px and
+the per-instance tangent angle error by $\NNoneTotalMta^\circ$ in dense tiles; the effect is small but consistent, and
+it grows with building density. Two other ideas do not hold: morphological priors added to the input do not reduce
+merged buildings, and the contact class stays inactive in most runs. An exploratory baseline, a binary segmentation
+whose components are regularized with minimum-area rectangles, beats the full pipeline on every metric but merged
+buildings (AP \NApBthreem{} against \NApFull). Seeds from an oriented-box detector, also trained from masks, cut merged
+buildings by about a quarter at equal AP. On \NTilesClean{} validation tiles without a duplicate in training, HiSup
+scores \NCleanApHisup{} AP instead of the \NLeakyApHisup{} of the full validation set, and our mask-supervised
+pipeline is $\NCleanDeltaAp$ AP behind it.
+\end{abstract}
+
+\begin{IEEEkeywords}
+building extraction, polygon regularization, instance segmentation, data leakage, remote sensing
+\end{IEEEkeywords}
+
+\section{Introduction}
+Maps need buildings as polygons with few vertices and straight walls, not as masks. Recent methods learn polygons
+directly~\cite{girard2021ffl,zorzi2022polyworld,xu2023hisup,jiao2024polyrcnn,adimoolam2025pix2poly} and report an average
+precision close to 80 on the CrowdAI Mapping Challenge~\cite{mohanty2020crowdai}. Two facts qualify these numbers. First,
+they need polygon annotations, which many regional datasets lack. Second, the CrowdAI validation set shares most of its
+images with the training set, up to rotations and flips~\cite{adimoolam2023leakage}, so the benchmark rewards
+memorization.
+
+This paper asks two questions about dense settlements, where roofs touch and a single merged polygon hides several
+houses. How good can polygons be when only instance masks are available for training? And which design choices of a
+mask-supervised pipeline survive an evaluation without leakage, split by building density?
+
+We built a pipeline from known parts and three additions of our own, wrote down beforehand how each addition would be
+judged, and then ran the experiments. The outcome is mixed, and we report it as such:
+\begin{itemize}
+\item \textbf{Protocol.} A CrowdAI split without duplicate tiles across training, tuning and test, density strata frozen
+from the ground truth, three seeds, paired cluster-bootstrap intervals, and decision rules fixed before any model was
+trained (Section~\ref{sec:protocol}).
+\item \textbf{Orientation from masks.} A two-channel head predicts the building orientation, with labels derived from the
+minimum-area rectangle of each mask, and guides the regularization. It improves polygon geometry by a small, consistent
+amount that grows with density (Section~\ref{sec:n1}).
+\item \textbf{Negative results.} Morphological priors as extra input channels do not help, and the contact class meant to
+separate touching roofs is rarely predicted at all (Sections~\ref{sec:n3} and~\ref{sec:contact}).
+\item \textbf{A simple strong baseline.} Regularizing the connected components of a binary segmentation is better than
+the full pipeline on every metric except merged buildings, and detector seeds reduce merges in both
+(Section~\ref{sec:exploratory}). These comparisons were added after the results and are marked as exploratory.
+\end{itemize}
+
+\section{Related Work}
+\textbf{Polygonal building extraction.} Frame field learning~\cite{girard2021ffl} predicts a field aligned with building
+walls and polygonizes the mask with it. PolyWorld~\cite{zorzi2022polyworld}, HiSup~\cite{xu2023hisup},
+PolyR-CNN~\cite{jiao2024polyrcnn} and Pix2Poly~\cite{adimoolam2025pix2poly} predict vertices and their connections more
+directly. All of them are trained with polygon annotations. Our orientation head is a much reduced relative of the frame
+field: one angle modulo $90^\circ$ per pixel, supervised by rectangles fitted to masks.
+
+\textbf{Separating touching buildings.} A third class for the pixels where instances meet, followed by a watershed, was
+introduced for satellite imagery by TernausNetV2~\cite{iglovikov2018ternausv2}; weighting the loss near
+boundaries goes back to U-Net~\cite{ronneberger2015unet} and was applied to footprints by Bischke et
+al.~\cite{bischke2019multitask}. We adopt both without claiming them.
+
+\textbf{Morphological cues.} The morphological building index (MBI)~\cite{huang2011mbi} responds to bright structures of
+building size. We test it, and a directional black top-hat that responds to the dark gaps between roofs, as extra input
+channels.
+
+\textbf{Leakage in CrowdAI.} Adimoolam et al.~\cite{adimoolam2023leakage} showed with perceptual hashes that most
+CrowdAI training images are exact or augmented duplicates and that the validation set leaks from the training set. We
+build on their finding and re-evaluate a published method on the validation tiles that are free of it.
+
+\section{Method}
+\label{sec:method}
+Fig.~\ref{fig:pipeline} shows the pipeline. Everything it learns from is derived from an instance map, one integer label
+per building; no polygon annotation is used in training.
+
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=5mm and 6mm, >={Stealth[length=2mm]},
+  box/.style={draw, rounded corners=2pt, align=center, font=\small, minimum height=8mm, inner sep=3pt},
+  opt/.style={box, dashed}]
+\node[box] (rgb) {RGB tile};
+\node[box, right=of rgb] (net) {U-Net++\\EfficientNet-B4};
+\node[box, above right=2mm and 7mm of net] (cls) {3 classes:\\background, building, contact};
+\node[box, below right=2mm and 7mm of net] (ori) {orientation\\$(\sin 4\theta,\cos 4\theta)$};
+\node[box, right=of cls] (ws) {markers\\$\rightarrow$ watershed};
+\node[box, right=of ori] (reg) {$\theta$-guided\\regularization};
+\node[box, right=of reg] (out) {one polygon\\per building};
+\node[opt, above=of ws] (det) {detector seeds\\(FULL+Y)};
+\node[opt, above=of rgb] (pri) {morphological priors\\(ablation)};
+\draw[->] (rgb) -- (net);
+\draw[->] (net) |- (cls);
+\draw[->] (net) |- (ori);
+\draw[->] (cls) -- (ws);
+\draw[->] (ws) -- (reg);
+\draw[->] (ori) -- (reg);
+\draw[->] (reg) -- (out);
+\draw[->, dashed] (det) -- (ws);
+\draw[->, dashed] (pri) -| (net);
+\end{tikzpicture}}
+\caption{The mask-supervised pipeline. Dashed parts are variants: morphological priors as extra input channels, and
+seeds from an oriented-box detector. All labels, including the orientation and the detector's boxes, come from instance
+masks.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Labels from masks}
+\textbf{Classes.} A pixel is background, building or contact. Contact pixels are building pixels within $r$ pixels of
+another building ($r=2$ on CrowdAI).
+
+\textbf{Orientation.} For each instance we fit the minimum-area rectangle and take the direction $\theta$ of one of its
+sides, modulo $90^\circ$. The targets are $(\sin 4\theta,\cos 4\theta)$ on the pixels of the instance, which removes
+the ambiguity between the four sides. Labels are derived after the geometric augmentation, so that flips and
+transpositions are handled without special cases.
+
+\textbf{Boundary weight.} Each pixel has a weight $w=1+\alpha\exp(-d^2/2\sigma^2)$, where $d$ is the distance to the
+nearest instance boundary ($\alpha=5$, $\sigma=3$\,px).
+
+\subsection{Network and loss}
+The network is a U-Net++~\cite{zhou2018unetpp} with an EfficientNet-B4 encoder~\cite{tan2019efficientnet} pretrained on
+ImageNet, and one convolutional head with five outputs: three class logits and two orientation channels through a
+$\tanh$. The loss is
+\begin{equation}
+L = \overline{w\cdot\mathrm{CE}} + L_{\mathrm{Dice}} + \lambda L_\theta ,
+\end{equation}
+where $L_\theta$ is the mean squared error of the two orientation channels over building pixels and $\lambda=1$.
+
+\subsection{Instances}
+With class probabilities $P_{bg}$, $P_b$, $P_k$, the foreground is $1-P_{bg}>0.5$ and the markers are the components of
+$P_b-P_k>\tau$ inside it. A watershed of $-P_b$ from the markers, restricted to the foreground, gives the instances;
+foreground components without a marker become instances of their own.
+
+\subsection{Orientation-guided regularization}
+The orientation of an instance is the circular mean of the head's output over its pixels. In the frame rotated by
+$-\theta$, the contour is first compared with a rectangle whose sides come from the second-order moments of the mask; if
+their IoU reaches $\rho$, the rectangle is the polygon. Otherwise the contour is simplified with
+Douglas--Peucker~\cite{douglas1973}, with a tolerance proportional to the square root of the area, its edges within
+$\delta$ of the two axes are snapped to them, consecutive edges of the same class are merged, and the vertices are
+recomputed as intersections. A result that is invalid or leaves the contour (IoU below 0.7) falls back to the simplified
+contour. The same procedure with $\theta$ taken from the minimum-area rectangle of the predicted instance, instead of
+the head, is the mode we call \emph{mar}.
+
+\subsection{Variants}
+\textbf{Morphological priors.} MBI and a gap map, the difference between the largest and the smallest directional black
+top-hat, are appended to the RGB input. The first convolution is widened with zero weights for the new channels, so
+that the pretrained network is unchanged at the start of training.
+
+\textbf{Detector seeds.} A YOLOv8n oriented-box detector~\cite{jocher2023yolov8} is trained on boxes fitted to the same
+instance masks. At inference the centres of its boxes become seeds: a marker that contains two or more seeds is replaced
+by them, and a seed in a foreground component without a marker is added.
+
+\section{Evaluation Protocol}
+\label{sec:protocol}
+\subsection{Data without leakage}
+CrowdAI~\cite{mohanty2020crowdai} has \NTrainImages{} training and \NValImages{} validation tiles of $300\times300$
+pixels. We hash every training tile and its eight rotations and flips with a perceptual hash, as
+in~\cite{adimoolam2023leakage}, and obtain \NTrainClusters{} clusters of duplicates. One tile per cluster is kept. The
+clusters are shuffled once: 10\% form the tuning split, divided into \NTuneTiles{} tiles for tuning the post-processing
+and \NSelectTiles{} for selecting checkpoints, another 10\% (\NTestTiles{} tiles) form the test split, and the remaining
+\NTrainDedup{} tiles are used for training. No parameter is tuned on the test split.
+
+The published methods were trained on the full training set, so our test split is not clean for them. For the
+comparison with HiSup~\cite{xu2023hisup}, whose predictions on the validation set are public, we use the validation
+tiles that have no duplicate in the training set even after rotations and flips, one per cluster: \NTilesClean{} tiles.
+
+The WHU aerial dataset~\cite{ji2019whu} serves as a second dataset with one seed. Following
+Pix2Poly~\cite{adimoolam2025pix2poly} we evaluate on $224\times224$ patches, but our test tiles are rebuilt from the
+official release and are not exactly theirs, so the comparison with their reported numbers is approximate.
+
+\subsection{Density strata}
+Before any model was evaluated, the test tiles were divided into terciles by their number of ground-truth buildings
+(sparse, medium, dense), and, as a second index, into tiles with and without touching buildings.
+
+\subsection{Metrics}
+We report the COCO mask AP~\cite{lin2014coco} and its boundary variant~\cite{cheng2021boundaryiou}, the pixel IoU, the
+complexity-aware IoU and the vertex ratio of~\cite{zorzi2022polyworld}, PoLiS~\cite{avbelj2015polis} and the max tangent
+angle error (MTA)~\cite{girard2021ffl}, computed with the scripts of Pix2Poly. Since those pooled versions of PoLiS and
+MTA depend on which buildings a method finds, the claims use paired versions: predictions are matched one-to-one to the
+ground truth at an IoU of 0.5, and PoLiS and MTA are averaged over the buildings matched by both methods compared. The
+merge rate is the share of ground-truth buildings covered by a prediction that also covers another building, and the
+split rate the share covered by two or more predictions.
+
+\subsection{Statistics and decision rules}
+Core comparisons use three seeds. Differences are paired by seed and averaged; their 95\% interval comes from a cluster
+bootstrap over tiles with 1000 replicates, the same resamples for both methods. The rules were written down before any
+model was trained: a contribution is supported if, in the dense stratum of the test split, its main metrics improve
+with an interval that excludes zero and in all three seeds, and AP does not fall by more than 0.5 points. ``Largest in
+dense areas'' needs the interval of the difference between the dense and the sparse effect to exclude zero for every
+main metric. ``Close to the state of the art'' means at most 3 AP behind HiSup on the clean validation tiles.
+Comparisons outside this list are exploratory and marked as such.
+
+\subsection{Training}
+All CrowdAI models are trained for 60 epochs with AdamW~\cite{loshchilov2019adamw}, a batch of 16, a learning rate of
+$2\times10^{-4}$ with one warm-up epoch and a cosine decay, mixed precision, and flips, right-angle rotations,
+transpositions and a mild photometric jitter. Tiles are padded to $320\times320$, never resized. The checkpoint with the
+best foreground IoU on the selection split is kept. The post-processing of every model is tuned on the same grid.
+Table~\ref{tab:ablation} lists the scenarios: B0 is a classical MBI baseline, B1--B3 are binary segmentations (U-Net,
+U-Net++, with boundary weights), B4 adds the contact class and the watershed, B5 regularizes B4 in mode \emph{mar}, and
+FULL adds the orientation head, without priors (P0), with MBI (P1), or with MBI and the gap map (P2).
+B5$'$ applies mode \emph{mar} to the FULL-P0 network, which separates the effect of training with the head from the
+effect of using its output.
+
+\section{Results}
+\begin{table*}[t]
+\centering
+\caption{Scenarios on the deduplicated CrowdAI test split (mean $\pm$ standard deviation over the runs). AP, IoU, C-IoU
+and merge rate in percent, PoLiS in pixels, MTA in degrees. FULL+Y adds detector seeds; B3m and B3m+Y are exploratory.}
+\label{tab:ablation}
+\resizebox{\textwidth}{!}{\input{tables/ablation}}
+\end{table*}
+
+\subsection{What each step does}
+Table~\ref{tab:ablation} gives the overall picture. Regularization is what makes polygons: from B4 to B5 the C-IoU rises
+from \NCiouBfour{} to \NCiouBfive{} and the MTA falls from \NMtaBfour$^\circ$ to \NMtaBfive$^\circ$, at a cost of about
+one AP point. The contact class and the watershed lower the merge rate, from \NMergeBthree\% in B3 to \NMergeBfour\% in
+B4, but they also split more buildings and cost AP: the plain binary model B3 has the highest AP of all,
+\NApBthree.
+
+\subsection{Orientation head}
+\label{sec:n1}
+\begin{table}[t]
+\centering
+\caption{Paired differences in the dense stratum of the test split (\NTilesDense{} tiles, three seeds), with 95\%
+bootstrap intervals.}
+\label{tab:n1}
+\resizebox{\columnwidth}{!}{\input{tables/n1}}
+\end{table}
+Table~\ref{tab:n1} decomposes the step from B5 to FULL-P0. Training with the orientation head already improves the
+polygons that mode \emph{mar} draws, and guiding the regularization with the head improves them further. In total the
+paired PoLiS falls by $\NNoneTotalPolis$\,px, 95\% interval $\NNoneTotalPolisCi$, and the per-instance MTA by
+$\NNoneTotalMta^\circ$, $\NNoneTotalMtaCi$, in all three seeds, while AP changes by $\NNoneTotalAp$. By our rule the
+contribution is supported. The effect is small: a few percent of either metric (compare Table~\ref{tab:ablation}).
+
+\subsection{Morphological priors}
+\label{sec:n3}
+\begin{table}[t]
+\centering
+\caption{Effect of the priors in the dense stratum: paired differences with 95\% bootstrap intervals.}
+\label{tab:priors}
+\resizebox{\columnwidth}{!}{\input{tables/priors}}
+\end{table}
+The priors were meant to reduce merged buildings. They do not (Table~\ref{tab:priors}): with both priors the merge rate
+changes by $\NNthreeDeltaMerge$ points, $\NNthreeDeltaMergeCi$, in the wrong direction and not in every seed. Neither
+MBI alone nor the gap map on top of it helps. The contribution is not supported.
+
+\subsection{Effect by density}
+\begin{table*}[t]
+\centering
+\caption{Effect of the orientation head (B5 $\rightarrow$ FULL-P0) and of the priors (FULL-P0 $\rightarrow$ FULL-P2) per
+stratum of the test split, and the difference between the dense and the sparse effect (stratified bootstrap).}
+\label{tab:density}
+\input{tables/density}
+\end{table*}
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/crowdai_n2}
+\caption{The effects of Table~\ref{tab:density} per stratum, with 95\% bootstrap intervals.}
+\label{fig:density}
+\end{figure*}
+The gain from the orientation head grows from sparse to dense tiles on both metrics (Table~\ref{tab:density},
+Fig.~\ref{fig:density}). The difference between the dense and the sparse effect is significant for the MTA,
+$\NDenseMta^\circ$, $\NDenseMtaCi$, but not for the PoLiS, $\NDensePolis$\,px, $\NDensePolisCi$. Our rule asks for both,
+so ``largest in dense areas'' is not supported as a claim; the trend is there for one metric and has the same sign for
+the other.
+
+\subsection{Contact class}
+\label{sec:contact}
+Contact pixels are about 0.01\% of the building pixels. In \NContactInactive{} of the \NContactRuns{} FULL runs the
+contact class is never the most probable class on the selection split, and its probability stays near zero everywhere.
+In those runs buildings are separated only by predicted background gaps. Whether the class is active does not predict
+the merge rate across seeds. The orientation-head comparison is unaffected in the seed where the class is active in
+both models, but the finding means that the mechanism we adopted for touching roofs is mostly not at work.
+
+\subsection{Comparison on leakage-free data}
+\begin{table*}[t]
+\centering
+\caption{HiSup, evaluated from its released predictions, and our final model on the \NTilesClean{} validation tiles
+without a duplicate in the training set. Same evaluation code for both.}
+\label{tab:sota}
+\resizebox{\textwidth}{!}{\input{tables/sota}}
+\end{table*}
+\begin{table}[t]
+\centering
+\caption{Numbers \emph{reported in the cited papers} on the full CrowdAI validation set, which leaks from the training
+set. They are not comparable with Tables~\ref{tab:ablation} and~\ref{tab:sota}.}
+\label{tab:reported}
+\resizebox{\columnwidth}{!}{\input{tables/reported}}
+\end{table}
+Our evaluation reproduces the reported AP of HiSup on the full validation set, \NLeakyApHisup{}
+(Table~\ref{tab:reported} lists the reported numbers). On the clean tiles the same predictions score \NCleanApHisup{}
+(Table~\ref{tab:sota}). The clean tiles are not a random sample of the validation set, so part of the drop may come from
+their difficulty and not only from leakage; still, the reported level does not carry over. FULL-P0, trained without
+polygon annotations and on the deduplicated training split, is $\NCleanDeltaAp$ AP behind, $\NCleanDeltaApCi$, more than
+the 3 points we had set as the limit: ``close to the state of the art'' is not supported. The two are close in
+AP$_{50}$ (\NCleanApfiftyFull{} against \NCleanApfiftyHisup) and apart in boundary accuracy: our pipeline finds the same
+buildings and places their outlines less precisely.
+
+\subsection{WHU}
+\begin{table}[t]
+\centering
+\caption{WHU test patches under the rules of Pix2Poly. $^\dagger$Reported in~\cite{adimoolam2025pix2poly}; their test
+tiles are not exactly ours, so the comparison is approximate.}
+\label{tab:whu}
+\resizebox{\columnwidth}{!}{\input{tables/whu}}
+\end{table}
+On WHU (one seed) FULL-P0 reaches \NWhuAp{} AP and \NWhuCiouMain{} C-IoU against the official per-building ground
+truth. Under the rules of Pix2Poly its C-IoU is \NWhuCiou, between the reported values of frame field learning and of
+HiSup (\NWhuCiouHisup) and Pix2Poly (\NWhuCiouPixtopoly), see Table~\ref{tab:whu}. The effect of guiding the
+regularization with the head has the same sign and the same growth with density as on CrowdAI. Touching buildings remain
+the weak point: \NWhuMergeTouching\% of them are merged in patches with touching buildings.
+
+\subsection{Exploratory: a binary baseline and detector seeds}
+\label{sec:exploratory}
+\begin{table*}[t]
+\centering
+\caption{Comparisons added after the results (exploratory, except FULL-P0 $\rightarrow$ FULL+Y, which was planned): paired
+differences on all test tiles with 95\% bootstrap intervals. B3m: mode \emph{mar} on the components of B3; +Y: detector
+seeds.}
+\label{tab:exploratory}
+\resizebox{\textwidth}{!}{\input{tables/exploratory}}
+\end{table*}
+Because B3 has the highest AP, we applied the regularization of mode \emph{mar} directly to its connected components
+(B3m). This costs $\NRegBinaryAp$ AP and raises the C-IoU by $\NRegBinaryCiou$ points (Table~\ref{tab:exploratory}).
+B3m is better than FULL-P0 on every metric except merged buildings: FULL-P0 is $\NBinaryToFullAp$ AP and
+$\NBinaryToFullCiou$ C-IoU behind it, and splits more buildings, while its merge rate is lower (\NMergeFull\% against
+\NMergeBthreem\%; in tiles with touching buildings \NMergeTouchingFull\% against \NMergeTouchingBthreem\%). The
+three-class route buys separation at the price of boundary accuracy.
+
+Detector seeds address the remaining weakness of both. The detector reaches a mAP$_{50}$ of \NDetectorMap{} on the
+selection split. Its seeds lower the merge rate of FULL-P0 by $\NSeedFullMerge$ points, $\NSeedFullMergeCi$, and of B3m
+by $\NSeedBinaryMerge$ points, $\NSeedBinaryMergeCi$, in every seed, and more in tiles with touching buildings. They
+also split more buildings, and AP does not change. The ranking of the two routes stays the same.
+
+Fig.~\ref{fig:qualitative} shows the polygons of four models on test tiles.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/crowdai_qualitative}
+\caption{Test tiles of the dense stratum (three rows, drawn at random) and, in the last row, the tile with touching
+buildings on which FULL-P0 merges the most buildings. The number in each panel counts its polygons. B4 draws raw
+contours; the other models regularize them.}
+\label{fig:qualitative}
+\end{figure*}
+
+\subsection{Cost}
+\begin{table}[t]
+\centering
+\caption{Cost on an RTX 5090 and one CPU thread for the post-processing. The detector's parameters are not included.}
+\label{tab:efficiency}
+\resizebox{\columnwidth}{!}{\input{tables/efficiency}}
+\end{table}
+All networks have about \NParamsFull{} million parameters (Table~\ref{tab:efficiency}). The orientation-guided
+regularization dominates the post-processing time; the whole pipeline runs at \NFpsFull{} tiles per second, and at
+\NFpsFullY{} with the detector.
+
+\section{Discussion and Limitations}
+The orientation head does what it was designed for, but the effect is small, and the larger share of the polygon
+quality comes from the regularization itself, which works as well with rectangles fitted to the predicted instances.
+The head was only tested on the three-class route; whether it helps the stronger binary route needs a training run we
+did not plan.
+
+The clean comparison rests on \NTilesClean{} tiles that are not a random sample. WHU has one seed and an approximate
+match to the published test set. The detector was trained once and shared by the three seeds, and its confidence
+threshold was chosen at the upper end of a grid fixed in advance. Polygons have no holes. The deduplication relies on
+perceptual hashes and can miss near-duplicates that differ by more than a rotation or flip.
+
+\section{Conclusion}
+With instance masks only, a segmentation network and a geometric regularization give polygons whose complexity is close
+to the ground truth, $\NCleanDeltaAp$ AP from a polygon-supervised method on leakage-free data. An orientation head
+supervised by rectangles fitted to the masks improves the geometry a little, and more in dense tiles. Morphological
+priors and a contact class do not deliver the separation of touching roofs they were meant to; seeds from a
+mask-supervised detector do. The strongest pipeline we found is also the simplest, a binary segmentation with
+regularized components, which we could only identify because the baselines were evaluated under the same protocol as
+the method.
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
