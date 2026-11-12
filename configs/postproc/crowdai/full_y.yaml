@@ -1,0 +1,44 @@
+# Frozen post-processing of full_y on crowdai (docs/EXPERIMENTS.md §4), tuned on val_tune_sub and
+# written by scripts/tune_postproc.py; do not edit. load_config merges the postproc section only.
+postproc:
+  tau: 0.6
+  marker_min_px: 8
+  instance_min_px: 20
+  rect_iou: 0.93
+  dp_k: 0.02
+  snap_deg: 10
+  yolo_conf: 0.4
+tuning:
+  seeds:
+  - yolo_conf: 0.15
+    AP: 0.6237882596391937
+    PoLiS_paired: 1.5844317008297457
+  - yolo_conf: 0.25
+    AP: 0.6263871437335304
+    PoLiS_paired: 1.5795537895179783
+  - yolo_conf: 0.4
+    AP: 0.6296059822381272
+    PoLiS_paired: 1.5698422228142255
+  inherited_from: full_p0
+  detector:
+    weights: yolo/crowdai/runs/seed0/weights/best.pt
+    min_conf: 0.05
+    seconds_per_image: 0.0031750463063362987
+    n_boxes: 10226
+    git: 6b9c1e67e050044f73e6ee48ed6348216697e378
+    created: '2026-11-12T19:01:53+07:00'
+  split: val_tune_sub
+  images: 1000
+  created: '2026-11-12T19:03:01+07:00'
+  git: 6b9c1e67e050044f73e6ee48ed6348216697e378
+  grid:
+    file: configs/postproc/grid.yaml
+    sha256: 8c2f5528c9fbf8d04f55fcef803996cb6f92862dc4e3fbaf4ebeaf44cd28d5b8
+  score:
+    AP: 0.6296059822381272
+    PoLiS_paired: 1.5698422228142255
+  stage1: []
+  stage2: []
+  seconds:
+    seeds: 28.1
+  workers: 12

@@ -1,0 +1,42 @@
+# Frozen post-processing of b3my on crowdai (docs/EXPERIMENTS.md §4), tuned on val_tune_sub and
+# written by scripts/tune_postproc.py; do not edit. load_config merges the postproc section only.
+postproc:
+  instance_min_px: 5
+  rect_iou: 0.93
+  dp_k: 0.02
+  snap_deg: 10
+  yolo_conf: 0.4
+tuning:
+  seeds:
+  - yolo_conf: 0.15
+    AP: 0.6467878123844931
+    PoLiS_paired: 1.487384855083997
+  - yolo_conf: 0.25
+    AP: 0.6482717879904216
+    PoLiS_paired: 1.4848219992711866
+  - yolo_conf: 0.4
+    AP: 0.6510745558796033
+    PoLiS_paired: 1.4812744717310962
+  inherited_from: b3m
+  detector:
+    weights: yolo/crowdai/runs/seed0/weights/best.pt
+    min_conf: 0.05
+    seconds_per_image: 0.0031750463063362987
+    n_boxes: 10226
+    git: 6b9c1e67e050044f73e6ee48ed6348216697e378
+    created: '2026-11-12T19:01:53+07:00'
+  split: val_tune_sub
+  images: 1000
+  created: '2026-11-12T19:03:33+07:00'
+  git: 6b9c1e67e050044f73e6ee48ed6348216697e378
+  grid:
+    file: configs/postproc/grid.yaml
+    sha256: 8c2f5528c9fbf8d04f55fcef803996cb6f92862dc4e3fbaf4ebeaf44cd28d5b8
+  score:
+    AP: 0.6510745558796033
+    PoLiS_paired: 1.4812744717310962
+  stage1: []
+  stage2: []
+  seconds:
+    seeds: 28.9
+  workers: 12
