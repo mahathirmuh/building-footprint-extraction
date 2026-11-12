@@ -310,3 +310,36 @@ def test_result_figures_are_drawn_from_the_written_tables(splits):
     assert apart[2] - apart[0] == pytest.approx(1.0) and apart[1] - apart[2] >= 1.0  # order kept, neighbours a gap apart
     assert sum(apart) == pytest.approx(7.2)  # the mean stays
     assert module.spread([3.0, 1.0], 0.5) == [3.0, 1.0]  # far enough already
+
+
+def figures_module():
+    spec = importlib.util.spec_from_file_location("figures_script2", paths.REPO_ROOT / "scripts" / "figures.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_qualitative_tiles_are_dense_ones_plus_the_worst_merge():
+    module = figures_module()
+    dense, touching = [10, 11, 12, 13, 14], [11, 20, 21, 22]
+    merged = {11: 9, 20: 2, 21: 5, 22: 5}
+    picked = module.pick_qualitative(dense, touching, merged, 3)
+    assert [kind for _, kind in picked] == ["dense", "dense", "dense", "failure"]
+    assert {i for i, kind in picked if kind == "dense"} <= set(dense)
+    failure = picked[-1][0]
+    assert failure == (11 if 11 not in {i for i, _ in picked[:3]} else 21)  # most merges; ties: the smallest id
+    assert module.pick_qualitative(dense, touching, merged, 3) == picked  # the same tiles every time
+    assert [kind for _, kind in module.pick_qualitative(dense, [20], {20: 0}, 2)] == ["dense", "dense"]  # nothing merged
+
+
+def test_polygons_are_grouped_by_image():
+    module = figures_module()
+    items = [
+        {"image_id": 1, "segmentation": [[0, 0, 4, 0, 4, 3]]},
+        {"image_id": 2, "segmentation": [[1, 1, 2, 1, 2, 2, 1, 2]]},
+        {"image_id": 1, "segmentation": [[5, 5, 6, 5, 6, 6]]},
+        {"image_id": 3, "segmentation": [[0, 0, 1, 0, 1, 1]]},
+    ]
+    rings = module.polygons_by_image(items, {1, 2, 9})
+    assert [ring.shape for ring in rings[1]] == [(3, 2), (3, 2)] and rings[2][0].tolist()[1] == [2, 1]
+    assert rings[9] == [] and 3 not in rings

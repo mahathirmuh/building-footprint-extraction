@@ -298,7 +298,9 @@ Ringkasan hasil uji kewarasan ditulis ke `docs/sanity_report.md` (tanggal, versi
 
 - `scripts/tables.py` hanya membaca file JSON/parquet di `outputs/metrics/` (dan `configs/paper_numbers.yaml` untuk
   angka paper lain). `scripts/figures.py --results` hanya membaca tabel JSON buatan `scripts/tables.py` di
-  `outputs/tables/`. Tidak ada angka yang diketik tangan.
+  `outputs/tables/`. Tidak ada angka yang diketik tangan. `scripts/figures.py --qualitative` menggambar prediksi tersimpan seed 0
+  di atas tile `test`: tiga tile acak (seed 0) dari strata padat dan, sebagai contoh kegagalan, tile bersentuhan dengan rumah
+  tergabung terbanyak pada FULL final.
 - Setiap tabel bisa ditelusuri ke path JSON: `scripts/tables.py --trace` mencetak file sumber tiap tabel, dan JSON
   tabelnya mencatat file itu beserta commit pembuatnya.
 - Tabel Fase 8 (`eval/reports.py`): `sota` (FULL final lawan HiSup di `val_clean`, §8 poin 5), `paper` (angka paper

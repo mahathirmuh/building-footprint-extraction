@@ -3,11 +3,16 @@
     python scripts/figures.py --qa-labels --data crowdai    # 12 val_tune tiles: RGB, classes, θ, w, MBI, gap map
     python scripts/figures.py --qa-gap-mode --data crowdai  # 10 val_tune tiles: gap map in max vs contrast mode
     python scripts/figures.py --results --data crowdai      # density analysis, from the tables of scripts/tables.py
+    python scripts/figures.py --qualitative --data crowdai  # real test tiles: ground truth and the polygons of each model
 
 --results draws no number of its own: it reads $DENSEPOLY_OUT/tables/<dataset>/n2.json (effect of each comparison per
 density stratum, with its 95% CI) and strata.json (metrics per stratum), and writes <dataset>_n2 and <dataset>_strata as
 PNG and PDF to $DENSEPOLY_OUT/figures/results/. --lang picks the language of the labels (en for the paper, id for the
 slides).
+
+--qualitative draws the saved test predictions of seed 0 (outputs/preds/) over the tiles: QUALITATIVE_DENSE tiles drawn at
+random (seed 0) from the dense stratum and, as the failure case, the tile with touching buildings on which the FULL final
+merges the most buildings (from its per-image metrics). It writes <dataset>_qualitative as PNG and PDF.
 
 The QA figures:
 
@@ -337,17 +342,99 @@ def results_strata(dataset: str, lang: str = "en") -> Path:
     return save_result(fig, dataset, "strata" if lang == "en" else f"strata_{lang}")
 
 
+# --- qualitative figure: what each model draws on the same real tiles
+
+QUALITATIVE_MODELS = {"crowdai": ("b4", "full_p0", "full_y", "b3m"), "whu": ("b5p", "full_p0")}
+QUALITATIVE_DENSE = 3
+GT_COLOUR, PREDICTION_COLOUR = "#39d353", "#ffd60a"
+CAPTIONS = {
+    "en": {"gt": "ground truth", "dense": "dense tile", "failure": "failure case (merged buildings)"},
+    "id": {"gt": "ground truth", "dense": "tile padat", "failure": "contoh kegagalan (rumah tergabung)"},
+}
+
+
+def polygons_by_image(items: list[dict], image_ids: set[int]) -> dict[int, list[np.ndarray]]:
+    """{image id: [(n, 2) rings]} of the COCO annotations or results of these images (first ring of each)."""
+    rings: dict[int, list[np.ndarray]] = {image_id: [] for image_id in image_ids}
+    for item in items:
+        if item["image_id"] in rings and item.get("segmentation"):
+            rings[item["image_id"]].append(np.reshape(item["segmentation"][0], (-1, 2)))
+    return rings
+
+
+def pick_qualitative(dense: list[int], touching: list[int], merged: dict[int, int], n_dense: int, seed: int = 0) -> list:
+    """[(image id, kind)]: n_dense tiles drawn from the dense stratum, then the touching tile with the most merged
+    buildings (ties: the smallest id) as the failure case, when there is one."""
+    rng = np.random.default_rng(seed)
+    picked = [(int(i), "dense") for i in sorted(rng.choice(sorted(dense), min(n_dense, len(dense)), replace=False).tolist())]
+    taken = {image_id for image_id, _ in picked}
+    candidates = [i for i in touching if i not in taken and merged.get(i, 0) > 0]
+    if candidates:
+        picked.append((min(candidates, key=lambda i: (-merged[i], i)), "failure"))
+    return picked
+
+
+def draw_rings(ax, image: np.ndarray, rings: list[np.ndarray], colour: str) -> None:
+    ax.imshow(image)
+    for ring in rings:
+        closed = np.vstack([ring, ring[:1]])
+        ax.plot(closed[:, 0], closed[:, 1], color="black", linewidth=2.2, alpha=0.55)  # a dark edge under the colour
+        ax.plot(closed[:, 0], closed[:, 1], color=colour, linewidth=1.2)
+    ax.set_xlim(0, image.shape[1])
+    ax.set_ylim(image.shape[0], 0)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+
+def qualitative(dataset: str, lang: str = "en", splits_dir: Path | None = None) -> Path:
+    import pandas as pd
+
+    from densepoly.data.dataset import TileDataset, tile_refs
+
+    split, run = "test", paths.run_name(0)
+    models = [exp for exp in QUALITATIVE_MODELS[dataset] if paths.pred_file(dataset, exp, run, split).exists()]
+    density = read_json(paths.density_file(dataset, split, splits_dir))
+    table = pd.read_parquet(paths.metrics_artifact(dataset, "full_p0", run, split, "per_image.parquet"))
+    merged = dict(zip(table["image_id"].astype(int), table["n_merged"].astype(int), strict=True))
+    picked = pick_qualitative(
+        density["main"]["strata"]["padat"], density["secondary"]["strata"]["bersentuhan"], merged, QUALITATIVE_DENSE
+    )
+    image_ids = {image_id for image_id, _ in picked}
+    refs = {int(ref.key): ref for ref in tile_refs(dataset, split, splits_dir) if int(ref.key) in image_ids}
+    tiles = TileDataset(load_config(dataset, "full_p0"), split, "predict", splits_dir=splits_dir)
+    images = {i: tiles.cut(cache.read_rgb(refs[i].image), refs[i]) for i in image_ids}
+    columns = [("gt", polygons_by_image(read_json(paths.gt_file(dataset, split))["annotations"], image_ids))]
+    columns += [(exp, polygons_by_image(read_json(paths.pred_file(dataset, exp, run, split)), image_ids)) for exp in models]
+    words = CAPTIONS[lang]
+    fig, axes = plt.subplots(len(picked), len(columns), figsize=(2.6 * len(columns), 2.7 * len(picked)), squeeze=False)
+    for row, (image_id, kind) in enumerate(picked):
+        for col, (name, rings) in enumerate(columns):
+            ax = axes[row][col]
+            draw_rings(ax, images[image_id], rings[image_id], GT_COLOUR if name == "gt" else PREDICTION_COLOUR)
+            if row == 0:
+                ax.set_title(words["gt"] if name == "gt" else LABELS[name], color=INK, fontsize=10)
+            if col == 0:
+                ax.set_ylabel(f"{words[kind]}\n#{image_id}", color=MUTED, fontsize=8)
+            ax.text(0.03, 0.04, str(len(rings[image_id])), transform=ax.transAxes, fontsize=8, color="white",
+                    bbox={"facecolor": "black", "alpha": 0.6, "pad": 1.5, "edgecolor": "none"})  # fmt: skip
+    fig.tight_layout(pad=0.4)
+    return save_result(fig, dataset, "qualitative" if lang == "en" else f"qualitative_{lang}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data", choices=paths.DATASETS, required=True)
     parser.add_argument("--qa-labels", action="store_true")
     parser.add_argument("--qa-gap-mode", action="store_true")
     parser.add_argument("--results", action="store_true", help="the density figures, from the written tables")
-    parser.add_argument("--lang", choices=sorted(WORDS), default="en", help="language of the labels of --results")
+    parser.add_argument("--qualitative", action="store_true", help="test tiles with the polygons of each model")
+    parser.add_argument("--lang", choices=sorted(WORDS), default="en", help="language of the labels of the result figures")
     parser.add_argument("--splits-dir", type=Path, help="folder of the density strata (default: repo splits/)")
     args = parser.parse_args(argv)
-    if not (args.qa_labels or args.qa_gap_mode or args.results):
-        parser.error("nothing to do: give --qa-labels, --qa-gap-mode and/or --results")
+    if not (args.qa_labels or args.qa_gap_mode or args.results or args.qualitative):
+        parser.error("nothing to do: give --qa-labels, --qa-gap-mode, --results and/or --qualitative")
+    if args.qualitative:
+        print("saved", qualitative(args.data, args.lang, args.splits_dir))
     if args.results:
         print("saved", results_n2(args.data, args.lang))
         print("saved", results_strata(args.data, args.lang))
