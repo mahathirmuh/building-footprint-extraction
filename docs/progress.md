@@ -1710,3 +1710,46 @@ Pix2Poly (2412.07899v1, Tabel 5–6 untuk CrowdAI dan Tabel 1 untuk WHU, termasu
 (benchmark, semua tabel, grafik). Sampai 12 Nov 13.36 WIB keduanya menunggu GPU, yang dipakai kernel Jupyter proyek lain (utilisasi ±70%).
 
 **Aturan commit** (pemilik proyek, 12 Nov 2026): commit hanya atas nama `mahathirmuh`, tanpa baris co-author. Berlaku sejak `cb02497`.
+
+**Pesan commit ditulis ulang** (12 Nov 2026, 13.39 WIB, atas permintaan pemilik proyek): baris co-author dihapus dari 32 commit yang
+belum di-push (setelah `e5ca893`). Isi file, author, dan tanggal tiap commit tidak berubah, tetapi hash-nya berubah. Hash lama masih
+tercatat di bagian `docs/progress.md` sebelum catatan ini, di field `git` file tuning beku (`configs/postproc/`), dan di stempel
+`outputs/` (run, prediksi, metrik, tabel). Padanannya:
+
+| Hash lama | Hash baru | Commit |
+|---|---|---|
+| `cb07da4` | `f41ecdc` | Log the move to the lab server and the Phase 5 pilots, E and B4 seed 0 |
+| `0501b95` | `6d8a819` | Record the lab server, r = 2, contact weight 1 and E = 60 in the docs |
+| `ea69880` | `d4ffd9a` | Freeze the B4 and B5 post-processing tuned on val_tune_sub |
+| `2de5950` | `1d1423d` | Log B0, B4 and B5 on CrowdAI test and the Phase 5 completion check |
+| `806f53d` | `7696667` | Report B4 and B5 on test from the GPU once it was free |
+| `c47a2c2` | `94cbb8b` | Close Phase 5 and freeze lambda = 1 before the first FULL run |
+| `a04178a` | `0b7401c` | Freeze the FULL-P0, B5' and FULL-P2 post-processing tuned on val_tune_sub |
+| `7da0aea` | `8122cec` | Add the result tables and the decision rules of EXPERIMENTS §8 |
+| `499e966` | `76efb3b` | Record FULL-P0 as the FULL final, chosen on val_select before test |
+| `a1a1dac` | `9877bbd` | Report the N1 and N3 tests of Phase 6 on CrowdAI test |
+| `c6d9392` | `8f4ce8d` | Close Phase 6: approved, FULL-P0 is the FULL final |
+| `e53953e` | `9d6a3a7` | Start Phase 7: record the approved plan, its measured cost and the GPU rule |
+| `1c7480e` | `000fa45` | Add the attribution table of the priors (EXPERIMENTS §8 point 3) |
+| `67b83dc` | `10ee683` | Freeze the B1, B2, B3 and FULL-P1 post-processing tuned on val_tune_sub |
+| `a870169` | `b185bb8` | Read WHU patches in the tile dataset |
+| `0c1f472` | `1d75ceb` | Report the Phase 7 CrowdAI results: ablation chain and prior attribution |
+| `e9f65dc` | `888c023` | Record the approval to train B3 seeds 1 and 2 |
+| `70398b0` | `477ba29` | Report B3 over three seeds and the measured WHU cost |
+| `94a7e83` | `b02c56c` | Record the approved WHU training: FULL-P0, one seed, E = 17 |
+| `4ba1174` | `8b27d57` | Plan a full notebook that also trains from scratch |
+| `db826aa` | `cd58715` | Plan the IEEE paper and the presentation slides |
+| `effeefe` | `3e5fba7` | Record the finished WHU training and the inactive contact class |
+| `c6bd271` | `1ef3bb0` | Close Phase 7 with the owner's approval |
+| `9903547` | `921b5bc` | Record the approved Phase 8 plan and its measured cost |
+| `ffd8834` | `686ca95` | Add the Phase 8 tables: SOTA, paper numbers, strata, N2, p2p, efficiency |
+| `e1f5681` | `2baddd0` | Add the cost benchmark: parameters, network speed, post-processing time |
+| `fd77691` | `87b5654` | Copy the numbers of FFL, PolyWorld, PolyR-CNN and Pix2Poly from their PDFs |
+| `b2e006d` | `4006d55` | Draw the density figures from the written tables |
+| `68f170b` | `7895235` | Document the Phase 8 tables, the benchmark and the result figures |
+| `2ded831` | `089ab54` | Keep the labels of the result figures clear of the marks |
+| `cb02497` | `487b58a` | Freeze the WHU post-processing of FULL-P0 and B5' tuned on val_tune_sub |
+| `b0c5e64` | `fc79010` | Record the WHU tunings, the Phase 8 code and the copied paper numbers |
+
+Riwayat lama masih bisa dibuka di server ini lewat `refs/backup/pre-trailer-strip` (lokal, tidak ikut di-push). Hash lama dengan akhiran
+`-dirty` mengikuti padanan yang sama.
