@@ -1977,7 +1977,7 @@ doi 10.14358/PERS.77.7.721; Avbelj dkk. 2015, IEEE GRSL 12(1): 170–174; Ji, We
 hlm. **8484–8493** (README repo yang menulis 8473–8482 keliru); Adimoolam dkk., "Data Leakage Detection and De-duplication in Large Scale
 Geospatial Image Datasets", arXiv:2304.02296 (2023). Dahatonde dkk. (2024) tidak dipakai di paper.
 
-**Belum selesai:**
+**Belum selesai per 20.40 WIB (lihat cek "Selesai jika" di bawah untuk keadaan terakhir):**
 - **PDF paper belum dikompilasi.** Server tidak punya LaTeX, dan pengunduhan mesin LaTeX (Tectonic) ditolak pengaman otomatis karena berupa
   berkas biner dari luar. Naskah sudah diperiksa konsistensinya, tetapi belum pernah dikompilasi.
 - **PPT belum diperiksa secara visual.** Server tidak punya LibreOffice untuk merender slide; yang diperiksa baru strukturnya (18 slide,
@@ -2049,3 +2049,45 @@ Di luar daftar klaim (eksploratif, kecuali FULL+Y yang direncanakan di Fase 9):
    bersentuhan hilang. Karena itu klaim memakai versi berpasangan per instance (`PoLiS_paired`, `MTA_inst`), dan angka vendor hanya dipakai
    untuk kesebandingan dengan paper lain.
 10. **B3m dan B3m+Y eksploratif.** Keduanya ditambahkan setelah hasil ada, jadi tidak boleh dibaca sebagai klaim terencana.
+
+**Notebook penuh dieksekusi** (12 Nov 2026, 20.01–22.10 WIB; `densepoly-work/outputs_full/`, log `logs/phase10_full_nb.log`): 25 sel, tanpa
+galat. Cakupan yang disepakati: satu run FULL-P0 seed 0 dari bobot ImageNet, E = 60. Ekspor: `outputs/report/full_pipeline.html` dan
+`full_pipeline.executed.ipynb` (salinan dari `outputs_full/report/`).
+- Kecepatan 13,10 langkah/s (benchmark 200 iterasi); training 7.208 s (2,00 jam; run beku 6.540 s, saat itu GPU tidak dibagi dengan
+  training lain). Checkpoint terbaik epoch 59, `fg_iou` `val_select` 0,8876 (run beku: epoch 58, 0,8869). Kelas kontak juga tidak aktif
+  di run ini (F1 0 di semua epoch), sama dengan run beku seed 0.
+- Tuning di `val_tune_sub` (308 s): τ 0,6, m_min 16, A_min 10, ρ 0,93, k 0,03, δ 10; AP 62,90, `PoLiS_paired` 1,571. Run beku memilih
+  m_min 8, A_min 20, k 0,02 (AP 62,74); selisih antar-titik grid itu memang di bawah 0,2 AP. File tuning notebook disimpan di
+  `outputs_full/configs/`, bukan di repo.
+- Ground truth disalin dari keluaran beku, karena anotasi mentah tidak ada di server (lihat catatan di atas).
+
+| `crowdai/test`, FULL-P0 seed 0 | AP | AP50 | AP_b | IoU | C-IoU | PoLiS | MTA | `PoLiS_paired` | `MTA_inst` | merge rate | split rate |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Notebook (dari awal) | 62,72 | 86,20 | 36,87 | 88,16 | 75,82 | 1,792 | 36,15 | 1,606 | 36,59 | 2,23 | 3,62 |
+| Run beku | 62,73 | 86,14 | 37,58 | 88,41 | 75,22 | 1,772 | 36,07 | 1,582 | 36,33 | 2,18 | 3,32 |
+| Selisih | −0,01 | +0,05 | −0,71 | −0,25 | +0,60 | +0,019 | +0,08 | +0,024 | +0,26 | +0,04 | +0,30 |
+| SD antar-seed run beku | 0,69 | 0,02 | 1,19 | 0,35 | 0,64 | 0,044 | 0,24 | 0,039 | 0,30 | 0,20 | 0,37 |
+
+Dua run dengan seed yang sama tidak identik per bit (operasi GPU tidak deterministik, dan tuning memilih titik grid yang berbeda), tetapi
+semua selisih berada di dalam satu SD antar-seed, kecuali AP50 (+0,05 poin; SD-nya sendiri hanya 0,02). Jadi alur penuh dari training
+sampai tabel bisa diulang dan memberi angka yang setara.
+
+**Cek "Selesai jika" Fase 10:**
+
+| Kriteria | Status |
+|---|---|
+| Satu perintah membuat ulang semua tabel dan gambar | ya: `python scripts/build_report.py` |
+| `notebooks/demo_hasil.ipynb` lolos dijalankan dari atas ke bawah dan ekspor HTML-nya ada | ya, di server ini (kernel baru, 12 s); tidak diuji di Colab, sesuai keputusan |
+| `notebooks/full_pipeline.ipynb` dieksekusi sesuai cakupan dan ekspornya ada | ya |
+| PDF paper dikompilasi dari sumber LaTeX | **belum**: tidak ada mesin LaTeX di server |
+| PPT presentasi ada | ya (`slides/densepoly.pptx`); belum diperiksa secara visual |
+| `docs/progress.md` lengkap | ya |
+
+`pytest -q`: 726 lolos. Fase 10 belum bisa ditutup sampai PDF paper dikompilasi.
+
+**Yang masih butuh pemilik proyek:**
+1. Mengompilasi `paper/main.tex`: unduh Tectonic ke `mahathir/tools/tectonic` (rilis resmi di GitHub, satu berkas biner), atau unggah
+   folder `paper/` ke Overleaf. Kesalahan kompilasi, bila ada, baru terlihat saat itu.
+2. Membuka `slides/densepoly.pptx` di PowerPoint (font Raleway) dan memeriksa tata letaknya; menambahkan logo ITS bila diinginkan.
+3. Memutuskan judul akhir (naskah memakai judul kerja berbahasa Inggris) dan memeriksa blok penulis di `paper/main.tex` (tanpa email).
+4. Menyetujui penutupan Fase 10.

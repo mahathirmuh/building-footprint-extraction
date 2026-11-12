@@ -71,8 +71,10 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   Eksploratif (12 Nov 2026): B3m (mask B3 + `mar`) AP 64,89, C-IoU 76,97, mengungguli FULL-P0 di semua metrik kecuali merge rate (2,81% lawan 1,96%).
   Fase 9 selesai dan disetujui (12 Nov 2026; FULL+Y masuk laporan): seed YOLOv8n-OBB menurunkan merge rate FULL-P0 1,96% → 1,52% (Δ −0,45 [−0,56; −0,35]) dan B3m
   2,81% → 2,14%, dengan AP setara dan split rate naik (+0,24 dan +0,37 poin). B3m+Y tetap di atas FULL+Y di AP (64,79 lawan 61,87).
-  Fase 10 berjalan sejak 12 Nov 2026: `notebooks/full_pipeline.ipynb`, `paper/` (naskah IEEEtran, belum dikompilasi ke PDF), dan
-  `slides/densepoly.pptx` sudah ada; `notebooks/demo_hasil.ipynb` belum. Rinciannya di `docs/progress.md`.
+  Fase 10 berjalan sejak 12 Nov 2026 dan tinggal menunggu pemilik proyek: `notebooks/full_pipeline.ipynb` (dieksekusi; run dari awal
+  FULL-P0 seed 0 AP 62,72, run beku 62,73), `notebooks/demo_hasil.ipynb`, `paper/` (naskah IEEEtran, **belum dikompilasi ke PDF**:
+  server tidak punya LaTeX), `slides/densepoly.pptx` (belum diperiksa visual), dan ringkasan keterbatasan sudah ada. Rinciannya dan
+  daftar yang masih butuh pemilik proyek ada di akhir `docs/progress.md`.
 
 ## Cara bekerja di proyek ini
 
