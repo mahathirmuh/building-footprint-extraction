@@ -265,7 +265,7 @@ def save_result(fig, dataset: str, name: str) -> Path:
     target = paths.out_root() / "figures" / "results" / f"{dataset}_{name}.png"
     target.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(target, dpi=200, facecolor="white")
-    fig.savefig(target.with_suffix(".pdf"), facecolor="white")
+    fig.savefig(target.with_suffix(".pdf"), facecolor="white", metadata={"CreationDate": None})  # same bytes each time
     plt.close(fig)
     return target
 

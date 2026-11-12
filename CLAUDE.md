@@ -230,6 +230,7 @@ python scripts/train_yolo.py --data crowdai --weights yolov8n-obb.pt          # 
 python scripts/predict_yolo.py --data crowdai --split val_tune_sub            # kotak per citra, dipakai --exp full_y
 python scripts/tables.py --data crowdai && python scripts/figures.py --data crowdai --results --qualitative
 python scripts/paper_tables.py                                                # paper/tables/, paper/figures/, slides/numbers.json
+python scripts/build_report.py                                                # satu perintah: semua tabel, gambar, dan tabel paper
 ```
 
 ## Jebakan teknis (baca sebelum menulis kode)
