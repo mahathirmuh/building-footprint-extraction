@@ -296,9 +296,14 @@ Ringkasan hasil uji kewarasan ditulis ke `docs/sanity_report.md` (tanggal, versi
 
 ## 7. Pelaporan
 
-- `scripts/tables.py` dan `scripts/figures.py` hanya membaca file JSON/parquet di `outputs/metrics/`. Tidak ada angka
-  yang diketik tangan.
-- Setiap sel tabel bisa ditelusuri ke path JSON (`scripts/tables.py --trace` mencetak sumber tiap sel).
+- `scripts/tables.py` hanya membaca file JSON/parquet di `outputs/metrics/` (dan `configs/paper_numbers.yaml` untuk
+  angka paper lain). `scripts/figures.py --results` hanya membaca tabel JSON buatan `scripts/tables.py` di
+  `outputs/tables/`. Tidak ada angka yang diketik tangan.
+- Setiap tabel bisa ditelusuri ke path JSON: `scripts/tables.py --trace` mencetak file sumber tiap tabel, dan JSON
+  tabelnya mencatat file itu beserta commit pembuatnya.
+- Tabel Fase 8 (`eval/reports.py`): `sota` (FULL final lawan HiSup di `val_clean`, §8 poin 5), `paper` (angka paper
+  lain), `strata` (semua eksperimen per strata), `n2` (Δ per strata dan Δpadat − Δjarang, §8 poin 4), `p2p` (WHU dengan
+  aturan dan GT Pix2Poly, di samping angka paper), `efficiency` (hasil `scripts/benchmark.py`).
 - Angka dari paper lain disimpan di `configs/paper_numbers.yaml` dengan field `source` (paper, tabel, halaman) dan
   `split_note` (misalnya "val CrowdAI, bocor").
 - Laporan menjelaskan perilaku metrik vendor (§2.2) dan menyebut varian mana yang dipakai di tiap tabel.

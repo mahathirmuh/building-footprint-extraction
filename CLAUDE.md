@@ -180,7 +180,8 @@ densepoly/
 │   ├── losses.py  train.py  infer.py
 │   ├── postproc/    # markers.py, watershed.py, contours.py, regularize.py, polygonize.py, yolo_seeds.py
 │   ├── classical/b0.py
-│   └── eval/        # coco_io.py, pixel.py, instance.py, vertex.py, orientation.py, run_eval.py, stats.py, tables.py
+│   └── eval/        # coco_io.py, pixel.py, instance.py, vertex.py, orientation.py, run_eval.py, stats.py, tables.py,
+│                    # reports.py (tabel Fase 8), efficiency.py
 ├── third_party/pix2poly_metrics/            # polis.py, angle_eval.py, cIoU.py (MIT, dengan catatan perbaikan)
 ├── scripts/         # CLI: prepare_*, dedup_crowdai, make_density, precompute_priors, train, predict, evaluate,
 │                    #      tune_postproc, pack_colab, benchmark, tables, figures
@@ -214,7 +215,8 @@ python scripts/tune_postproc.py --data crowdai --exp b4                       # 
 python scripts/predict.py --data crowdai --exp b5 --seed 0 --split test --from-channels
 python scripts/predict.py --data crowdai --exp full_p2 --seed 0 --split test
 python scripts/evaluate.py --data crowdai --exp full_p2 --seed 0 --split test
-python scripts/tables.py && python scripts/figures.py
+python scripts/benchmark.py --data crowdai --exp full_p0 --seed 0             # parameter, FPS, waktu post-processing
+python scripts/tables.py --data crowdai && python scripts/figures.py --data crowdai --results
 ```
 
 ## Jebakan teknis (baca sebelum menulis kode)
