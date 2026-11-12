@@ -179,6 +179,18 @@ def efficiency_file(dataset: str, exp: str, run: str) -> Path:
     return out_root() / "metrics" / dataset / exp / run / "efficiency.json"
 
 
+def yolo_dir(dataset: str) -> Path:
+    """Everything of the FULL+Y detector of a dataset: its exported training set, its runs and its predicted boxes."""
+    _check(dataset)
+    return out_root() / "yolo" / dataset
+
+
+def yolo_boxes_file(dataset: str, split: str) -> Path:
+    """Boxes the detector predicted on a split: {image id: [[x, y, confidence, w, h, angle], ...]} (docs/METHOD.md §8)."""
+    _check(dataset, split)
+    return yolo_dir(dataset) / "boxes" / f"{split}.json"
+
+
 def gt_file(dataset: str, split: str, variant: str | None = None) -> Path:
     """COCO ground truth restricted to one split (all of its images, including empty ones), as evaluated
     (densepoly.eval.coco_io); variant as in annotation_file."""

@@ -13,6 +13,7 @@ from skimage.measure import label
 from skimage.segmentation import watershed
 
 from densepoly.postproc.markers import drop_small, foreground, label4, markers
+from densepoly.postproc.yolo_seeds import merge_seeds
 
 
 @dataclass(frozen=True)
@@ -49,11 +50,21 @@ def watershed_instances(landscape: np.ndarray, marker_labels: np.ndarray, fg: np
 
 
 def three_class_instances(
-    p_bg: np.ndarray, p_b: np.ndarray, p_k: np.ndarray, tau: float, marker_min_px: int, min_area: int
+    p_bg: np.ndarray,
+    p_b: np.ndarray,
+    p_k: np.ndarray,
+    tau: float,
+    marker_min_px: int,
+    min_area: int,
+    seeds: np.ndarray | None = None,
 ) -> Instances:
-    """§6.2: F, markers, watershed of −P_b, unreached components, 4-connected parts; score = mean 1 − P_bg."""
+    """§6.2: F, markers, watershed of −P_b, unreached components, 4-connected parts; score = mean 1 − P_bg.
+    seeds: (n, 2) centres (x, y) of a detector's boxes, merged into the markers after the m_min filter (§8, FULL+Y)."""
     fg = foreground(p_bg)
-    instance_map = watershed_instances(-p_b, markers(p_b, p_k, fg, tau, marker_min_px), fg, min_area)
+    marker_labels = markers(p_b, p_k, fg, tau, marker_min_px)
+    if seeds is not None:
+        marker_labels = merge_seeds(marker_labels, fg, seeds)
+    instance_map = watershed_instances(-p_b, marker_labels, fg, min_area)
     return Instances(instance_map, mean_per_instance(instance_map, 1.0 - p_bg))
 
 
