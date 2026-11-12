@@ -1643,7 +1643,7 @@ ulang, dan kelas kontak yang tidak aktif dilaporkan sebagai keterbatasan.
 
 ---
 
-## Fase 8 — Perbandingan SOTA dan analisis kepadatan (N2) (sedang berjalan)
+## Fase 8 — Perbandingan SOTA dan analisis kepadatan (N2) (selesai dan disetujui 12 November 2026)
 
 **Rencana, diajukan 11 Nov 2026 dan disetujui pemilik proyek 12 Nov 2026, ±13.10 WIB ("lanjut"):**
 - **SOTA di `crowdai/val_clean` (212 tile):** FULL-P0 3 seed lawan prediksi rilisan HiSup (sudah dievaluasi di Fase 3), total dan per
@@ -1827,4 +1827,20 @@ Regularisasi berpandu θ menambah ±7 ms per tile di atas B4. Pembanding dari pa
 (dilaporkan di paper, perangkat berbeda); paper HiSup tidak melaporkan FPS atau jumlah parameter.
 
 **Cek "Selesai jika" Fase 8:** semua tabel dibuat ulang oleh skrip (`scripts/tables.py --data crowdai|whu`), dan setiap tabel mencatat file
-JSON sumbernya (`--trace`). `pytest -q`: 684 lolos. Menunggu persetujuan pemilik proyek.
+JSON sumbernya (`--trace`). `pytest -q`: 684 lolos.
+
+**Persetujuan:** Fase 8 disetujui pemilik proyek pada 12 Nov 2026 ("lanjut"), bersama urutan berikutnya:
+1. Satu eksperimen eksploratif, regularisasi `mar` di atas mask B3 (lihat bagian di bawah).
+2. Fase 9 dilewati.
+3. Fase 10 dengan bingkai studi evaluasi: kebocoran data menggelembungkan angka literatur; head θ merapikan poligon tanpa anotasi poligon
+   dengan efek kecil tetapi konsisten; prior morfologi dan kelas kontak tidak membantu. Paper berbahasa Inggris, PPT berbahasa Indonesia,
+   notebook penuh dijalankan untuk satu run FULL-P0 seed 0. Judul kerja belum diubah; menunggu keputusan pemilik proyek.
+
+---
+
+## Fase 9 — (Opsional) FULL+Y: dilewati (12 November 2026)
+
+Tidak dikerjakan, dengan persetujuan pemilik proyek. Alasannya: fase ini butuh kode baru (label OBB, penggabungan seed), training YOLOv8n-OBB,
+dan tuning `c_y`, sedangkan klaim N1–N3 tidak bergantung padanya, dan waktunya lebih berguna untuk bahan Fase 10. Baris FULL+Y tidak ada di
+tabel. Yang tetap terbuka sebagai saran lanjutan: rumah bersentuhan masih titik lemah (merge rate 7,8% di CrowdAI dan 14,7% di WHU pada
+tile/patch bersentuhan), dan seed dari detektor adalah salah satu cara untuk mengatasinya.
