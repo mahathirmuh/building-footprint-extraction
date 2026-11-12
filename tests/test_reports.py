@@ -273,3 +273,20 @@ def test_script_writes_the_new_tables_and_traces_their_sources(splits, capsys):
     out = capsys.readouterr().out.splitlines()
     assert out[0] == "strata:" and "  metrics/crowdai/b4/seed0/test.json" in out
     assert "  metrics/crowdai/full_p0/seed2/test.json" in out
+
+
+def test_result_figures_are_drawn_from_the_written_tables(splits):
+    install(b3="a", b4="a", b5="a", b5p="a", full_p0="gt", full_p2="gt")
+    figures = importlib.util.spec_from_file_location("figures_script", paths.REPO_ROOT / "scripts" / "figures.py")
+    module = importlib.util.module_from_spec(figures)
+    figures.loader.exec_module(module)
+    with pytest.raises(FileNotFoundError, match="scripts/tables.py"):
+        module.read_table("crowdai", "no_such_table")
+    tables.write_table("crowdai", "strata", splits_dir=splits)
+    tables.write_table("crowdai", "n2", n_rep=20, splits_dir=splits)
+    module.main(["--data", "crowdai", "--results", "--lang", "id"])
+    folder = paths.out_root() / "figures" / "results"
+    for name in ("crowdai_n2_id.png", "crowdai_n2_id.pdf", "crowdai_strata_id.png", "crowdai_strata_id.pdf"):
+        assert (folder / name).stat().st_size > 1000
+    assert module.number(-0.0371, module.WORDS["id"], 3, signed=True) == "-0,037"
+    assert module.number(1.5, module.WORDS["en"]) == "1.50"

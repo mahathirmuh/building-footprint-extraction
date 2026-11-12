@@ -1,7 +1,15 @@
-"""Figures. Phase 2 QA (PLAN.md):
+"""Figures. Phase 2 QA (PLAN.md) and the result figures of Phase 8:
 
     python scripts/figures.py --qa-labels --data crowdai    # 12 val_tune tiles: RGB, classes, θ, w, MBI, gap map
     python scripts/figures.py --qa-gap-mode --data crowdai  # 10 val_tune tiles: gap map in max vs contrast mode
+    python scripts/figures.py --results --data crowdai      # density analysis, from the tables of scripts/tables.py
+
+--results draws no number of its own: it reads $DENSEPOLY_OUT/tables/<dataset>/n2.json (effect of each comparison per
+density stratum, with its 95% CI) and strata.json (metrics per stratum), and writes <dataset>_n2 and <dataset>_strata as
+PNG and PDF to $DENSEPOLY_OUT/figures/results/. --lang picks the language of the labels (en for the paper, id for the
+slides).
+
+The QA figures:
 
 Tiles come from the frozen density strata of val_tune (seed 0), so that sparse, dense and touching tiles all appear;
 the test split is never shown. Priors are computed on the fly with the dataset's settings (WHU on the whole official
@@ -25,6 +33,7 @@ from omegaconf import OmegaConf  # noqa: E402
 
 from densepoly import paths  # noqa: E402
 from densepoly.config import load_config  # noqa: E402
+from densepoly.eval.tables import LABELS  # noqa: E402
 from densepoly.labels.boundary_weight import boundary_mask  # noqa: E402
 from densepoly.labels.instances import load_instances  # noqa: E402
 from densepoly.labels.targets import targets_from_config  # noqa: E402
@@ -183,15 +192,139 @@ def qa_gap_mode(dataset: str, splits_dir: Path | None = None, seed: int = 0) -> 
     return save(fig, dataset, "gap_mode")
 
 
+# --- result figures (Phase 8): colours of a validated palette, text always in ink, one y axis per panel
+
+SERIES_COLOURS = ("#2a78d6", "#eb6834", "#1baf7a")  # at most three series per panel
+SERIES_MARKERS = ("o", "s", "D")  # a second cue next to the colour, for print
+INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
+DENSITY, TOUCHING = ("jarang", "sedang", "padat"), ("bersentuhan", "tidak_bersentuhan")
+STRATA_SERIES = {"crowdai": ("b3", "b4", "full_p0"), "whu": ("b5p", "full_p0")}
+STRATA_PANELS = ("AP", "merge_rate", "PoLiS_paired")
+SCALE = {"AP": 100, "merge_rate": 100, "split_rate": 100, "CIoU": 100}  # shown in percent
+WORDS = {
+    "en": {
+        "jarang": "sparse", "sedang": "medium", "padat": "dense",
+        "bersentuhan": "touching", "tidak_bersentuhan": "not touching",
+        "AP": "AP (%)", "merge_rate": "merge rate (%)", "PoLiS_paired": "PoLiS, paired (px)",
+        "MTA_inst": "MTA per instance (°)", "delta": "Δ", "points": "points",
+        "density": "tiles by number of buildings", "tiles": "tiles", "decimal": ".",
+    },
+    "id": {
+        "jarang": "jarang", "sedang": "sedang", "padat": "padat",
+        "bersentuhan": "bersentuhan", "tidak_bersentuhan": "tidak bersentuhan",
+        "AP": "AP (%)", "merge_rate": "merge rate (%)", "PoLiS_paired": "PoLiS berpasangan (px)",
+        "MTA_inst": "MTA per instance (°)", "delta": "Δ", "points": "poin",
+        "density": "tile menurut jumlah bangunan", "tiles": "tile", "decimal": ",",
+    },
+}  # fmt: skip
+
+
+def read_table(dataset: str, name: str) -> dict:
+    file = paths.out_root() / "tables" / dataset / f"{name}.json"
+    if not file.exists():
+        raise FileNotFoundError(f"{file} does not exist: run scripts/tables.py --data {dataset} --table {name} first")
+    return read_json(file)
+
+
+def number(value: float, words: dict, digits: int = 2, signed: bool = False) -> str:
+    return f"{value:{'+' if signed else ''}.{digits}f}".replace(".", words["decimal"])
+
+
+def style(ax) -> None:
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(GRID)
+    ax.tick_params(colors=MUTED, length=0, labelsize=9)
+    ax.grid(axis="y", color=GRID, linewidth=0.8)
+    ax.set_axisbelow(True)
+
+
+def save_result(fig, dataset: str, name: str) -> Path:
+    target = paths.out_root() / "figures" / "results" / f"{dataset}_{name}.png"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(target, dpi=200, facecolor="white")
+    fig.savefig(target.with_suffix(".pdf"), facecolor="white")
+    plt.close(fig)
+    return target
+
+
+def results_n2(dataset: str, lang: str = "en") -> Path:
+    """Δ of every comparison of the n2 table in each stratum, with its 95% CI: one panel per comparison and metric."""
+    words, table = WORDS[lang], read_table(dataset, "n2")
+    panels = [(name, spec, metric) for name, spec in table["comparisons"].items() for metric in spec["metrics"]]
+    fig, axes = plt.subplots(1, len(panels), figsize=(3.6 * len(panels), 3.4), squeeze=False)
+    for ax, (name, spec, metric) in zip(axes[0], panels, strict=True):
+        groups = [g for g in (*DENSITY, *TOUCHING) if g in spec["per_stratum"]]
+        scale = SCALE.get(metric, 1)
+        xs = [i + (0.6 if g in TOUCHING else 0.0) for i, g in enumerate(groups)]  # a gap before the second grouping
+        deltas = np.array([spec["per_stratum"][g][metric]["delta"] for g in groups], float) * scale
+        cis = np.array([spec["per_stratum"][g][metric]["ci95"] or [np.nan, np.nan] for g in groups], float) * scale
+        ax.axhline(0, color=MUTED, linewidth=1, linestyle=(0, (4, 3)))
+        ax.errorbar(
+            xs, deltas, yerr=[deltas - cis[:, 0], cis[:, 1] - deltas], fmt="o", color=SERIES_COLOURS[0],
+            markersize=7, markeredgecolor="white", markeredgewidth=1.5, elinewidth=1.5, capsize=3,
+        )  # fmt: skip
+        for x, delta in zip(xs, deltas, strict=True):
+            ax.annotate(number(delta, words, 3 if scale == 1 and abs(delta) < 1 else 2, signed=True), (x, delta),
+                        xytext=(8, 0), textcoords="offset points", va="center", fontsize=8, color=INK)  # fmt: skip
+        ax.set_xticks(xs, [words[g].replace(" ", "\n") for g in groups])
+        ax.set_xlim(min(xs) - 0.5, max(xs) + 0.9)
+        unit = f"{words['delta']} {words[metric]}".replace("(%)", f"({words['points']})")
+        ax.set_ylabel(unit, color=MUTED, fontsize=9)
+        left, right = (LABELS[exp] for exp in name.split("->"))
+        ax.set_title(f"{spec['name']}: {left} → {right}", color=INK, fontsize=10, loc="left")
+        style(ax)
+    fig.tight_layout()
+    return save_result(fig, dataset, "n2" if lang == "en" else f"n2_{lang}")
+
+
+def results_strata(dataset: str, lang: str = "en") -> Path:
+    """Metrics per density stratum of up to three experiments, mean over the seeds with ± SD bars; one panel per metric."""
+    words, table = WORDS[lang], read_table(dataset, "strata")
+    series = [exp for exp in STRATA_SERIES[dataset] if exp in table["rows"]]
+    fig, axes = plt.subplots(1, len(STRATA_PANELS), figsize=(3.6 * len(STRATA_PANELS), 3.4), squeeze=False)
+    xs = np.arange(len(DENSITY))
+    for ax, metric in zip(axes[0], STRATA_PANELS, strict=True):
+        scale = SCALE.get(metric, 1)
+        for k, exp in enumerate(series):
+            summaries = [table["rows"][exp]["strata"][g][metric]["summary"] for g in DENSITY]
+            if any(s is None for s in summaries):
+                continue
+            means = np.array([s["mean"] for s in summaries]) * scale
+            sds = np.array([s["sd"] or 0.0 for s in summaries]) * scale
+            ax.errorbar(
+                xs, means, yerr=sds, color=SERIES_COLOURS[k], marker=SERIES_MARKERS[k], markersize=7,
+                markeredgecolor="white", markeredgewidth=1.5, linewidth=2, elinewidth=1.2, capsize=2,
+                label=LABELS[exp],
+            )  # fmt: skip
+            ax.annotate(LABELS[exp], (xs[-1], means[-1]), xytext=(9, 0), textcoords="offset points",
+                        va="center", fontsize=8, color=INK)  # fmt: skip
+        sizes = [table["sizes"][g]["n_images"] for g in DENSITY]
+        ax.set_xticks(xs, [f"{words[g]}\n({n} {words['tiles']})" for g, n in zip(DENSITY, sizes, strict=True)])
+        ax.set_xlim(-0.35, len(DENSITY) - 1 + 0.75)
+        ax.set_title(words[metric], color=INK, fontsize=10, loc="left")
+        style(ax)
+    axes[0][0].legend(frameon=False, fontsize=8, labelcolor=INK, loc="best")
+    fig.supxlabel(words["density"], color=MUTED, fontsize=9)
+    fig.tight_layout()
+    return save_result(fig, dataset, "strata" if lang == "en" else f"strata_{lang}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data", choices=paths.DATASETS, required=True)
     parser.add_argument("--qa-labels", action="store_true")
     parser.add_argument("--qa-gap-mode", action="store_true")
+    parser.add_argument("--results", action="store_true", help="the density figures, from the written tables")
+    parser.add_argument("--lang", choices=sorted(WORDS), default="en", help="language of the labels of --results")
     parser.add_argument("--splits-dir", type=Path, help="folder of the density strata (default: repo splits/)")
     args = parser.parse_args(argv)
-    if not (args.qa_labels or args.qa_gap_mode):
-        parser.error("nothing to do: give --qa-labels and/or --qa-gap-mode")
+    if not (args.qa_labels or args.qa_gap_mode or args.results):
+        parser.error("nothing to do: give --qa-labels, --qa-gap-mode and/or --results")
+    if args.results:
+        print("saved", results_n2(args.data, args.lang))
+        print("saved", results_strata(args.data, args.lang))
     if args.qa_labels:
         print("saved", qa_labels(args.data, args.splits_dir))
     if args.qa_gap_mode:
