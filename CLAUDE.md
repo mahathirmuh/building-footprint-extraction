@@ -69,6 +69,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   aturan Pix2Poly: C-IoU 66,83 (paper: HiSup 79,62, Pix2Poly 81,63; kira-kira). "Efek N1 terbesar di area padat" tidak didukung (§8 poin 4:
   `MTA_inst` ya, `PoLiS_paired` tidak). FULL-P0: 20,81 juta parameter, 42 FPS alur penuh.
   Eksploratif (12 Nov 2026): B3m (mask B3 + `mar`) AP 64,89, C-IoU 76,97, mengungguli FULL-P0 di semua metrik kecuali merge rate (2,81% lawan 1,96%).
+  Fase 9 (12 Nov 2026, menunggu persetujuan): seed YOLOv8n-OBB menurunkan merge rate FULL-P0 1,96% → 1,52% (Δ −0,45 [−0,56; −0,35]) dan B3m
+  2,81% → 2,14%, dengan AP setara dan split rate naik (+0,24 dan +0,37 poin). B3m+Y tetap di atas FULL+Y di AP (64,79 lawan 61,87).
 
 ## Cara bekerja di proyek ini
 

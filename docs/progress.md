@@ -1869,7 +1869,7 @@ Semua selisih searah di ketiga seed. Di strata padat polanya sama (B3m → FULL-
 
 ---
 
-## Fase 9 — (Opsional) FULL+Y: YOLOv8n-OBB sebagai seed (dikerjakan sejak 12 November 2026)
+## Fase 9 — (Opsional) FULL+Y: YOLOv8n-OBB sebagai seed (semua run selesai 12 November 2026, menunggu persetujuan)
 
 Pada 12 Nov 2026 fase ini sempat dicatat "dilewati" atas saran saya. Pemilik proyek lalu memutuskan fase ini **tetap dikerjakan**
 ("fase 9 tetap dikerjakan"), jadi catatan itu dicabut. Urutan kerja: eksperimen eksploratif B3m (berjalan sendiri), Fase 9, lalu Fase 10.
@@ -1895,3 +1895,54 @@ Pengukuran awal 2 epoch di 2.000 tile: 25 s. Training penuh dimulai 12 Nov 18.13
 
 **Antrean** (lepas dari sesi): `densepoly-work/phase9_yolo.sh` (ekspor, training, kotak `val_tune_sub`), lalu `phase9_eval.sh` (tuning `c_y`
 FULL+Y dan B3m+Y, commit dan push file beku, kotak `test`, prediksi dan evaluasi 3 seed, tabel, selisih berpasangan, benchmark).
+
+**Detektor** (12 Nov 2026, 18.13–19.00 WIB): YOLOv8n-OBB, 100 epoch, 2.820 s. Di `val_select` (epoch 100): presisi 0,932, recall 0,849, mAP50 0,917.
+3,09 juta parameter. Kotak (confidence ≥ 0,05): 10.226 di `val_tune_sub`, 30.362 di `test`; pada `c_y` terpilih tersisa 7.339 dan 21.763 (GT `test`: 25.145 bangunan).
+
+**Tuning `c_y`** (`val_tune_sub`, 29 s per model; parameter lain diwarisi dari file beku FULL-P0 dan B3m), dibekukan dan di-push (`c6b3edb`) sebelum test:
+
+| Model | `c_y` 0,15 | 0,25 | 0,4 | terpilih | tanpa seed |
+|---|---|---|---|---|---|
+| FULL+Y (AP) | 62,38 | 62,64 | 62,96 | 0,4 | FULL-P0 62,74 |
+| B3m+Y (AP) | 64,68 | 64,83 | 65,11 | 0,4 | B3m 65,00 |
+
+`c_y` terpilih ada di ujung atas grid dan AP masih naik, jadi nilai lebih tinggi mungkin lebih baik. Grid tidak diperluas, karena sudah
+dibekukan sebelum ada hasil (`docs/METHOD.md` §10).
+
+**Hasil di `crowdai/test`** (3 seed jaringan, satu detektor; `outputs/tables/crowdai/{ablation,strata}.md`, selisih berpasangan
+`densepoly-work/phase9_steps.py` → `logs/phase9_steps.json`, bootstrap 1.000 replikasi):
+
+| Model | AP | AP_b | C-IoU | PoLiS ↓ | MTA ↓ | merge rate ↓ | merge rate, tile bersentuhan ↓ | split rate ↓ (padat) |
+|---|---|---|---|---|---|---|---|---|
+| FULL-P0 | 61,94 ± 0,68 | 36,22 | 74,55 | 1,823 | 36,34 | 1,96 ± 0,20 | 7,81 ± 2,01 | 3,11 |
+| **FULL+Y** | 61,87 ± 0,70 | 36,18 | 74,48 | 1,850 | 36,31 | 1,52 ± 0,10 | 6,41 ± 1,02 | 3,21 |
+| B3m (eksploratif) | 64,89 ± 0,01 | 41,35 | 76,97 | 1,657 | 36,16 | 2,81 ± 0,16 | 11,86 ± 0,42 | 1,79 |
+| **B3m+Y** (eksploratif) | 64,79 ± 0,09 | 41,05 | 76,88 | 1,678 | 36,14 | 2,14 ± 0,12 | 8,92 ± 0,35 | 1,98 |
+
+| Selisih berpasangan [CI 95%] | Tile | AP | merge rate | split rate | recall@0,5 | C-IoU |
+|---|---|---|---|---|---|---|
+| FULL-P0 → FULL+Y | semua | −0,07 [−0,25; +0,05] | −0,45 [−0,56; −0,35] | +0,24 [+0,19; +0,30] | +0,22 [+0,15; +0,29] | −0,07 [−0,12; −0,04] |
+| FULL-P0 → FULL+Y | padat | +0,19 [+0,03; +0,33] | −0,44 [−0,59; −0,31] | +0,10 [+0,05; +0,15] | +0,23 [+0,13; +0,32] | −0,03 [−0,04; −0,01] |
+| FULL-P0 → FULL+Y | bersentuhan | +0,66 [−0,06; +1,34] | −1,41 [−2,21; −0,72] | +0,18 [+0,02; +0,42] | +0,98 [+0,48; +1,54] | −0,09 [−0,29; +0,05] |
+| B3m → B3m+Y | semua | −0,10 [−0,28; +0,21] | −0,67 [−0,82; −0,53] | +0,37 [+0,30; +0,44] | +0,39 [+0,29; +0,51] | −0,08 [−0,13; −0,04] |
+| B3m → B3m+Y | padat | +0,26 [−0,02; +0,51] | −0,68 [−0,88; −0,49] | +0,19 [+0,13; +0,27] | +0,44 [+0,31; +0,59] | −0,05 [−0,08; −0,02] |
+| B3m → B3m+Y | bersentuhan | +1,64 [+0,52; +3,26] | −2,94 [−4,49; −1,64] | +0,49 [+0,13; +0,96] | +2,13 [+1,08; +3,36] | +0,07 [−0,18; +0,36] |
+| B3m+Y → FULL+Y | semua | −2,92 [−3,17; −2,72] | −0,63 [−0,76; −0,49] | +1,40 [+1,25; +1,54] | −0,88 [−1,07; −0,68] | −2,41 [−2,65; −2,15] |
+
+Arah merge rate, split rate, dan recall sama di ketiga seed pada kedua model.
+
+- **Seed YOLO bekerja sesuai tujuannya.** Merge rate turun ±23% secara relatif di FULL-P0 (1,96 → 1,52) dan ±24% di B3m (2,81 → 2,14), dan
+  lebih banyak rumah ditemukan (recall naik). Di tile bersentuhan, turunnya 1,4 dan 2,9 poin.
+- **Harganya: rumah terbelah bertambah** (+0,24 dan +0,37 poin), sehingga AP keseluruhan tidak berubah (CI memuat 0). Di strata padat AP FULL+Y
+  naik tipis (+0,19), dan di tile bersentuhan AP B3m+Y naik 1,64 poin.
+- **Peringkat keseluruhan tidak berubah.** B3m+Y tetap mengungguli FULL+Y di AP (+2,92), AP_b, C-IoU, PoLiS, dan split rate. FULL+Y tetap
+  unggul di merge rate (1,52% lawan 2,14%; di tile bersentuhan 6,41% lawan 8,92%). Seed YOLO memperkecil selisih merge rate itu, tetapi
+  tidak menutupnya.
+- **Biaya** (RTX 5090, `outputs/tables/crowdai/efficiency.md`): detektor menambah 3,09 juta parameter dan 2,2 ms per tile (batch 32), dan
+  penggabungan seed menambah ±1,3 ms post-processing (17,17 ms lawan 15,89 ms; satu thread CPU). FPS alur penuh tanpa detektor 39,6 (FULL-P0
+  42,3); dengan waktu detektor ±36.
+- **Keterbatasan:** satu detektor (seed 0) untuk ketiga seed jaringan, jadi SD tidak memuat variasi detektor; `c_y` di ujung grid; B3m+Y
+  eksploratif dan cara pemecahannya (watershed peta jarak) tidak disetel.
+
+**Cek "Selesai jika" Fase 9:** baris FULL+Y ada di tabel ablasi, per strata, dan efisiensi beserta biayanya. `pytest -q`: 713 lolos.
+Keputusan "masuk laporan atau tidak" menunggu pemilik proyek; saran: masuk, sebagai varian yang menurunkan merge rate dengan AP setara.
