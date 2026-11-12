@@ -226,8 +226,24 @@ def read_table(dataset: str, name: str) -> dict:
     return read_json(file)
 
 
+DIGITS = {"PoLiS_paired": 3}
+
+
 def number(value: float, words: dict, digits: int = 2, signed: bool = False) -> str:
-    return f"{value:{'+' if signed else ''}.{digits}f}".replace(".", words["decimal"])
+    return f"{value:{'+' if signed else ''}.{digits}f}".replace(".", words["decimal"]).replace("-", "−")
+
+
+def spread(positions: list[float], gap: float) -> list[float]:
+    """The positions moved apart, in their order, so that neighbours are at least gap away; their mean is kept."""
+    order = sorted(range(len(positions)), key=positions.__getitem__)
+    placed = []
+    for i in order:
+        placed.append(max(positions[i], placed[-1] + gap) if placed else positions[i])
+    shift = sum(positions[i] for i in order) / len(order) - sum(placed) / len(placed) if placed else 0.0
+    result = [0.0] * len(positions)
+    for i, value in zip(order, placed, strict=True):
+        result[i] = value + shift
+    return result
 
 
 def style(ax) -> None:
@@ -253,11 +269,12 @@ def results_n2(dataset: str, lang: str = "en") -> Path:
     """Δ of every comparison of the n2 table in each stratum, with its 95% CI: one panel per comparison and metric."""
     words, table = WORDS[lang], read_table(dataset, "n2")
     panels = [(name, spec, metric) for name, spec in table["comparisons"].items() for metric in spec["metrics"]]
-    fig, axes = plt.subplots(1, len(panels), figsize=(3.6 * len(panels), 3.4), squeeze=False)
+    fig, axes = plt.subplots(1, len(panels), figsize=(4.2 * len(panels), 3.6), squeeze=False)
     for ax, (name, spec, metric) in zip(axes[0], panels, strict=True):
         groups = [g for g in (*DENSITY, *TOUCHING) if g in spec["per_stratum"]]
         scale = SCALE.get(metric, 1)
-        xs = [i + (0.6 if g in TOUCHING else 0.0) for i, g in enumerate(groups)]  # a gap before the second grouping
+        first = [g for g in groups if g in DENSITY]  # then, after a gap, the second grouping with room for its names
+        xs = [first.index(g) if g in first else len(first) + 0.6 + 1.4 * TOUCHING.index(g) for g in groups]
         deltas = np.array([spec["per_stratum"][g][metric]["delta"] for g in groups], float) * scale
         cis = np.array([spec["per_stratum"][g][metric]["ci95"] or [np.nan, np.nan] for g in groups], float) * scale
         ax.axhline(0, color=MUTED, linewidth=1, linestyle=(0, (4, 3)))
@@ -265,11 +282,11 @@ def results_n2(dataset: str, lang: str = "en") -> Path:
             xs, deltas, yerr=[deltas - cis[:, 0], cis[:, 1] - deltas], fmt="o", color=SERIES_COLOURS[0],
             markersize=7, markeredgecolor="white", markeredgewidth=1.5, elinewidth=1.5, capsize=3,
         )  # fmt: skip
-        for x, delta in zip(xs, deltas, strict=True):
-            ax.annotate(number(delta, words, 3 if scale == 1 and abs(delta) < 1 else 2, signed=True), (x, delta),
-                        xytext=(8, 0), textcoords="offset points", va="center", fontsize=8, color=INK)  # fmt: skip
-        ax.set_xticks(xs, [words[g].replace(" ", "\n") for g in groups])
-        ax.set_xlim(min(xs) - 0.5, max(xs) + 0.9)
+        values = [number(delta, words, DIGITS.get(metric, 2), signed=True) for delta in deltas]  # under the tick,
+        names = [words[g].replace(" ", "\n") if g in TOUCHING else words[g] for g in groups]
+        ticks = [f"{name}\n{value}" for name, value in zip(names, values, strict=True)]  # clear of the intervals
+        ax.set_xticks(xs, ticks, fontsize=8)
+        ax.set_xlim(min(xs) - 0.5, max(xs) + 0.5)
         unit = f"{words['delta']} {words[metric]}".replace("(%)", f"({words['points']})")
         ax.set_ylabel(unit, color=MUTED, fontsize=9)
         left, right = (LABELS[exp] for exp in name.split("->"))
@@ -283,31 +300,40 @@ def results_strata(dataset: str, lang: str = "en") -> Path:
     """Metrics per density stratum of up to three experiments, mean over the seeds with ± SD bars; one panel per metric."""
     words, table = WORDS[lang], read_table(dataset, "strata")
     series = [exp for exp in STRATA_SERIES[dataset] if exp in table["rows"]]
-    fig, axes = plt.subplots(1, len(STRATA_PANELS), figsize=(3.6 * len(STRATA_PANELS), 3.4), squeeze=False)
+    fig, axes = plt.subplots(1, len(STRATA_PANELS), figsize=(3.8 * len(STRATA_PANELS), 3.7), squeeze=False)
     xs = np.arange(len(DENSITY))
+    handles = {}
     for ax, metric in zip(axes[0], STRATA_PANELS, strict=True):
         scale = SCALE.get(metric, 1)
+        ends = {}
         for k, exp in enumerate(series):
             summaries = [table["rows"][exp]["strata"][g][metric]["summary"] for g in DENSITY]
             if any(s is None for s in summaries):
                 continue
             means = np.array([s["mean"] for s in summaries]) * scale
             sds = np.array([s["sd"] or 0.0 for s in summaries]) * scale
-            ax.errorbar(
+            handles[exp] = ax.errorbar(
                 xs, means, yerr=sds, color=SERIES_COLOURS[k], marker=SERIES_MARKERS[k], markersize=7,
                 markeredgecolor="white", markeredgewidth=1.5, linewidth=2, elinewidth=1.2, capsize=2,
-                label=LABELS[exp],
             )  # fmt: skip
-            ax.annotate(LABELS[exp], (xs[-1], means[-1]), xytext=(9, 0), textcoords="offset points",
-                        va="center", fontsize=8, color=INK)  # fmt: skip
+            ends[exp] = float(means[-1])
+        low, high = ax.get_ylim()
+        labels_at = spread(list(ends.values()), 0.07 * (high - low))  # names at the line ends, kept apart
+        for exp, y in zip(ends, labels_at, strict=True):
+            ax.annotate(LABELS[exp], (xs[-1], y), xytext=(10, 0), textcoords="offset points", va="center",
+                        fontsize=8, color=INK)  # fmt: skip
         sizes = [table["sizes"][g]["n_images"] for g in DENSITY]
-        ax.set_xticks(xs, [f"{words[g]}\n({n} {words['tiles']})" for g, n in zip(DENSITY, sizes, strict=True)])
+        ticks = [f"{words[g]}\n({n} {words['tiles']})" for g, n in zip(DENSITY, sizes, strict=True)]
+        ax.set_xticks(xs, ticks, fontsize=8)
         ax.set_xlim(-0.35, len(DENSITY) - 1 + 0.75)
         ax.set_title(words[metric], color=INK, fontsize=10, loc="left")
         style(ax)
-    axes[0][0].legend(frameon=False, fontsize=8, labelcolor=INK, loc="best")
-    fig.supxlabel(words["density"], color=MUTED, fontsize=9)
-    fig.tight_layout()
+    fig.legend(
+        handles.values(), [LABELS[exp] for exp in handles], loc="upper center", ncol=len(handles), frameon=False,
+        fontsize=9, labelcolor=INK,
+    )  # fmt: skip
+    fig.supxlabel(words["density"], color=MUTED, fontsize=9, y=0.04)
+    fig.tight_layout(rect=(0, 0.05, 1, 0.93))
     return save_result(fig, dataset, "strata" if lang == "en" else f"strata_{lang}")
 
 

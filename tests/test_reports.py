@@ -288,5 +288,9 @@ def test_result_figures_are_drawn_from_the_written_tables(splits):
     folder = paths.out_root() / "figures" / "results"
     for name in ("crowdai_n2_id.png", "crowdai_n2_id.pdf", "crowdai_strata_id.png", "crowdai_strata_id.pdf"):
         assert (folder / name).stat().st_size > 1000
-    assert module.number(-0.0371, module.WORDS["id"], 3, signed=True) == "-0,037"
+    assert module.number(-0.0371, module.WORDS["id"], 3, signed=True) == "−0,037"
     assert module.number(1.5, module.WORDS["en"]) == "1.50"
+    apart = module.spread([1.0, 5.0, 1.2], 1.0)
+    assert apart[2] - apart[0] == pytest.approx(1.0) and apart[1] - apart[2] >= 1.0  # order kept, neighbours a gap apart
+    assert sum(apart) == pytest.approx(7.2)  # the mean stays
+    assert module.spread([3.0, 1.0], 0.5) == [3.0, 1.0]  # far enough already
