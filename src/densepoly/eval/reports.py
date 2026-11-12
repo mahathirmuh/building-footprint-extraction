@@ -532,7 +532,77 @@ def _missing_efficiency(dataset: str) -> list[str]:
     return [str(paths.efficiency_file(dataset, tables.FULL_CANDIDATES[0], paths.run_name(0)))]
 
 
-tables.BUILDERS.update({"sota": sota, "paper": paper, "strata": strata, "n2": n2, "p2p": p2p, "efficiency": efficiency})
+# --- exploratory: comparisons added after the results (docs/EXPERIMENTS.md §8 point 7), and the seeds of Phase 9
+
+EXPLORATORY_STEPS = {
+    "crowdai": (
+        ("b3", "b3m", "regularisasi `mar` di atas mask biner (eksploratif)"),
+        ("b3m", "full_p0", "jalur biner lawan jalur 3 kelas + θ (eksploratif)"),
+        ("full_p0", "full_y", "seed detektor pada FULL final (Fase 9)"),
+        ("b3m", "b3my", "seed detektor pada B3m (eksploratif)"),
+        ("b3my", "full_y", "kedua jalur dengan seed (eksploratif)"),
+    )
+}
+EXPLORATORY_METRICS = ("AP", "CIoU", "merge_rate", "split_rate", "PoLiS_paired", "MTA_inst")
+EXPLORATORY_GROUPS = (ALL_IMAGES, DENSE_STRATUM, "bersentuhan")
+
+
+def exploratory(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> tuple[dict, list[str]]:
+    """Paired differences of the comparisons outside the frozen list, on all test tiles, the dense stratum and the tiles
+    with touching buildings; same bootstrap as the claims, but none of these is a claim of §8."""
+    split = "test"
+    steps = EXPLORATORY_STEPS[dataset]
+    exps = list(dict.fromkeys(exp for a, b, _ in steps for exp in (a, b)))
+    runs = tables.load_runs(dataset, exps, split)
+    strata_ids = strata_image_ids(dataset, split, splits_dir)
+    groups = {ALL_IMAGES: sorted(int(i) for i in runs[exps[0]][0].per_image.index)}
+    groups.update({name: strata_ids[name] for name in EXPLORATORY_GROUPS if name in strata_ids})
+    results, lines = {}, [
+        f"# Perbandingan eksploratif: {dataset}/{split} ({len(SEEDS)} seed)",
+        "",
+        "Perbandingan ini ditambahkan setelah hasil ada, jadi **bukan klaim** `docs/EXPERIMENTS.md` §8 (poin 7). Δ = kanan − kiri,",
+        f"rata-rata seed, CI 95% bootstrap per tile ({n_rep} replikasi). AP, C-IoU, dan laju dalam poin persen; PoLiS dalam",
+        "piksel; MTA dalam derajat.",
+    ]
+    for a, b, note in steps:
+        by_group = {
+            group: {m: stats.compare(runs[a], runs[b], m, ids, n_rep, BOOTSTRAP_SEED) for m in EXPLORATORY_METRICS}
+            for group, ids in groups.items()
+        }
+        results[f"{a}->{b}"] = {"note": note, "n_images": {g: len(ids) for g, ids in groups.items()}, "groups": by_group}
+        rows = [
+            [group, str(len(groups[group])), *(f"{cell(m, r['delta'], True)} {tables._ci(m, r['ci95'])}" for m, r in by_metric.items())]
+            for group, by_metric in by_group.items()
+        ]
+        header = ("Tile", "Jumlah", *(f"Δ {m}" for m in EXPLORATORY_METRICS))
+        lines += ["", f"## {LABELS[a]} → {LABELS[b]}: {note}", "", *tables._markdown_table(header, rows)]
+    payload = {
+        "split": split,
+        "seeds": list(SEEDS),
+        "n_rep": n_rep,
+        "bootstrap_seed": BOOTSTRAP_SEED,
+        "steps": results,
+        "sources": {exp: tables._sources(dataset, exp, map(paths.run_name, SEEDS), split) for exp in exps},
+    }
+    return payload, lines
+
+
+def _missing_exploratory(dataset: str) -> list[str]:
+    if dataset not in EXPLORATORY_STEPS:
+        return [f"no exploratory comparison is defined on {dataset}"]
+    exps = dict.fromkeys(exp for a, b, _ in EXPLORATORY_STEPS[dataset] for exp in (a, b))
+    return tables.missing_runs(dataset, exps, "test")
+
+
+tables.BUILDERS.update({
+        "sota": sota,
+        "paper": paper,
+        "strata": strata,
+        "n2": n2,
+        "p2p": p2p,
+        "efficiency": efficiency,
+        "exploratory": exploratory,
+    })
 tables.MISSING.update(
     {
         "sota": _missing_sota,
@@ -541,5 +611,6 @@ tables.MISSING.update(
         "n2": _missing_n2,
         "p2p": _missing_p2p,
         "efficiency": _missing_efficiency,
+        "exploratory": _missing_exploratory,
     }
 )

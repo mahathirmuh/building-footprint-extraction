@@ -343,3 +343,22 @@ def test_polygons_are_grouped_by_image():
     rings = module.polygons_by_image(items, {1, 2, 9})
     assert [ring.shape for ring in rings[1]] == [(3, 2), (3, 2)] and rings[2][0].tolist()[1] == [2, 1]
     assert rings[9] == [] and 3 not in rings
+
+
+def test_exploratory_table_compares_the_steps_outside_the_frozen_list(splits):
+    assert tables.missing_for("whu", "exploratory") != []
+    install(b3="a", b3m="a", full_p0="a", full_y="fix_merge", b3my="fix_merge")
+    assert tables.missing_for("crowdai", "exploratory") == []
+    payload, lines = reports.exploratory("crowdai", n_rep=10, splits_dir=splits)
+    assert list(payload["steps"]) == ["b3->b3m", "b3m->full_p0", "full_p0->full_y", "b3m->b3my", "b3my->full_y"]
+    seeded = payload["steps"]["full_p0->full_y"]
+    assert list(seeded["groups"]) == ["semua", "padat", "bersentuhan"] and seeded["n_images"]["bersentuhan"] == 1
+    runs = tables.load_runs("crowdai", ("full_p0", "full_y"), "test")
+    assert seeded["groups"]["bersentuhan"]["merge_rate"] == stats.compare(
+        runs["full_p0"], runs["full_y"], "merge_rate", [6], 10, tables.BOOTSTRAP_SEED
+    )
+    assert seeded["groups"]["bersentuhan"]["merge_rate"]["delta"] == pytest.approx(-1.0)  # the merge of image 6 is fixed
+    assert payload["steps"]["b3->b3m"]["groups"]["semua"]["AP"]["delta"] == 0  # the same predictions
+    assert any("bukan klaim" in line for line in lines) and any("FULL-P0 → FULL+Y" in line for line in lines)
+    paths.metrics_file("crowdai", "b3my", "seed2", "test").unlink()
+    assert tables.missing_for("crowdai", "exploratory") != []
