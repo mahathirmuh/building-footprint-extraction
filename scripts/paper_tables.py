@@ -57,6 +57,8 @@ def numbers() -> dict[str, str]:
     def put(name: str, value: str | None) -> None:
         if value is not None and value != latex.DASH:
             out[name] = value.replace("$", "")
+            if out[name][:1] in "+-" and "[" not in out[name]:  # a signed difference: "falls by \\N...Abs"
+                out[f"{name}Abs"] = out[name][1:]
 
     def plain(result: dict | None, metric: str) -> tuple[str | None, str | None]:
         if result is None:

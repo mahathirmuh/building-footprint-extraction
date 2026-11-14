@@ -96,8 +96,8 @@ function n(name) {
 
   s = d.slide("N1 didukung: *head* θ merapikan poligon", `B5 → FULL-P0 di ${n("NTilesDense")} *tile* padat, selisih berpasangan dengan selang 95%.`);
   d.cards(s, [
-    { head: "PoLiS", body: `Turun ${n("NNoneTotalPolis")} piksel, selang 95% ${n("NNoneTotalPolisCi")}. Batas poligon lebih dekat ke *ground truth*.` },
-    { head: "MTA", body: `Galat sudut turun ${n("NNoneTotalMta")}°, selang 95% ${n("NNoneTotalMtaCi")}. Dinding lebih sejajar.` },
+    { head: "PoLiS", body: `Turun ${n("NNoneTotalPolisAbs")} piksel; selisih dan selang 95%: ${n("NNoneTotalPolis")} ${n("NNoneTotalPolisCi")}. Batas poligon lebih dekat ke *ground truth*.` },
+    { head: "MTA", body: `Galat sudut turun ${n("NNoneTotalMtaAbs")}°; selisih dan selang 95%: ${n("NNoneTotalMta")} ${n("NNoneTotalMtaCi")}. Dinding lebih sejajar.` },
     { head: "AP", body: `Berubah ${n("NNoneTotalAp")} poin, jadi kerapian tidak dibayar dengan akurasi deteksi.` },
   ], { callout: "Efeknya kecil, tetapi searah di ketiga *seed*." });
 
@@ -117,12 +117,12 @@ function n(name) {
     ["HiSup, *tile* bersih", "ya", n("NCleanApHisup"), n("NCleanApfiftyHisup"), n("NCleanApbHisup"), n("NCleanCiouHisup")],
     ["FULL-P0 (kita), *tile* bersih", "tidak", n("NCleanApFull"), n("NCleanApfiftyFull"), n("NCleanApbFull"), n("NCleanCiouFull")],
   ], { colW: [4.6, 2.1, 1.2, 1.2, 1.6, 1.194], align: "center",
-    callout: `HiSup turun dari ${n("NLeakyApHisup")} ke ${n("NCleanApHisup")} AP di data bersih; kita tertinggal ${n("NCleanDeltaAp")} poin.` });
+    callout: `HiSup turun dari ${n("NLeakyApHisup")} ke ${n("NCleanApHisup")} AP di data bersih; kita tertinggal ${n("NCleanDeltaApAbs")} poin.` });
 
   s = d.slide("Eksploratif: *baseline* sederhana dan *seed* detektor", "Ditambahkan setelah hasil ada, jadi bukan bagian dari klaim.");
   d.cards(s, [
     { head: "B3m: biner + regularisasi", body: `AP ${n("NApBthreem")} dan C-IoU ${n("NCiouBthreem")}; FULL-P0 ${n("NApFull")} dan ${n("NCiouFull")}. B3m unggul di semua metrik kecuali rumah tergabung.` },
-    { head: "*Seed* dari detektor", body: `YOLOv8n-OBB, juga dilatih dari *mask*, mengubah *merge rate* FULL-P0 ${n("NSeedFullMerge")} poin dan B3m ${n("NSeedBinaryMerge")} poin, dengan AP setara.` },
+    { head: "*Seed* dari detektor", body: `YOLOv8n-OBB, juga dilatih dari *mask*, menurunkan *merge rate* FULL-P0 ${n("NSeedFullMergeAbs")} poin dan B3m ${n("NSeedBinaryMergeAbs")} poin, dengan AP setara.` },
     { head: "Artinya", body: "Jalur biner paling akurat dan rapi. Jalur tiga kelas paling baik memisahkan rumah berdempetan. *Seed* membantu keduanya." },
   ]);
 
