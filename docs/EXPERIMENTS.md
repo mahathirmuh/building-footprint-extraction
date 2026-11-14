@@ -261,3 +261,8 @@ keputusan N1–N3 maupun kriteria §8, dan FULL final tetap FULL-P0. Hasil negat
 **Catatan implementasi.** Keluaran B3θ ditulis dalam susunan 5 kanal FULL: logit kelas (0, z, −10⁴), lalu (ŝ, ĉ).
 Softmax-nya (1 − σ(z), σ(z), 0), sehingga inferensi, validasi, dan regularisasi `theta` membaca keluaran itu seperti keluaran
 FULL. Kelas kontak tidak pernah diprediksi, jadi F1 kontak di log validasi B3θ selalu 0 dan tidak dipakai.
+
+**Hasil (15 Nov 2026).** Aturan di atas **tidak terpenuhi**: di strata padat, B3m → B3θ memberi `PoLiS_paired` +0,084 px
+[+0,075; +0,094], `MTA_inst` +0,30° [+0,14; +0,46], dan AP −2,26 [−2,55; −1,99]. Efek pemanduan (B3θ′ → B3θ) tetap positif
+(−0,016 px, −0,18°), tetapi efek pelatihan (B3m → B3θ′) negatif dan lebih besar (+0,100 px, +0,48°, AP −2,25). Rinciannya di
+`docs/progress.md` (Fase 11) dan tabel `n1_binary`.

@@ -2098,7 +2098,7 @@ sampai tabel bisa diulang dan memberi angka yang setara.
 logo IF di sampul, ornamen di slide penutup. Tidak ada logo yang digambar ulang. Foto latar slide penutup tidak tersedia, jadi slide itu
 memakai biru ITS polos. Deck tetap 18 slide; pemeriksaan visual masih belum dilakukan (server tidak punya LibreOffice).
 
-## Fase 11 — (Eksploratif) Head θ di jalur biner: B3θ (berjalan sejak 14 November 2026)
+## Fase 11 — (Eksploratif) Head θ di jalur biner: B3θ (hasil ada 15 November 2026; menunggu persetujuan)
 
 **Persetujuan.** 14 Nov 2026 pemilik proyek meminta proyek dilanjutkan ("maksud saya lanjut project ini"), lalu menyetujui
 usulan eksperimen B3 + head θ dengan 3 seed, kira-kira 6 jam GPU ("iya melanjutkan penelitian"). Fase 10 tidak berubah:
@@ -2127,5 +2127,105 @@ di AP, C-IoU, dan MTA. Head θ belum pernah diuji di jalur biner. Rancangan leng
 
 **Antrean.** `densepoly-work/phase11.sh` (lepas dari sesi; log `logs/phase11.log`, penanda `logs/phase11_done/`):
 training seed 0, 1, 2 → kanal `val_tune_sub` seed 0 → tuning B3θ dan B3θ′ → tuning di-commit dan di-push → prediksi dan
-evaluasi `test` (3 seed, dua-duanya) → tabel → benchmark kecepatan bila GPU kosong. Hasil dicatat di bawah setelah antrean
-selesai.
+evaluasi `test` (3 seed, dua-duanya) → tabel → benchmark kecepatan bila GPU kosong.
+
+### Hasil (15 November 2026)
+
+Antrean selesai 15 Nov 2026 pukul 05.02 WIB (`PHASE11_DONE`) tanpa langkah yang gagal dan tanpa menunggu GPU. Semua angka di
+bawah berasal dari `outputs/tables/crowdai/{n1_binary,ablation,strata,efficiency}.{md,json}`, log run, dan file tuning.
+
+**Training** (E = 60, satu sesi per seed, kode `aa9cec9`):
+
+| Seed | Waktu | `fg_iou` `val_select` terbaik (epoch) |
+|---|---|---|
+| 0 | 6.977 s (1,94 jam) | 0,8881 (58) |
+| 1 | 6.726 s (1,87 jam) | 0,8873 (58) |
+| 2 | 6.517 s (1,81 jam) | 0,8881 (57) |
+
+Pembanding, `fg_iou` `val_select` terbaik per seed: B3 0,8986; 0,8966; 0,8973. B4 0,8849; 0,8838; 0,8813.
+FULL-P0 0,8869; 0,8803; 0,8834. Jadi mask B3θ turun kira-kira 1 poin IoU dari B3 dan berada di tingkat model 3 kelas.
+Loss training rata-rata tiga epoch terakhir: B3 BCE 0,207–0,214 dan Dice 0,053–0,055; B3θ BCE 0,248–0,255, Dice
+0,066–0,068, dan θ 0,011–0,012 (θ FULL-P0: 0,012–0,013). Segmentasi B3θ juga lebih buruk di data train, jadi ini bukan
+overfitting.
+
+**Tuning di `val_tune_sub`** (seed 0, grid yang sama; dibekukan di commit `25056a8` sebelum `test` disentuh):
+
+| Kode | A_min | ρ | k | δ | AP | `PoLiS_paired` | Waktu |
+|---|---|---|---|---|---|---|---|
+| B3θ | 5 | 0,93 | 0,02 | 10 | 62,55 | 1,569 | 175 s |
+| B3θ′ | 5 | 0,93 | 0,02 | 10 | 62,65 | 1,592 | 204 s |
+
+Titik yang terpilih sama dengan B3m. AP tahap 1 (poligon `raw`) B3θ 63,55; B3 pada tahap yang sama 65,86 (file tuning B3m).
+
+**`crowdai/test`, semua tile (rata-rata ± SD 3 seed):**
+
+| Kode | AP | AP50 | AP_b | IoU | PoLiS ↓ | MTA ↓ | C-IoU | N-ratio | merge rate ↓ |
+|---|---|---|---|---|---|---|---|---|---|
+| B3 | 65,74 ± 0,07 | 87,21 ± 0,05 | 43,64 ± 0,22 | 89,89 ± 0,06 | 1,697 ± 0,008 | 45,51 ± 0,25 | 66,51 ± 0,33 | 1,70 ± 0,02 | 2,84 ± 0,15 |
+| B3m | 64,89 ± 0,01 | 87,19 ± 0,03 | 41,35 ± 0,20 | 89,43 ± 0,05 | 1,657 ± 0,010 | 36,16 ± 0,09 | 76,97 ± 0,07 | 1,19 ± 0,01 | 2,81 ± 0,16 |
+| B3θ′ | 62,61 ± 0,18 | 86,19 ± 0,03 | 37,24 ± 0,31 | 88,41 ± 0,09 | 1,784 ± 0,018 | 36,51 ± 0,14 | 75,44 ± 0,06 | 1,21 ± 0,01 | 2,88 ± 0,02 |
+| B3θ | 62,51 ± 0,11 | 86,19 ± 0,03 | 37,28 ± 0,22 | 88,40 ± 0,08 | 1,763 ± 0,018 | 36,23 ± 0,11 | 75,52 ± 0,06 | 1,22 ± 0,01 | 2,88 ± 0,01 |
+| FULL-P0 | 61,94 ± 0,68 | 86,12 ± 0,02 | 36,22 ± 1,19 | 88,01 ± 0,35 | 1,823 ± 0,044 | 36,34 ± 0,24 | 74,55 ± 0,64 | 1,26 ± 0,03 | 1,96 ± 0,20 |
+
+**Aturan beku §10, strata padat `test` (857 tile):**
+
+| Kode | `PoLiS_paired` ↓ | `MTA_inst` ↓ | galat θ median ↓ | galat θ p90 ↓ | AP |
+|---|---|---|---|---|---|
+| B3m | 1,358 ± 0,006 | 35,66 ± 0,12 | 0,00 ± 0,00 | 3,18 ± 0,00 | 64,43 ± 0,09 |
+| B3θ′ | 1,457 ± 0,006 | 36,13 ± 0,16 | 0,00 ± 0,00 | 3,12 ± 0,05 | 62,17 ± 0,04 |
+| B3θ | 1,440 ± 0,005 | 35,96 ± 0,18 | 0,27 ± 0,01 | 2,47 ± 0,02 | 62,17 ± 0,14 |
+
+| Langkah | Δ `PoLiS_paired` [CI 95%] | Δ `MTA_inst` [CI 95%] | Δ AP [CI 95%] |
+|---|---|---|---|
+| B3m → B3θ′ (pelatihan θ) | +0,100 [+0,091; +0,109] | +0,48 [+0,34; +0,63] | −2,25 [−2,54; −2,01] |
+| B3θ′ → B3θ (pemanduan θ) | −0,016 [−0,018; −0,014] | −0,18 [−0,28; −0,08] | −0,01 [−0,12; +0,10] |
+| B3m → B3θ (total) | +0,084 [+0,075; +0,094] | +0,30 [+0,14; +0,46] | −2,26 [−2,55; −1,99] |
+
+**Keputusan: "head θ membantu di jalur biner" tidak didukung.** Ketiga syarat gagal: `PoLiS_paired` naik di semua seed
+(+0,088; +0,085; +0,079), `MTA_inst` naik di semua seed (+0,34; +0,22; +0,34), dan AP turun 2,26 poin (batasnya 0,5).
+Hasil negatif ini dilaporkan apa adanya. Keputusan N1–N3, kriteria §8, dan FULL final (FULL-P0) tidak berubah.
+
+**B3θ terhadap metode lain** (Δ = B3θ − pembanding, CI 95%):
+
+| Pembanding | Tile | Δ AP | Δ C-IoU | Δ merge rate | Δ split rate | Δ `PoLiS_paired` | Δ `MTA_inst` |
+|---|---|---|---|---|---|---|---|
+| B3m | semua (2.928) | −2,38 [−2,53; −2,08] | −1,44 [−1,66; −1,20] | +0,07 [−0,09; +0,24] | +0,37 [+0,24; +0,50] | +0,095 [+0,087; +0,103] | +0,32 [+0,21; +0,45] |
+| B3m | bersentuhan (146) | −1,87 [−2,59; −1,07] | −0,93 [−1,61; −0,26] | −0,54 [−1,46; +0,31] | −0,23 [−0,61; +0,16] | +0,074 [+0,045; +0,103] | +0,15 [−0,21; +0,53] |
+| B3 | semua | −3,23 [−3,37; −2,97] | +9,02 [+8,62; +9,36] | +0,03 [−0,12; +0,20] | +0,37 [+0,25; +0,51] | +0,053 [+0,045; +0,061] | −9,11 [−9,27; −8,95] |
+| FULL-P0 | semua | +0,57 [+0,43; +0,76] | +0,97 [+0,76; +1,17] | +0,91 [+0,77; +1,06] | −1,15 [−1,29; −1,02] | −0,042 [−0,048; −0,035] | −0,05 [−0,15; +0,05] |
+| FULL-P0 | padat (857) | +0,35 [+0,13; +0,61] | +0,68 [+0,46; +0,89] | +1,10 [+0,89; +1,34] | −1,03 [−1,22; −0,85] | −0,025 [−0,032; −0,018] | −0,03 [−0,17; +0,12] |
+| FULL-P0 | bersentuhan | −0,72 [−1,55; +0,05] | +1,39 [+0,78; +2,03] | +3,50 [+2,50; +4,53] | −1,59 [−2,18; −1,03] | −0,020 [−0,043; +0,005] | −0,05 [−0,48; +0,33] |
+
+**Efisiensi** (seed 0, GPU kosong saat diukur: utilisasi 0%): 20.813.403 parameter (B3 + 290), jaringan 7,33 ms (136,4 FPS),
+post-processing 12,49 ms, alur penuh 50,5 FPS. B3 74,0 FPS dan FULL-P0 42,3 FPS (diukur 12 Nov). Jaringan B3 dan B3θ nyaris
+sama, jadi selisih FPS jaringan 124,6 lawan 136,4 adalah variasi antar-hari pengukuran, bukan beda model.
+
+**Yang terbaca dari angka itu:**
+1. **Efek pemanduan θ terulang.** B3θ′ → B3θ memberi `PoLiS_paired` −0,016 px dan `MTA_inst` −0,18°, hampir sama dengan
+   B5′ → FULL-P0 di jalur 3 kelas (−0,017 px [−0,019; −0,015] dan −0,18° [−0,27; −0,09]). Galat θ head juga sama di kedua
+   jalur: median 0,27° dan p90 2,47° (FULL-P0: 0,27° dan 2,45°). Jadi head mempelajari θ sama baiknya dan memandu
+   regularisasi sama baiknya.
+2. **Efek pelatihan θ berbalik arah.** Di jalur 3 kelas, B5 → B5′ memperbaiki poligon (`PoLiS_paired` −0,020 px, `MTA_inst`
+   −0,77°, AP +0,40). Di jalur biner, B3m → B3θ′ memperburuknya (+0,100 px, +0,48°, AP −2,25). Pada `PoLiS_paired`
+   kerugian itu kira-kira enam kali keuntungan pemanduan, dan pada `MTA_inst` hampir tiga kali.
+3. **Kerugiannya ada di mask, bukan di regularisasi.** Buktinya: `fg_iou` validasi (0,888 lawan 0,897–0,899), IoU `test`
+   (88,41 lawan 89,43 untuk B3m), AP_b (37,24 lawan 41,35), dan BCE training (0,25 lawan 0,21). Mask B3θ jatuh ke tingkat
+   B4 dan FULL-P0.
+4. **Penyebabnya belum diketahui.** Eksperimen ini hanya melatih satu konfigurasi (λ = 1), sesuai rancangan beku. Dugaan
+   yang **belum diuji**: tugas regresi θ berebut kapasitas dengan segmentasi di blok decoder terakhir (16 kanal) dan satu
+   konvolusi head; λ = 1 terlalu besar untuk model biner; atau θ mendominasi gradien di epoch awal (`fg_iou` B3θ sudah
+   tertinggal sejak epoch 0: 0,813 lawan 0,826).
+5. **Jalur 3 kelas tetap lebih sedikit menggabungkan rumah.** B3θ lebih baik dari FULL-P0 di AP, C-IoU, `PoLiS_paired`, dan
+   split rate, tetapi merge rate-nya 2,88% lawan 1,96% (di tile bersentuhan +3,50 poin).
+
+**Akibat untuk laporan:** keputusan N1 tetap (aturannya memakai B5 → FULL-P0), tetapi cakupannya menyempit: head θ tidak
+memberi perbaikan bersih pada baseline terkuat. B3m tetap konfigurasi terbaik di semua metrik kecuali merge rate.
+
+**Catatan dan kelemahan:**
+- Hanya satu konfigurasi dan satu dataset (CrowdAI). Tidak ada yang disetel setelah hasil terlihat.
+- Statusnya eksploratif: aturannya dibekukan sebelum training, tetapi perbandingannya ditambahkan setelah hasil Fase 6–9.
+- F1 kontak di log validasi B3θ selalu 0 karena kelas itu memang tidak pernah diprediksi; angka itu tidak dipakai.
+- Kanal `test` B3θ untuk 3 seed disimpan di `outputs/channels/crowdai/b3t` (8,3 GB) dan tidak dihapus.
+- Lanjutan yang mungkin, semuanya butuh training baru dan persetujuan: λ lebih kecil, head θ dengan lapisan sendiri, atau
+  gradien θ dihentikan sebelum decoder. Belum ada yang dijalankan.
+
