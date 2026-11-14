@@ -40,8 +40,10 @@ the per-instance tangent angle error by \NNoneTotalMtaAbs$^\circ$ in dense tiles
 it grows with building density. Two other ideas do not hold: morphological priors added to the input do not reduce
 merged buildings, and the contact class stays inactive in most runs. An exploratory baseline, a binary segmentation
 whose components are regularized with minimum-area rectangles, beats the full pipeline on every metric but merged
-buildings (AP \NApBthreem{} against \NApFull). Seeds from an oriented-box detector, also trained from masks, cut merged
-buildings by about a quarter at equal AP. On \NTilesClean{} validation tiles without a duplicate in training, HiSup
+buildings (AP \NApBthreem{} against \NApFull). Adding the orientation head to this baseline does not help: its
+guidance still improves the polygons, but the network trained with it segments worse (AP \NApBthreet{} against
+\NApBthreem). Seeds from an oriented-box detector, also trained from masks, cut merged buildings by about a quarter at
+equal AP. On \NTilesClean{} validation tiles without a duplicate in training, HiSup
 scores \NCleanApHisup{} AP instead of the \NLeakyApHisup{} of the full validation set, and our mask-supervised
 pipeline trails it by \NCleanDeltaApAbs{} AP.
 \end{abstract}
@@ -75,7 +77,9 @@ amount that grows with density (Section~\ref{sec:n1}).
 separate touching roofs is rarely predicted at all (Sections~\ref{sec:n3} and~\ref{sec:contact}).
 \item \textbf{A simple strong baseline.} Regularizing the connected components of a binary segmentation is better than
 the full pipeline on every metric except merged buildings, and detector seeds reduce merges in both
-(Section~\ref{sec:exploratory}). These comparisons were added after the results and are marked as exploratory.
+(Section~\ref{sec:exploratory}). The orientation head does not transfer to this baseline: trained with it, the binary
+network segments worse (Section~\ref{sec:binarytheta}). These comparisons were added after the results and are marked
+as exploratory.
 \end{itemize}
 
 \section{Related Work}
@@ -179,6 +183,12 @@ that the pretrained network is unchanged at the start of training.
 instance masks. At inference the centres of its boxes become seeds: a marker that contains two or more seeds is replaced
 by them, and a seed in a foreground component without a marker is added.
 
+\textbf{Orientation head on the binary model.} In an exploratory variant, B3$\theta$, a network with one building logit
+instead of three class logits gets the two orientation channels, and $\lambda L_\theta$ is added to its binary loss with
+the same $\lambda$. Its instances are the connected components of the foreground, and the regularization is guided by
+the predicted orientation as in the full pipeline. B3$\theta'$ regularizes the same instances with minimum-area
+rectangles instead.
+
 \section{Evaluation Protocol}
 \label{sec:protocol}
 \subsection{Data without leakage}
@@ -217,7 +227,9 @@ model was trained: a contribution is supported if, in the dense stratum of the t
 with an interval that excludes zero and in all three seeds, and AP does not fall by more than 0.5 points. ``Largest in
 dense areas'' needs the interval of the difference between the dense and the sparse effect to exclude zero for every
 main metric. ``Close to the state of the art'' means at most 3 AP behind HiSup on the clean validation tiles.
-Comparisons outside this list are exploratory and marked as such.
+Comparisons outside this list are exploratory and marked as such. One of them, the orientation head on the binary
+model (Section~\ref{sec:binarytheta}), was run after the others; its rule, that of the orientation head with the
+regularized binary baseline in the place of B5, was fixed before its training.
 
 \subsection{Training}
 All CrowdAI models are trained for 60 epochs with AdamW~\cite{loshchilov2019adamw}, a batch of 16, a learning rate of
@@ -234,7 +246,8 @@ effect of using its output.
 \begin{table*}[t]
 \centering
 \caption{Scenarios on the deduplicated CrowdAI test split (mean $\pm$ standard deviation over the runs). AP, IoU, C-IoU
-and merge rate in percent, PoLiS in pixels, MTA in degrees. FULL+Y adds detector seeds; B3m and B3m+Y are exploratory.}
+and merge rate in percent, PoLiS in pixels, MTA in degrees. FULL+Y adds detector seeds; B3m, B3m+Y, B3$\theta'$ and
+B3$\theta$ are exploratory.}
 \label{tab:ablation}
 \resizebox{\textwidth}{!}{\input{tables/ablation}}
 \end{table*}
@@ -372,6 +385,34 @@ contours; the other models regularize them.}
 \label{fig:qualitative}
 \end{figure*}
 
+\subsection{Exploratory: the orientation head on the binary baseline}
+\label{sec:binarytheta}
+\begin{table}[t]
+\centering
+\caption{Orientation head on the binary route: paired differences in the dense stratum of the test split (\NTilesDense{}
+tiles, three seeds), with 95\% bootstrap intervals. B3$\theta'$ and B3$\theta$ share one network; the first is
+regularized with minimum-area rectangles, the second with the predicted orientation.}
+\label{tab:binarytheta}
+\resizebox{\columnwidth}{!}{\input{tables/binary_theta}}
+\end{table}
+B3m has the best masks, but the orientation head was tested on the three-class route only. We therefore trained the
+binary model with the orientation head (B3$\theta$, three seeds, the same budget) and asked the question of
+Section~\ref{sec:n1} again, with B3m in the place of B5. The rule is not met (Table~\ref{tab:binarytheta}): in the dense
+stratum the paired PoLiS rises by \NBinThetaTotalPolisAbs\,px, the per-instance MTA rises by
+\NBinThetaTotalMtaAbs$^\circ$, and AP falls by \NBinThetaTotalApAbs{} points, in all three seeds.
+
+The decomposition shows where this comes from. Guiding the regularization with the predicted orientation helps as much
+as on the three-class route: from B3$\theta'$ to B3$\theta$ the paired PoLiS changes by $\NBinThetaGuidePolis$\,px and
+the MTA by $\NBinThetaGuideMta^\circ$, against $\NNoneGuidePolis$\,px and $\NNoneGuideMta^\circ$ from B5$'$ to FULL-P0.
+Training with the head is what differs. It improved the polygons of the three-class model, but the binary model
+segments worse with it: its best foreground IoU on the selection split is on average \NFgIouBthreet\% against
+\NFgIouBthree\% for B3, and on the test split its AP is \NApBthreet{} against \NApBthreem{} for B3m (Table~\ref{tab:ablation}). This loss
+outweighs the gain from guidance. We trained a single configuration, with the loss weight of the full pipeline, so we
+cannot say whether a smaller weight or a separate orientation branch would avoid it.
+
+B3$\theta$ remains ahead of FULL-P0, by \NFullToThetaBinaryApAbs{} AP and \NFullToThetaBinaryCiouAbs{} C-IoU points, and
+like B3m it merges more buildings (\NMergeBthreet\% against \NMergeFull\%).
+
 \subsection{Cost}
 \begin{table}[t]
 \centering
@@ -386,8 +427,9 @@ regularization dominates the post-processing time; the whole pipeline runs at \N
 \section{Discussion and Limitations}
 The orientation head does what it was designed for, but the effect is small, and the larger share of the polygon
 quality comes from the regularization itself, which works as well with rectangles fitted to the predicted instances.
-The head was only tested on the three-class route; whether it helps the stronger binary route needs a training run we
-did not plan.
+On the stronger binary route the head does not pay off: its guidance gives the same small gain, but training it costs
+more mask quality than the guidance returns (Section~\ref{sec:binarytheta}). That run was exploratory and used a
+single loss weight.
 
 The clean comparison rests on \NTilesClean{} tiles that are not a random sample. WHU has one seed and an approximate
 match to the published test set. The detector was trained once and shared by the three seeds, and its confidence
@@ -397,7 +439,8 @@ perceptual hashes and can miss near-duplicates that differ by more than a rotati
 \section{Conclusion}
 With instance masks only, a segmentation network and a geometric regularization give polygons whose complexity is close
 to the ground truth, \NCleanDeltaApAbs{} AP below a polygon-supervised method on leakage-free data. An orientation head
-supervised by rectangles fitted to the masks improves the geometry a little, and more in dense tiles. Morphological
+supervised by rectangles fitted to the masks improves the geometry a little on the three-class route, and more in
+dense tiles; added to the binary model, it lowers the mask quality by more than its guidance gains. Morphological
 priors and a contact class do not deliver the separation of touching roofs they were meant to; seeds from a
 mask-supervised detector do. The strongest pipeline we found is also the simplest, a binary segmentation with
 regularized components, which we could only identify because the baselines were evaluated under the same protocol as

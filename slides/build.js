@@ -126,6 +126,13 @@ function n(name) {
     { head: "Artinya", body: "Jalur biner paling akurat dan rapi. Jalur tiga kelas paling baik memisahkan rumah berdempetan. *Seed* membantu keduanya." },
   ]);
 
+  s = d.slide("Eksploratif: *head* θ di jalur biner tidak membantu", `B3m → B3θ di ${n("NTilesDense")} *tile* padat; aturannya dibekukan sebelum training.`);
+  d.cards(s, [
+    { head: "Pemanduan θ tetap membantu", body: `B3θ′ → B3θ: PoLiS ${n("NBinThetaGuidePolis")} piksel dan MTA ${n("NBinThetaGuideMta")}°. Di jalur tiga kelas: ${n("NNoneGuidePolis")} piksel dan ${n("NNoneGuideMta")}°.` },
+    { head: "Pelatihan θ menurunkan mutu *mask*", body: `B3m → B3θ′: AP turun ${n("NBinThetaTrainApAbs")} poin dan PoLiS naik ${n("NBinThetaTrainPolisAbs")} piksel. IoU validasi ${n("NFgIouBthreet")}% lawan ${n("NFgIouBthree")}% pada B3.` },
+    { head: "Total: aturan tidak terpenuhi", body: `PoLiS ${n("NBinThetaTotalPolis")} piksel, MTA ${n("NBinThetaTotalMta")}°, AP ${n("NBinThetaTotalAp")} poin, searah di ketiga *seed*.` },
+  ], { callout: "Hasil negatif: *head* θ tidak memberi perbaikan bersih pada *baseline* terkuat. B3m tetap yang terbaik." });
+
   s = d.slide("Contoh hasil di *tile* asli", "*Ground truth* dan poligon tiap model pada *tile* *test* yang sama.");
   d.mediaStack(s, { image: figure("crowdai_qualitative_id.png"), alt: "Poligon tiap model pada tile test", split: 0.6, items: [
     { head: "B4", body: "Kontur mentah: bergelombang dan boros verteks." },
@@ -144,7 +151,7 @@ function n(name) {
   d.numbered(s, [
     { head: "Data bersih kecil", body: `Banding HiSup hanya di ${n("NTilesClean")} *tile*, dan bukan sampel acak.` },
     { head: "WHU satu *seed*", body: "Daftar *tile* uji tidak persis sama dengan Pix2Poly." },
-    { head: "Efek N1 kecil", body: "Baru diuji di jalur tiga kelas, belum di jalur biner." },
+    { head: "Efek N1 kecil", body: "Di jalur biner, melatih *head* θ malah menurunkan mutu *mask* (satu konfigurasi, eksploratif)." },
     { head: "Satu detektor", body: "YOLO dilatih sekali dan dipakai untuk ketiga *seed*." },
     { head: "Tanpa lubang", body: "Poligon hanya memuat cincin luar bangunan." },
   ], { labelW: 2.9 });
@@ -152,7 +159,7 @@ function n(name) {
   s = d.slide("Kesimpulan", "Empat hal yang bisa dibawa pulang.");
   d.numbered(s, [
     { head: "Poligon rapi bisa dari *mask* saja", body: "Regularisasi geometris bekerja tanpa anotasi poligon." },
-    { head: "*Head* θ membantu sedikit", body: "Konsisten, dan makin terasa di *tile* padat." },
+    { head: "*Head* θ membantu sedikit", body: "Konsisten di jalur tiga kelas, makin terasa di *tile* padat; tidak terbawa ke jalur biner." },
     { head: "Prior dan kelas kontak gagal", body: "Dilaporkan sebagai hasil negatif." },
     { head: "*Baseline* sederhana paling kuat", body: "Terlihat karena semua model dinilai dengan protokol yang sama." },
   ], { shape: "square", labelW: 4.7 });

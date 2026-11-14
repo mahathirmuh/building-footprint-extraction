@@ -21,6 +21,7 @@ from densepoly.eval import latex
 from densepoly.utils.io import read_json, write_json, write_lines
 
 N1_NAMES = {"b5->b5p": "training $\\theta$", "b5p->full_p0": "guiding by $\\theta$", "b5->full_p0": "total"}
+BINARY_THETA_NAMES = {"b3m->b3tp": "training $\\theta$", "b3tp->b3t": "guiding by $\\theta$", "b3m->b3t": "total"}
 PRIOR_NAMES = {"full_p0->full_p1": "MBI", "full_p1->full_p2": "gap map", "full_p0->full_p2": "both priors"}
 COCO = ("AP", "AP50", "AP75", "AR", "AP_boundary", "IoU", "CIoU", "PoLiS", "MTA")
 COCO_HEADER = ["AP", "AP$_{50}$", "AP$_{75}$", "AR", "AP$_b$", "IoU", "C-IoU", "PoLiS$\\downarrow$", "MTA$\\downarrow$"]
@@ -37,6 +38,9 @@ TABLES = {
     "reported": ("crowdai", "paper", lambda r: latex.reported(r, COCO, COCO_HEADER)),
     "exploratory": ("crowdai", "exploratory", latex.exploratory),
     "exploratory_touching": ("crowdai", "exploratory", lambda r: latex.exploratory(r, "bersentuhan")),
+    "binary_theta": ("crowdai", "n1_binary", lambda r: latex.steps(r, ("PoLiS_paired", "MTA_inst", "AP"),
+                                                                   ["$\\Delta$PoLiS (px)", "$\\Delta$MTA ($^\\circ$)", "$\\Delta$AP"],
+                                                                   BINARY_THETA_NAMES)),
     "efficiency": ("crowdai", "efficiency", latex.efficiency),
     "whu": ("whu", "p2p", latex.whu),
     "whu_density": ("whu", "n2", latex.density),
@@ -67,8 +71,8 @@ def numbers() -> dict[str, str]:
         return latex.number(metric, result["delta"], signed=True), f"[{low}, {high}]"
 
     ablation = _load("crowdai", "ablation")
-    codes = {"b0": "Bzero", "b3": "Bthree", "b3m": "Bthreem", "b3my": "BthreemY", "b4": "Bfour", "b5": "Bfive",
-             "full_p0": "Full", "full_p2": "FullPtwo", "full_y": "FullY"}  # fmt: skip
+    codes = {"b0": "Bzero", "b3": "Bthree", "b3m": "Bthreem", "b3my": "BthreemY", "b3t": "Bthreet", "b3tp": "Bthreetp",
+             "b4": "Bfour", "b5": "Bfive", "full_p0": "Full", "full_p2": "FullPtwo", "full_y": "FullY"}  # fmt: skip
     metrics = {"AP": "Ap", "AP_boundary": "Apb", "CIoU": "Ciou", "MTA": "Mta", "PoLiS": "Polis", "merge_rate": "Merge",
                "N_ratio": "Nratio", "IoU": "Iou"}  # fmt: skip
     if ablation:
@@ -133,9 +137,30 @@ def numbers() -> dict[str, str]:
                     value, ci = plain(exploratory["steps"][key]["groups"][group][metric], metric)
                     put(f"N{name}{tag}{short}", value)
                     put(f"N{name}{tag}{short}Ci", ci)
+    binary_theta = _load("crowdai", "n1_binary")  # exploratory: the θ head on the binary route (EXPERIMENTS §10)
+    if binary_theta:
+        for key, name in (("b3m->b3t", "BinThetaTotal"), ("b3m->b3tp", "BinThetaTrain"), ("b3tp->b3t", "BinThetaGuide")):
+            for metric, short in (("PoLiS_paired", "Polis"), ("MTA_inst", "Mta"), ("AP", "Ap")):
+                step(binary_theta, key, f"{name}{short}", metric)
+        for key, name in (("b3m->b3t", "ThetaBinary"), ("full_p0->b3t", "FullToThetaBinary")):
+            for group, tag in (("semua", ""), ("bersentuhan", "Touching")):
+                for metric, short in (("AP", "Ap"), ("CIoU", "Ciou"), ("merge_rate", "Merge"), ("split_rate", "Split"),
+                                      ("MTA_inst", "Mta"), ("PoLiS_paired", "Polis")):  # fmt: skip
+                    value, ci = plain(binary_theta["wider"][key]["groups"][group][metric], metric)
+                    put(f"N{name}{tag}{short}", value)
+                    put(f"N{name}{tag}{short}Ci", ci)
+    for exp, code in (("b3", "Bthree"), ("b3t", "Bthreet")):  # best validation foreground IoU, mean over the seeds
+        best = []
+        for seed in (0, 1, 2):
+            log = paths.run_dir("crowdai", exp, paths.run_name(seed)) / "val_log.csv"
+            if log.exists():
+                rows = [line.split(",") for line in log.read_text(encoding="utf-8").splitlines()[1:]]
+                best.append(max(float(row[2]) for row in rows))
+        if len(best) == 3:
+            put(f"NFgIou{code}", latex.number("IoU", sum(best) / len(best)))
     efficiency = _load("crowdai", "efficiency")
     if efficiency:
-        for exp, code in (("b3", "Bthree"), ("full_p0", "Full"), ("full_y", "FullY")):
+        for exp, code in (("b3", "Bthree"), ("b3t", "Bthreet"), ("full_p0", "Full"), ("full_y", "FullY")):
             row = efficiency["rows"].get(exp)
             if row:
                 detector = 1000 * ((row.get("detector") or {}).get("seconds_per_image") or 0.0)

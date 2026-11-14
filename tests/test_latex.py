@@ -51,6 +51,26 @@ def test_ablation_keeps_the_order_and_leaves_out_missing_rows():
     assert lines.count("\\midrule") >= 2
 
 
+def test_ablation_has_no_rule_after_its_last_row_and_writes_theta_in_math_mode():
+    summary = {"mean": 0.5, "sd": 0.01}
+    row = {"runs": ["seed0", "seed1", "seed2"], "metrics": dict.fromkeys(latex.ABLATION, summary)}
+    without = latex.ablation({"rows": {"b3": row, "full_p0": row, "b3m": row}})
+    assert without[-3].startswith("B3m") and without[-2:] == ["\\bottomrule", "\\end{tabular}"]
+    lines = latex.ablation({"rows": {"b3": row, "b3m": row, "b3t": row, "b3tp": row}})
+    codes = [line.split(" & ")[0] for line in lines if line.startswith("B")]
+    assert codes == ["B3", "B3m", "B3$\\theta'$", "B3$\\theta$"]
+    assert lines[lines.index(next(line for line in lines if line.startswith("B3m"))) + 1] == "\\midrule"
+    assert lines[-3].startswith("B3$\\theta$") and all(ord(char) < 128 for line in lines for char in line)
+
+
+def test_steps_table_of_the_binary_route_has_no_unicode_theta():
+    record = {"steps": {"b3m->b3tp": {"AP": compare(-0.0225, -0.0254, -0.0201)}, "b3tp->b3t": {"AP": compare(0.0, -0.001, 0.001)}}}
+    lines = latex.steps(record, ("AP",), ["dAP"], {"b3m->b3tp": "training $\\theta$"})
+    assert lines[4].startswith("B3m $\\rightarrow$ B3$\\theta'$ (training $\\theta$) & $-2.25$")
+    assert lines[5].startswith("B3$\\theta'$ $\\rightarrow$ B3$\\theta$ & ")
+    assert all(ord(char) < 128 for line in lines for char in line)
+
+
 def test_density_table_ends_with_dense_minus_sparse():
     step = {
         "metrics": ["merge_rate"],

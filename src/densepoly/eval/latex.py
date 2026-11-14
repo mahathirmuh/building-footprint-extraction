@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from densepoly.eval.tables import DECIMALS, LABELS, PERCENT
 
-TEX_LABELS = {**LABELS, "b5p": "B5$'$", "hisup_release": "HiSup"}
+TEX_LABELS = {**LABELS, "b5p": "B5$'$", "b3t": "B3$\\theta$", "b3tp": "B3$\\theta'$", "hisup_release": "HiSup"}
 STRATA = {
     "semua": "all",
     "jarang": "sparse",
@@ -69,10 +69,18 @@ def printed(value) -> str:
 
 ABLATION = ("AP", "AP50", "AP_boundary", "IoU", "PoLiS", "MTA", "CIoU", "N_ratio", "merge_rate")
 ABLATION_HEADER = ["AP", "AP$_{50}$", "AP$_b$", "IoU", "PoLiS$\\downarrow$", "MTA$\\downarrow$", "C-IoU", "N-ratio", "Merge$\\downarrow$"]
-ABLATION_GROUPS = (("b0",), ("b1", "b2", "b3"), ("b4", "b5", "b5p"), ("full_p0", "full_p1", "full_p2"), ("full_y", "b3m", "b3my"))
+ABLATION_GROUPS = (
+    ("b0",),
+    ("b1", "b2", "b3"),
+    ("b4", "b5", "b5p"),
+    ("full_p0", "full_p1", "full_p2"),
+    ("full_y", "b3m", "b3my"),
+    ("b3tp", "b3t"),
+)
 
 
 def ablation(record: dict) -> list[str]:
+    """One row per evaluated scenario, a rule between the groups that have rows (none after the last row)."""
     rows, rules = [], []
     for group in ABLATION_GROUPS:
         for exp in group:
@@ -80,7 +88,8 @@ def ablation(record: dict) -> list[str]:
                 row = record["rows"][exp]
                 rows.append([TEX_LABELS[exp], str(len(row["runs"])), *(mean_sd(m, row["metrics"][m]) for m in ABLATION)])
         rules.append(len(rows) - 1)
-    return tabular("l c " + "c" * len(ABLATION), ["Code", "Runs", *ABLATION_HEADER], rows, tuple(rules[:-1]))
+    between = tuple(index for index in rules if 0 <= index < len(rows) - 1)
+    return tabular("l c " + "c" * len(ABLATION), ["Code", "Runs", *ABLATION_HEADER], rows, between)
 
 
 def steps(record: dict, metrics: tuple[str, ...], header: list[str], names: dict[str, str] | None = None) -> list[str]:
