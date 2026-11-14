@@ -2229,3 +2229,20 @@ memberi perbaikan bersih pada baseline terkuat. B3m tetap konfigurasi terbaik di
 - Lanjutan yang mungkin, semuanya butuh training baru dan persetujuan: λ lebih kecil, head θ dengan lapisan sendiri, atau
   gradien θ dihentikan sebelum decoder. Belum ada yang dijalankan.
 
+**Bahan laporan (15 Nov 2026).** Hasil ini masuk ke paper dan slide sebagai temuan eksploratif; klaim N1–N3, keputusan §8, dan
+FULL final tidak diubah.
+- `scripts/paper_tables.py`: tabel baru `paper/tables/binary_theta.tex` (B3m → B3θ′ → B3θ di strata padat) dan makro angka
+  baru di `numbers.tex` (489 angka; awalan `NBinTheta`, `NThetaBinary`, `NFullToThetaBinary`, `NFgIou`, dan kode `Bthreet`).
+  Tabel ablasi dan tabel biaya mendapat baris B3θ′ dan B3θ. Label LaTeX ditulis `B3$\theta$`, bukan huruf θ Unicode.
+- `paper/main.tex`: subbab baru "Exploratory: the orientation head on the binary baseline" dengan tabel itu, satu paragraf
+  varian di bagian metode, satu kalimat di abstrak, kontribusi, aturan keputusan, diskusi, dan kesimpulan. Kalimat diskusi
+  "head belum diuji di jalur biner" diganti dengan hasilnya. Pemeriksaan statis: semua makro, tabel, gambar, sitasi, dan
+  rujukan ada; lingkungan dan kurung seimbang. **PDF tetap belum dikompilasi** (server tidak punya LaTeX).
+- `slides/densepoly.pptx`: 19 slide (satu slide baru tentang hasil ini; butir keterbatasan dan kesimpulan disesuaikan). Belum
+  diperiksa secara visual.
+- `pytest -q`: 756 lolos.
+
+**Cek "Selesai jika" Fase 11:** tabel `n1_binary` ada beserta keputusan aturan §10 (ya); hasil tercatat di sini dan di bahan
+laporan (ya). Fase 11 menunggu persetujuan pemilik proyek untuk ditutup. Fase 10 masih menunggu hal yang sama seperti
+sebelumnya (PDF paper, pemeriksaan visual PPT, judul akhir, persetujuan).
+
