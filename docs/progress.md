@@ -2097,3 +2097,35 @@ sampai tabel bisa diulang dan memberi angka yang setara.
 `slides/densepoly.pptx` dibangun ulang: logo ITS, DIKTISAINTEK, dan Departemen Teknik Informatika di header, strip media sosial di footer,
 logo IF di sampul, ornamen di slide penutup. Tidak ada logo yang digambar ulang. Foto latar slide penutup tidak tersedia, jadi slide itu
 memakai biru ITS polos. Deck tetap 18 slide; pemeriksaan visual masih belum dilakukan (server tidak punya LibreOffice).
+
+## Fase 11 — (Eksploratif) Head θ di jalur biner: B3θ (berjalan sejak 14 November 2026)
+
+**Persetujuan.** 14 Nov 2026 pemilik proyek meminta proyek dilanjutkan ("maksud saya lanjut project ini"), lalu menyetujui
+usulan eksperimen B3 + head θ dengan 3 seed, kira-kira 6 jam GPU ("iya melanjutkan penelitian"). Fase 10 tidak berubah:
+masih menunggu PDF paper, pemeriksaan visual PPT, dan persetujuan penutupan.
+
+**Alasan.** N1 didukung di jalur 3 kelas (B5 → FULL-P0), tetapi mask terbaik ada di jalur biner: B3m mengungguli FULL-P0
+di AP, C-IoU, dan MTA. Head θ belum pernah diuji di jalur biner. Rancangan lengkap dan aturan keputusannya ada di
+`docs/EXPERIMENTS.md` §10, dan **aturan itu dibekukan sebelum training dimulai** (commit `55c1e19`).
+
+**Yang dibuat (sebelum ada hasil).**
+- Head `binary_theta` (`models/factory.py`): jaringan mempelajari 3 kanal (z, ŝ, ĉ), lalu `BinaryThetaLayout` menulisnya
+  sebagai 5 kanal FULL `(0, z, −10⁴, ŝ, ĉ)`. Softmax-nya `(1 − σ(z), σ(z), 0)`, jadi inferensi, validasi, dan regularisasi
+  `theta` tidak perlu diubah. B3θ = jaringan B3 + 290 parameter (2 kanal keluaran tambahan).
+- Loss `bce_dice_theta` (`losses.py`): loss B3 pada logit z, ditambah λ·L_θ. Tes membuktikan nilainya sama persis dengan
+  loss B3 + λ·L_θ.
+- Instance: `InstanceParams.components` membuat komponen terhubung dihitung dari `1 − P_bg` bila mode instance `cc`;
+  `scripts/tune_postproc.py` memilih grid tahap 1 dari mode instance, bukan dari jumlah kanal.
+- Config `exp/b3t` (B3θ) dan `exp/b3tp` (B3θ′: checkpoint B3θ, θ minAreaRect).
+- Tabel `n1_binary` (`eval/reports.py`): B3m → B3θ′ → B3θ di strata padat `test` dengan keputusan aturan §10, lalu B3θ
+  terhadap B3m, B3, dan FULL-P0 pada semua tile, strata padat, dan tile bersentuhan.
+- `pytest -q`: 754 lolos (28 tes baru).
+
+**Benchmark sebelum training** (200 iterasi, RTX 5090, GPU dibagi dengan dua proses pengguna lain, 4 worker):
+13,35 langkah/s, 1.464 langkah per epoch, 0,030 jam per epoch, jadi E = 60 kira-kira 1,9 jam per seed; memori GPU puncak
+5,9 GB. Komponen loss awal: BCE 0,716, Dice 0,438, θ 0,303.
+
+**Antrean.** `densepoly-work/phase11.sh` (lepas dari sesi; log `logs/phase11.log`, penanda `logs/phase11_done/`):
+training seed 0, 1, 2 → kanal `val_tune_sub` seed 0 → tuning B3θ dan B3θ′ → tuning di-commit dan di-push → prediksi dan
+evaluasi `test` (3 seed, dua-duanya) → tabel → benchmark kecepatan bila GPU kosong. Hasil dicatat di bawah setelah antrean
+selesai.
