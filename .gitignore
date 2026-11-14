@@ -3,6 +3,8 @@
 /data/
 /outputs/
 /outputs_full_pipeline/
+# Official ITS template graphics, unpacked from the ppt-its-assets skill for slides/build.js; the built deck holds them
+/slides/its_assets/
 *.pt
 *.npz
 .env

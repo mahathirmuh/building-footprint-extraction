@@ -2091,3 +2091,9 @@ sampai tabel bisa diulang dan memberi angka yang setara.
 2. Membuka `slides/densepoly.pptx` di PowerPoint (font Raleway) dan memeriksa tata letaknya; menambahkan logo ITS bila diinginkan.
 3. Memutuskan judul akhir (naskah memakai judul kerja berbahasa Inggris) dan memeriksa blok penulis di `paper/main.tex` (tanpa email).
 4. Menyetujui penutupan Fase 10.
+
+**Logo ITS di PPT** (14 Nov 2026, 22.35 WIB): skill template ITS sekarang menyertakan grafik resminya, jadi keputusan nomor 2 di atas
+("logo dilewati") tidak perlu lagi. Grafik dibongkar dengan skrip skill itu ke `slides/its_assets/` (tidak masuk git) dan
+`slides/densepoly.pptx` dibangun ulang: logo ITS, DIKTISAINTEK, dan Departemen Teknik Informatika di header, strip media sosial di footer,
+logo IF di sampul, ornamen di slide penutup. Tidak ada logo yang digambar ulang. Foto latar slide penutup tidak tersedia, jadi slide itu
+memakai biru ITS polos. Deck tetap 18 slide; pemeriksaan visual masih belum dilakukan (server tidak punya LibreOffice).

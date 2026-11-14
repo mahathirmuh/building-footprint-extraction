@@ -11,5 +11,6 @@ Bangun ulang:
     python scripts/paper_tables.py
     NODE_PATH=<folder node_modules yang berisi pptxgenjs> node slides/build.js
 
-Logo resmi ITS tidak disertakan. Taruh file logo di `slides/its_assets/` (nama file mengikuti slot di `its_kit.js`, misalnya
-`header_left.png`), lalu bangun ulang; tanpa itu header dan footer memakai teks.
+Logo resmi ITS (header, footer, logo IF di sampul, ornamen penutup) sudah ada di `densepoly.pptx`. File gambarnya dibongkar dari
+skill `ppt-its-assets` ke `slides/its_assets/` (tidak masuk git). Tanpa folder itu, `build.js` tetap berjalan dengan header dan
+footer teks. Foto latar slide penutup tidak tersedia, jadi slide penutup memakai warna biru ITS polos.
