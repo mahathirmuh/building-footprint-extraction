@@ -75,6 +75,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   FULL-P0 seed 0 AP 62,72, run beku 62,73), `notebooks/demo_hasil.ipynb`, `paper/` (naskah IEEEtran, **belum dikompilasi ke PDF**:
   server tidak punya LaTeX), `slides/densepoly.pptx` (belum diperiksa visual), dan ringkasan keterbatasan sudah ada. Rinciannya dan
   daftar yang masih butuh pemilik proyek ada di akhir `docs/progress.md`.
+  Fase 11 (eksploratif, disetujui 14 Nov 2026) berjalan: B3θ = B3 + head θ, 3 seed, aturan keputusan beku di
+  `docs/EXPERIMENTS.md` §10; hasilnya tidak mengubah keputusan N1–N3.
 
 ## Cara bekerja di proyek ini
 
@@ -178,7 +180,7 @@ densepoly/
 ├── configs/
 │   ├── base.yaml
 │   ├── data/{crowdai,whu}.yaml
-│   ├── exp/{b0,b1,b2,b3,b3m,b3my,b4,b5,b5p,full_p0,full_p1,full_p2,full_y}.yaml   # b3m, b3my: eksploratif
+│   ├── exp/{b0,b1,b2,b3,b3m,b3my,b3t,b3tp,b4,b5,b5p,full_p0,full_p1,full_p2,full_y}.yaml   # b3m, b3my, b3t, b3tp: eksploratif
 │   ├── postproc/<dataset>/<exp>.yaml        # hasil tuning di val_tune (dibekukan)
 │   └── paper_numbers.yaml                   # angka dari paper lain + sumber (tabel, halaman)
 ├── src/densepoly/

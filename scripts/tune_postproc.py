@@ -112,7 +112,7 @@ def main(argv: list[str] | None = None) -> None:
             report = tuning.tune_seeds(job, gt, grid, args.workers)
             report |= {"inherited": inherited, "inherited_from": str(cfg.postproc.base_exp), "detector": detector}
         else:
-            report = tuning.tune_network(job, gt, grid, int(cfg.model.classes) == 1, args.workers)
+            report = tuning.tune_network(job, gt, grid, job.instance.components, args.workers)
     wall = time.perf_counter() - tic
     summary = {"chosen": report["chosen"], "score": report["score"], "seconds": report["seconds"], "wall": round(wall)}
     if args.limit:

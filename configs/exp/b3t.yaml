@@ -1,0 +1,9 @@
+# B3θ (exploratory, added 14 Nov 2026 after the results; docs/EXPERIMENTS.md §10): B3 + θ head. The network learns
+# 3 channels (building logit z, ŝ, ĉ) and writes them in the 5-channel layout of FULL; loss = loss of B3 + λ·L_θ;
+# connected components as B3, regularization guided by the head θ as FULL.
+exp: b3t
+input: {priors: []}
+model: {arch: unetplusplus, classes: 5, head: binary_theta}
+loss: {type: bce_dice_theta, edge_weight: true}
+train: {enabled: true}
+postproc: {instance: cc, polygon: theta}

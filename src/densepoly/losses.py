@@ -4,6 +4,8 @@
 - Three classes (B4): Σ w·CE / non-ignored pixels + multiclass Dice over classes 1 and 2.
 - FULL: the loss of B4 + λ·L_θ, L_θ = Σ_{p∈V} [(ŝ − S)² + (ĉ − C)²] / max(|V|, 1), so buildings too small for a θ and
   background pixels add nothing to it.
+- Binary with a θ head (B3θ, exploratory): the loss of B3 on the building logit z + λ·L_θ. The model writes its output
+  in the FULL layout (models/factory.py), where z is class logit 1.
 
 Padding pixels (label 255) add nothing to any model. The whole loss runs in float32, whatever the autocast context of
 the model: softmax and Dice are not safe in float16.
@@ -18,7 +20,9 @@ from torch import nn
 
 from densepoly.models.factory import split_output
 
-KINDS = ("bce_dice", "ce_dice", "ce_dice_theta")
+KINDS = ("bce_dice", "ce_dice", "ce_dice_theta", "bce_dice_theta")
+BINARY = ("bce_dice", "bce_dice_theta")
+WITH_THETA = ("ce_dice_theta", "bce_dice_theta")
 
 
 class SegmentationLoss(nn.Module):
@@ -34,7 +38,7 @@ class SegmentationLoss(nn.Module):
         self.edge_weight = bool(cfg.loss.edge_weight)
         self.theta_lambda = float(cfg.loss.theta_lambda)
         self.register_buffer("class_weight", torch.tensor([1.0, 1.0, float(cfg.loss.contact_class_weight)]))
-        if self.kind == "bce_dice":
+        if self.kind in BINARY:
             self.dice = smp.losses.DiceLoss(mode="binary", ignore_index=self.ignore)
         else:
             self.dice = smp.losses.DiceLoss(mode="multiclass", classes=[1, 2], ignore_index=self.ignore)
@@ -44,10 +48,13 @@ class SegmentationLoss(nn.Module):
             logits, orientation = split_output(output.float())
             classes = batch["classes"]
             keep = classes != self.ignore
-            if self.kind == "bce_dice":
+            if self.kind in BINARY:
+                building = logits if orientation is None else logits[:, 1:2]  # FULL layout: z is class logit 1
+                if building.shape[1] != 1:
+                    raise ValueError(f"loss {self.kind} needs one building logit, got {building.shape[1]} channels")
                 target = torch.where(keep, (classes > 0).long(), classes)  # the BCE target is y == 1, never 255
-                pixel_loss = F.binary_cross_entropy_with_logits(logits[:, 0], (target == 1).float(), reduction="none")
-                dice = self.dice(logits, target)
+                pixel_loss = F.binary_cross_entropy_with_logits(building[:, 0], (target == 1).float(), reduction="none")
+                dice = self.dice(building, target)
             else:
                 pixel_loss = F.cross_entropy(
                     logits, classes, weight=self.class_weight, ignore_index=self.ignore, reduction="none"
@@ -55,7 +62,7 @@ class SegmentationLoss(nn.Module):
                 dice = self.dice(logits, classes)
             weight = batch["weight"].float() if self.edge_weight else torch.ones_like(pixel_loss)
             ce = (weight * keep * pixel_loss).sum() / keep.sum().clamp(min=1)
-            theta = self.theta_term(orientation, batch) if self.kind == "ce_dice_theta" else torch.zeros_like(ce)
+            theta = self.theta_term(orientation, batch) if self.kind in WITH_THETA else torch.zeros_like(ce)
             return {"loss": ce + dice + self.theta_lambda * theta, "ce": ce, "dice": dice, "theta": theta}
 
     @staticmethod

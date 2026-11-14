@@ -57,8 +57,8 @@ def crop_gt(scene_seeds):
 
 @pytest.fixture(scope="module")
 def trained(tmp_path_factory):
-    """One epoch of B4 and of FULL-P0 on fake tiles, the GT of val_tune_sub, and a copy of configs/ without frozen
-    tunings: (splits folder, configs folder)."""
+    """One epoch of B4, of FULL-P0 and of B3θ on fake tiles, the GT of val_tune_sub, and a copy of configs/ without
+    frozen tunings: (splits folder, configs folder)."""
     root = tmp_path_factory.mktemp("trained")
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv("DENSEPOLY_DATA", str(root / "data"))
@@ -66,7 +66,7 @@ def trained(tmp_path_factory):
         folder = root / "splits"
         folder.mkdir()
         ids = write_tiles(folder, {"train_dedup": 2, "val_select": 1, "val_tune_sub": 2})
-        for exp in ("b4", "full_p0"):
+        for exp in ("b4", "full_p0", "b3t"):
             cfg = load_config("crowdai", exp, SMALL)
             train.fit(cfg, paths.run_dir("crowdai", exp, "seed0"), splits_dir=folder)
         write_json(paths.gt_file("crowdai", "val_tune_sub"), crop_gt(ids["val_tune_sub"]))
@@ -134,6 +134,26 @@ def test_network_instances_separate_touching_houses_with_the_contact_class():
     found = infer.network_instances(channels, infer.InstanceParams())
     merged = infer.network_instances(1.0 - channels[:1], infer.InstanceParams())
     assert found.count == len(scene.buildings) and merged.count < found.count
+
+
+def test_component_instances_read_the_foreground_of_class_probabilities():
+    """B3θ: its channels have the layout of FULL, but its instances are the components of 1 − P_bg, as on B3."""
+    scene = make_scene(4)
+    channels = perfect_channels(scene.instance_map)
+    channels[1] += channels[2]  # a binary model with a θ head never predicts contact
+    channels[2] = 0
+    watershed = infer.network_instances(channels, infer.InstanceParams())
+    found = infer.network_instances(channels, infer.InstanceParams(components=True))
+    binary = infer.network_instances(1.0 - channels[:1], infer.InstanceParams())
+    assert np.array_equal(found.instance_map, binary.instance_map) and np.allclose(found.scores, binary.scores)
+    assert np.array_equal(watershed.instance_map, found.instance_map)  # without contact the watershed has no cut either
+    assert 0 < found.count < len(scene.buildings)
+
+
+@pytest.mark.parametrize(("exp", "components"), [("b3", True), ("b3t", True), ("b3my", True), ("b4", False),
+                                                 ("full_p0", False), ("full_y", False)])  # fmt: skip
+def test_instance_parameters_know_the_component_modes(exp, components):
+    assert infer.InstanceParams.from_config(load_config("crowdai", exp).postproc).components is components
 
 
 def test_mode_theta_takes_theta_and_kappa_from_the_head():
@@ -230,6 +250,33 @@ def test_the_tune_script_freezes_a_network_and_predict_uses_it(trained):
     meta = read_json(paths.pred_file("crowdai", "b5", "seed0", "val_tune_sub").with_name("val_tune_sub.meta.json"))
     assert meta["tuned_file"] == "configs/postproc/crowdai/b5.yaml" and meta["postproc"]["tau"] == frozen.postproc.tau
     postproc_file("crowdai", "b5", configs).unlink()
+
+
+def test_binary_theta_runs_through_the_scripts_with_the_binary_grid(trained):
+    """B3θ: channels in the layout of FULL, stage 1 of the binary models (A_min only), θ and κ from the head; B3θ′
+    reuses the channels with the minAreaRect θ."""
+    folder, configs = trained
+    predict(trained, "b3t", "--save-channels")
+    image_id = read_json(paths.gt_file("crowdai", "val_tune_sub"))["images"][0]["id"]
+    channels = np.load(paths.channel_file("crowdai", "b3t", "seed0", "val_tune_sub", image_id)).astype(np.float32)
+    assert channels.shape[0] == 5 and (channels[2] == 0).all()
+    assert np.allclose(channels[0] + channels[1], 1.0, atol=2e-3)
+    tune = load_script("tune_postproc")
+    for exp in ("b3t", "b3tp"):
+        tune.main(["--data", "crowdai", "--exp", exp, "--workers", "1", "--configs-dir", str(configs)])
+        frozen = read_yaml(postproc_file("crowdai", exp, configs))
+        assert set(frozen["postproc"]) == {"instance_min_px", "rect_iou", "dp_k", "snap_deg"}
+        assert [set(row) for row in frozen["tuning"]["stage1"]] == [{"instance_min_px", "AP", "PoLiS_paired"}] * len(
+            SMALL_GRID["binary"]["instance_min_px"]
+        )
+    predict(trained, "b3t", "--from-channels")
+    predict(trained, "b3tp", "--from-channels")
+    head = read_json(paths.pred_file("crowdai", "b3t", "seed0", "val_tune_sub"))
+    rect = read_json(paths.pred_file("crowdai", "b3tp", "seed0", "val_tune_sub"))
+    assert all(r["kappa"] is not None for r in head) and all(r["kappa"] is None for r in rect)
+    assert len(head) == len(rect)  # same instances, another θ
+    for exp in ("b3t", "b3tp"):
+        postproc_file("crowdai", exp, configs).unlink()
 
 
 @pytest.fixture

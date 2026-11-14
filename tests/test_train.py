@@ -62,9 +62,9 @@ def test_micro_batch_follows_accumulation_and_has_a_lower_bound():
         train.micro_batch(load_config("crowdai", "b4", ["train.accumulate=3"]))
 
 
-@pytest.mark.parametrize("exp", ["b2", "b4", "full_p2"])
+@pytest.mark.parametrize("exp", ["b2", "b4", "full_p2", "b3t"])
 def test_smoke_a_short_run_writes_everything(splits, tmp_path, exp):
-    """The smoke test of PLAN.md Phase 5, for one binary, one three-class and the fullest model."""
+    """The smoke test of PLAN.md Phase 5, for one binary, one three-class, the fullest model, and binary with θ."""
     run_dir = tmp_path / "run"
     outcome = train.fit(config(exp), run_dir, splits_dir=splits)
     assert outcome == {"status": "finished", "epoch": 2, "step": 4, "best": outcome["best"]}
@@ -73,7 +73,7 @@ def test_smoke_a_short_run_writes_everything(splits, tmp_path, exp):
     log = rows(run_dir / "train_log.csv")
     assert [int(row["step"]) for row in log] == [1, 2, 3, 4]
     assert all(float(row["loss"]) > 0 for row in log)
-    assert (float(log[0]["theta"]) > 0) == (exp == "full_p2")
+    assert (float(log[0]["theta"]) > 0) == (exp in ("full_p2", "b3t"))
     validation = rows(run_dir / "val_log.csv")
     assert [int(row["epoch"]) for row in validation] == [0, 1]
     assert float(validation[0]["fg_iou"]) >= 0 and (validation[0]["contact_f1"] == "") == (exp == "b2")

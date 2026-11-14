@@ -30,10 +30,11 @@ model:                        # docs/METHOD.md §4
   encoder: efficientnet-b4
   encoder_weights: imagenet   # tests always use null
   classes: ???                # output channels: 1 binary | 3 classes | 5 = 3 classes + (sin 4θ, cos 4θ)
+  head: null                  # binary_theta (B3θ): 3 learned channels (z, ŝ, ĉ) written in the 5-channel layout of FULL
   source_exp: null            # inference-only configs: experiment whose checkpoint (same seed) is used
 
 loss:                         # docs/METHOD.md §5
-  type: ???                   # bce_dice | ce_dice | ce_dice_theta | none
+  type: ???                   # bce_dice | ce_dice | ce_dice_theta | bce_dice_theta (head binary_theta) | none
   edge_weight: ???            # true: w = 1 + α·exp(−d²/2σ²); false: w = 1
   contact_class_weight: 1.0   # decided once in Phase 5 for all 3-class models
   theta_lambda: 1.0           # λ, fixed before FULL seed 0 (PLAN.md Phase 6)

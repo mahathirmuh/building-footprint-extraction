@@ -167,6 +167,10 @@ Tabel berikut dipakai sebagai **tes invarian** (label hasil turunan ulang harus 
 - B2, B3: `smp.UnetPlusPlus(... classes=1)`.
 - B4, B5: `smp.UnetPlusPlus(... classes=3)`.
 - FULL-P*: `smp.UnetPlusPlus(... classes=5)`; `logits = out[:, :3]`, `orient = tanh(out[:, 3:5])` → `(ŝ, ĉ)`.
+- B3θ (eksploratif, `docs/EXPERIMENTS.md` §10): `smp.UnetPlusPlus(... classes=3)` yang mempelajari `(z, ŝ, ĉ)`, lalu satu
+  lapisan tanpa bobot menulisnya dalam susunan FULL: `out = (0, z, −10⁴, ŝ, ĉ)`. Softmax tiga logit pertama adalah
+  `(1 − σ(z), σ(z), 0)`, jadi `P_bg` dan `P_b` sama dengan model biner dan kelas kontak tidak pernah diprediksi
+  (`model.head: binary_theta`).
 - P1/P2: buat model 3 kanal pretrained, lalu `expand_first_conv(model, 4 atau 5)`.
 - Semua model memakai encoder yang sama supaya perbandingan B1 → FULL hanya mengubah satu hal per langkah.
 - Satu konvolusi head 5 kanal setara dengan dua head konvolusi terpisah (3 + 2 kanal) yang berbagi decoder. Cara ini
@@ -183,6 +187,8 @@ Tabel berikut dipakai sebagai **tes invarian** (label hasil turunan ulang harus 
   ignore_index=255)`. Bobot kelas kontak default 1; diputuskan sekali di Fase 5 dengan aturan beku
   `docs/EXPERIMENTS.md` §4.1, lalu berlaku untuk semua model 3 kelas.
 - **FULL:** `L_B4 + λ · L_θ`, dengan `L_θ = Σ_{p∈V} [(ŝ − S)² + (ĉ − C)²] / max(|V|, 1)`, default `λ = 1`.
+- **B3θ (eksploratif):** `L_B3 + λ · L_θ`. `L_B3` dihitung persis seperti loss biner di atas pada logit `z`; `L_θ` dan `λ`
+  sama dengan FULL.
 - Dice dari `smp.losses.DiceLoss`; CE dari `F.cross_entropy(..., ignore_index=255, reduction="none")`.
 
 ## 6. Inferensi dan pemisahan instance
@@ -226,7 +232,7 @@ dan `watershed` dengan konektivitas bawaannya, 1).
 
 ### 6.3 Model biner (B1–B3)
 Instance = komponen terhubung-4 dari `σ(logit) > 0,5`, tanpa instance < `A_min` px; skor = rata-rata probabilitas di
-instance.
+instance. B3θ memakai aturan yang sama pada `1 − P_bg` (= `σ(z)`), dan θ instance-nya dihitung dengan §6.4.
 
 ### 6.4 Orientasi instance dari head (FULL)
 Normalisasi dulu vektor tiap piksel: `u_p = (ŝ, ĉ)_p / ‖(ŝ, ĉ)_p‖`, karena keluaran tanh dua kanal bukan vektor

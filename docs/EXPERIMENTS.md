@@ -35,13 +35,17 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 | FULL-P2 | `exp/full_p2` | U-Net++ | RGB + MBI + celah | 5 | sama | watershed | `theta` | ya |
 | FULL+Y | `exp/full_y` | FULL final + YOLOv8n-OBB | sama dengan FULL final | 5 | — | watershed + seed YOLO | `theta` | YOLO saja |
 | B3m+Y | `exp/b3my` | model B3 + YOLOv8n-OBB | RGB | 1 | — | CC + seed YOLO | `mar` | tidak (YOLO yang sama) |
+| B3θ | `exp/b3t` | U-Net++ | RGB | 3 terlatih (z, ŝ, ĉ), ditulis 5 | w·BCE + Dice + λ·L_θ | CC | `theta` | ya |
+| B3θ′ | `exp/b3tp` | model B3θ | RGB | sama | — | CC | `mar` | tidak |
 
 - **FULL final** = FULL-P0 atau FULL-P2, dipilih dengan aturan §8 poin 6 (dipakai untuk SOTA, WHU, dan FULL+Y).
 - **B5′ adalah tambahan** dari slide. Fungsinya memisahkan efek pelatihan dan efek pemanduan head θ.
 - **B3m eksploratif** (ditambahkan 12 Nov 2026, setelah hasil Fase 8; §8 poin 7): regularisasi `mar` di atas mask B3, tanpa training.
   Pertanyaannya: apakah AP tertinggi (B3) dan poligon rapi bisa didapat sekaligus, tanpa pipeline 3 kelas. Bukan bagian dari klaim N1–N3.
-- Config inferensi saja (`b5`, `b5p`, `full_y`) menunjuk ke checkpoint run sumbernya dengan seed yang sama; jangan
-  menyalin bobot.
+- **B3θ dan B3θ′ eksploratif** (ditambahkan 14 Nov 2026, setelah hasil Fase 9; §10): head θ dipasang pada model biner B3.
+  Aturan keputusannya dibekukan di §10 sebelum B3θ dilatih. Bukan bagian dari klaim N1–N3.
+- Config inferensi saja (`b5`, `b5p`, `full_y`, `b3m`, `b3my`, `b3tp`) menunjuk ke checkpoint run sumbernya dengan seed yang
+  sama; jangan menyalin bobot.
 
 ## 3. Pengaturan training (default; sama untuk semua model yang dibandingkan)
 
@@ -218,3 +222,42 @@ Dikonfirmasi tanpa perubahan saat Fase 3 dimulai (30 Okt 2026), jadi sejak itu t
 |---|---|---|---|---|---|---|---|---|---|---|
 | HiSup | ya | | | | | | | | | prediksi rilisan, dievaluasi ulang |
 | FULL final (kita) | tidak | | | | | | | | | run kita, 3 seed |
+
+## 10. Eksperimen lanjutan: head θ di jalur biner (B3θ; eksploratif, disetujui 14 Nov 2026)
+
+**Latar.** N1 didukung di jalur 3 kelas (B5 → FULL-P0, Fase 6). Tetapi B3m (mask B3 + `mar`) mengungguli FULL-P0 di AP,
+C-IoU, dan MTA; FULL-P0 hanya unggul di merge rate, dan kelas kontaknya tidak aktif di 6 dari 9 run (Fase 7–8). Jadi mask
+terbaik ada di jalur biner, sedangkan head θ baru diuji di jalur 3 kelas.
+
+**Pertanyaan.** Apakah head θ juga memperbaiki poligon bila dipasang pada model biner B3?
+
+**Model.**
+- **B3θ** (`exp/b3t`): U-Net++ yang sama dengan head 3 kanal (logit bangunan z, ŝ, ĉ). Loss = loss B3 (w·BCE + Dice)
+  + λ·L_θ dengan λ = 1, sama dengan FULL. Instance = komponen terhubung (`docs/METHOD.md` §6.3). Poligon mode `theta`, θ dan
+  κ dari head.
+- **B3θ′** (`exp/b3tp`): checkpoint B3θ, komponen terhubung, mode `mar` (θ minAreaRect). Perannya sama dengan B5′.
+
+Rantainya B3m → B3θ′ (efek pelatihan θ) → B3θ (efek pemanduan θ), sejajar dengan B5 → B5′ → FULL-P0. B3m dan B3θ berbeda
+dua hal, dan B3θ′ memisahkan keduanya.
+
+**Pengaturan.** Sama dengan semua run CrowdAI, tanpa penyetelan khusus: E = 60, seed 0, 1, 2, batch 16, AdamW 2e-4,
+4 worker. Hanya satu konfigurasi yang dilatih (λ = 1); tidak ada pemilihan varian. Post-processing disetel per model dengan
+grid yang sama di `val_tune_sub` dari seed 0 (tahap 1 memakai grid model biner: `A_min`; tahap 2: ρ, k, δ), lalu dibekukan
+dan di-commit sebelum `test` disentuh.
+
+**Aturan keputusan (dibekukan 14 Nov 2026, sebelum B3θ dilatih).** "Head θ membantu di jalur biner" dinyatakan didukung
+bila di strata padat `crowdai/test` B3θ lebih baik dari B3m pada `PoLiS_paired` **dan** `MTA_inst` (dihitung pada GT yang
+ter-match oleh kedua metode), CI 95% bootstrap selisih berpasangan tidak memuat 0, arahnya sama di ketiga seed, dan AP tidak
+turun lebih dari 0,5 poin. Ini aturan §8 poin 1 dengan B5 diganti B3m dan FULL-P0 diganti B3θ. Dekomposisi
+B3m → B3θ′ → B3θ dilaporkan dengan CI sebagai analisis deskriptif.
+
+**Yang juga dilaporkan (deskriptif).** B3θ terhadap B3m, B3, dan FULL-P0 pada semua tile `test`, strata padat, dan tile
+bersentuhan (AP, C-IoU, merge rate, split rate, `PoLiS_paired`, `MTA_inst`), serta galat θ (median dan persentil 90).
+Tabelnya `n1_binary` (`scripts/tables.py`).
+
+**Status.** Perbandingan ini ditambahkan setelah hasil Fase 6–9 ada, jadi eksploratif (§8 poin 7). Hasilnya tidak mengubah
+keputusan N1–N3 maupun kriteria §8, dan FULL final tetap FULL-P0. Hasil negatif dilaporkan apa adanya.
+
+**Catatan implementasi.** Keluaran B3θ ditulis dalam susunan 5 kanal FULL: logit kelas (0, z, −10⁴), lalu (ŝ, ĉ).
+Softmax-nya (1 − σ(z), σ(z), 0), sehingga inferensi, validasi, dan regularisasi `theta` membaca keluaran itu seperti keluaran
+FULL. Kelas kontak tidak pernah diprediksi, jadi F1 kontak di log validasi B3θ selalu 0 dan tidak dipakai.

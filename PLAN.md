@@ -257,6 +257,22 @@ ekspornya ada; PDF paper berhasil dikompilasi dari sumber LaTeX-nya; PPT present
 
 ---
 
+## Fase 11 — (Eksploratif) Head θ di jalur biner: B3θ
+
+Disetujui 14 Nov 2026, setelah hasil Fase 9. Rancangan dan aturan keputusan beku: `docs/EXPERIMENTS.md` §10.
+
+**Tugas**
+- Head `binary_theta` (3 kanal terlatih yang ditulis dalam susunan FULL), loss `bce_dice_theta`, komponen terhubung pada
+  probabilitas kelas; semuanya dengan tes sintetis.
+- Latih B3θ seed 0–2 (E = 60). Setel post-processing B3θ dan B3θ′ di `val_tune_sub`, bekukan, lalu prediksi dan evaluasi
+  `test`.
+- Tabel `n1_binary` dengan aturan §10; hasilnya masuk laporan sebagai temuan eksploratif.
+
+**Selesai jika:** tabel `n1_binary` ada beserta keputusan aturan §10, dan hasilnya (positif atau negatif) tercatat di
+`docs/progress.md` dan di bahan laporan.
+
+---
+
 ## Risiko dan cadangan
 
 | Risiko | Cadangan |

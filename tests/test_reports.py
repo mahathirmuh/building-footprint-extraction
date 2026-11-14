@@ -362,3 +362,26 @@ def test_exploratory_table_compares_the_steps_outside_the_frozen_list(splits):
     assert any("bukan klaim" in line for line in lines) and any("FULL-P0 → FULL+Y" in line for line in lines)
     paths.metrics_file("crowdai", "b3my", "seed2", "test").unlink()
     assert tables.missing_for("crowdai", "exploratory") != []
+
+
+def test_binary_theta_table_applies_the_n1_rule_to_the_binary_route(splits):
+    """B3m → B3θ′ → B3θ: the rule of §8 point 1 on b3m → b3t in the dense stratum, then B3θ against the others."""
+    assert tables.missing_for("whu", "n1_binary") != []
+    install(b3="a", b3m="a", b3tp="a", b3t="gt", full_p0="a")
+    assert tables.missing_for("crowdai", "n1_binary") == []
+    payload, lines = reports.n1_binary("crowdai", n_rep=10, splits_dir=splits)
+    assert list(payload["steps"]) == ["b3m->b3tp", "b3tp->b3t", "b3m->b3t"]
+    assert payload["stratum"] == "padat" and list(payload["methods"]) == ["b3m", "b3tp", "b3t"]
+    runs = tables.load_runs("crowdai", ("b3m", "b3t"), "test")
+    dense = tables.dense_image_ids("crowdai", "test", splits)
+    total = {m: stats.compare(runs["b3m"], runs["b3t"], m, dense, 10, tables.BOOTSTRAP_SEED) for m in tables.N1_METRICS}
+    assert payload["steps"]["b3m->b3t"] == total
+    assert payload["decision"] == {**tables.decide_n1(total), "rule": reports.BINARY_THETA_RULE}
+    assert payload["steps"]["b3m->b3tp"]["AP"]["delta"] == 0  # the same predictions
+    assert list(payload["wider"]) == ["b3m->b3t", "b3->b3t", "full_p0->b3t"]
+    assert list(payload["wider"]["full_p0->b3t"]["groups"]) == ["semua", "padat", "bersentuhan"]
+    assert set(payload["sources"]) == {"b3", "b3m", "b3tp", "b3t", "full_p0"}
+    assert any("B3m → B3θ′ (efek pelatihan θ)" in line for line in lines)
+    assert any("bukan" in line for line in lines) and any("FULL-P0 → B3θ" in line for line in lines)
+    paths.metrics_file("crowdai", "b3t", "seed1", "test").unlink()
+    assert tables.missing_for("crowdai", "n1_binary") != []

@@ -1,0 +1,8 @@
+# B3θ′ (exploratory, docs/EXPERIMENTS.md §10): inference only; B3θ checkpoint, but regularized with the minAreaRect θ
+# instead of the head θ, as B5′ does on FULL-P0 (separates training with θ from guiding with θ on the binary route).
+exp: b3tp
+input: {priors: []}
+model: {arch: unetplusplus, classes: 5, head: binary_theta, source_exp: b3t}
+loss: {type: none, edge_weight: false}
+train: {enabled: false}
+postproc: {instance: cc, polygon: mar}

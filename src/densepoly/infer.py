@@ -68,6 +68,7 @@ def _b0_chunk(args) -> list[tuple[list[dict], dict]]:
 
 
 SEEDED = ("watershed_yolo", "cc_yolo")  # instance modes that merge a detector's seeds into the markers (FULL+Y)
+COMPONENTS = ("cc", "cc_yolo")  # instance modes of §6.3: connected components of the foreground, no markers
 
 
 @dataclass(frozen=True)
@@ -76,11 +77,16 @@ class InstanceParams:
     marker_min_px: int = 8  # m_min
     instance_min_px: int = 10  # A_min
     yolo_conf: float = 0.25  # c_y, used only by a job that carries boxes
+    components: bool = False  # §6.3 also on class probabilities (B3θ): components of 1 − P_bg > 0.5
 
     @classmethod
     def from_config(cls, postproc) -> InstanceParams:
         return cls(
-            float(postproc.tau), int(postproc.marker_min_px), int(postproc.instance_min_px), float(postproc.yolo_conf)
+            float(postproc.tau),
+            int(postproc.marker_min_px),
+            int(postproc.instance_min_px),
+            float(postproc.yolo_conf),
+            str(postproc.instance) in COMPONENTS,
         )
 
 
@@ -146,9 +152,12 @@ def network_channels(
 
 
 def network_instances(channels: np.ndarray, params: InstanceParams, seeds: np.ndarray | None = None) -> Instances:
-    """§6.3 on one channel (binary models), §6.2 on the three class probabilities otherwise; seeds as in §8."""
+    """§6.3 on one channel (binary models) or, when the parameters ask for components, on the foreground 1 − P_bg of
+    the class probabilities; §6.2 on the three class probabilities otherwise; seeds as in §8."""
     if channels.shape[0] == 1:
         return binary_instances(channels[0], params.instance_min_px, seeds)
+    if params.components:
+        return binary_instances(1.0 - channels[0], params.instance_min_px, seeds)
     return three_class_instances(*channels[:3], params.tau, params.marker_min_px, params.instance_min_px, seeds)
 
 

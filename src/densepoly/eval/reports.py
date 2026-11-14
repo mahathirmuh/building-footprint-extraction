@@ -7,6 +7,9 @@
 - n2: the effect of each claim per stratum and Δdense − Δsparse (stratified bootstrap), with the decision of §8 point 4.
 - p2p: WHU test against Pix2Poly's ground truth, next to the numbers of the Pix2Poly paper (approximate comparison).
 - efficiency: parameters, network speed and post-processing time (scripts/benchmark.py).
+- exploratory: comparisons added after the results (§8 point 7).
+- n1_binary: the θ head on the binary route, B3m → B3θ′ → B3θ (docs/EXPERIMENTS.md §10; exploratory, rule frozen before
+  the runs).
 
 Importing this module registers the tables in eval/tables.py (BUILDERS), so scripts/tables.py writes them too.
 """
@@ -547,23 +550,15 @@ EXPLORATORY_METRICS = ("AP", "CIoU", "merge_rate", "split_rate", "PoLiS_paired",
 EXPLORATORY_GROUPS = (ALL_IMAGES, DENSE_STRATUM, "bersentuhan")
 
 
-def exploratory(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> tuple[dict, list[str]]:
-    """Paired differences of the comparisons outside the frozen list, on all test tiles, the dense stratum and the tiles
-    with touching buildings; same bootstrap as the claims, but none of these is a claim of §8."""
-    split = "test"
-    steps = EXPLORATORY_STEPS[dataset]
+def _grouped_steps(dataset: str, steps, n_rep: int, splits_dir: Path | None, split: str = "test"):
+    """({"a->b": comparisons per group of tiles}, Markdown sections, experiments) of steps (a, b, note): paired
+    differences on all tiles of the split, its dense stratum and its tiles with touching buildings."""
     exps = list(dict.fromkeys(exp for a, b, _ in steps for exp in (a, b)))
     runs = tables.load_runs(dataset, exps, split)
     strata_ids = strata_image_ids(dataset, split, splits_dir)
     groups = {ALL_IMAGES: sorted(int(i) for i in runs[exps[0]][0].per_image.index)}
     groups.update({name: strata_ids[name] for name in EXPLORATORY_GROUPS if name in strata_ids})
-    results, lines = {}, [
-        f"# Perbandingan eksploratif: {dataset}/{split} ({len(SEEDS)} seed)",
-        "",
-        "Perbandingan ini ditambahkan setelah hasil ada, jadi **bukan klaim** `docs/EXPERIMENTS.md` §8 (poin 7). Δ = kanan − kiri,",
-        f"rata-rata seed, CI 95% bootstrap per tile ({n_rep} replikasi). AP, C-IoU, dan laju dalam poin persen; PoLiS dalam",
-        "piksel; MTA dalam derajat.",
-    ]
+    results, lines = {}, []
     for a, b, note in steps:
         by_group = {
             group: {m: stats.compare(runs[a], runs[b], m, ids, n_rep, BOOTSTRAP_SEED) for m in EXPLORATORY_METRICS}
@@ -576,6 +571,22 @@ def exploratory(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | Non
         ]
         header = ("Tile", "Jumlah", *(f"Δ {m}" for m in EXPLORATORY_METRICS))
         lines += ["", f"## {LABELS[a]} → {LABELS[b]}: {note}", "", *tables._markdown_table(header, rows)]
+    return results, lines, exps
+
+
+def exploratory(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> tuple[dict, list[str]]:
+    """Paired differences of the comparisons outside the frozen list, on all test tiles, the dense stratum and the tiles
+    with touching buildings; same bootstrap as the claims, but none of these is a claim of §8."""
+    split = "test"
+    results, sections, exps = _grouped_steps(dataset, EXPLORATORY_STEPS[dataset], n_rep, splits_dir, split)
+    lines = [
+        f"# Perbandingan eksploratif: {dataset}/{split} ({len(SEEDS)} seed)",
+        "",
+        "Perbandingan ini ditambahkan setelah hasil ada, jadi **bukan klaim** `docs/EXPERIMENTS.md` §8 (poin 7). Δ = kanan − kiri,",
+        f"rata-rata seed, CI 95% bootstrap per tile ({n_rep} replikasi). AP, C-IoU, dan laju dalam poin persen; PoLiS dalam",
+        "piksel; MTA dalam derajat.",
+        *sections,
+    ]
     payload = {
         "split": split,
         "seeds": list(SEEDS),
@@ -594,6 +605,60 @@ def _missing_exploratory(dataset: str) -> list[str]:
     return tables.missing_runs(dataset, exps, "test")
 
 
+# --- exploratory: the θ head on the binary route (docs/EXPERIMENTS.md §10, rule frozen 14 Nov 2026 before the runs)
+
+BINARY_THETA_METHODS = ("b3m", "b3tp", "b3t")
+BINARY_THETA_STEPS = (("b3m", "b3tp"), ("b3tp", "b3t"), ("b3m", "b3t"))
+BINARY_THETA_NOTES = {"b3m->b3tp": "efek pelatihan θ", "b3tp->b3t": "efek pemanduan θ", "b3m->b3t": "efek total"}
+BINARY_THETA_RULE = "EXPERIMENTS §10: aturan §8 poin 1 pada B3m → B3θ (eksploratif)"
+BINARY_THETA_WIDER = {
+    "crowdai": (
+        ("b3m", "b3t", "head θ di jalur biner, efek total"),
+        ("b3", "b3t", "terhadap B3 tanpa regularisasi"),
+        ("full_p0", "b3t", "jalur 3 kelas + θ lawan jalur biner + θ"),
+    )
+}
+
+
+def n1_binary(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> tuple[dict, list[str]]:
+    """B3m → B3θ′ → B3θ in the dense stratum of test, decided with the rule of §8 point 1 moved to the binary route
+    (§10), then B3θ against B3m, B3 and FULL-P0 on all test tiles, the dense stratum and the touching tiles. Added after
+    the results of Phases 6-9, so none of it is a claim of §8."""
+    payload = tables._comparison(
+        dataset, BINARY_THETA_METHODS, BINARY_THETA_STEPS, tables.N1_METRICS, n_rep, splits_dir, theta=True
+    )
+    payload["decision"] = {**tables.decide_n1(payload["steps"]["b3m->b3t"]), "rule": BINARY_THETA_RULE}
+    header = ("PoLiS_paired ↓", "MTA_inst ↓", "galat θ median ↓", "galat θ p90 ↓", "AP")
+    names = ("PoLiS_paired", "MTA_inst", "theta_err_median", "theta_err_p90", "AP")
+    claim = 'Pernyataan eksploratif "head θ membantu di jalur biner"'
+    title = "Head θ di jalur biner (eksploratif)"
+    lines = tables._comparison_lines(title, payload, header, names, BINARY_THETA_NOTES, claim)
+    wider, sections, exps = _grouped_steps(dataset, BINARY_THETA_WIDER[dataset], n_rep, splits_dir)
+    payload["wider"] = wider
+    for exp in exps:
+        if exp not in payload["sources"]:
+            payload["sources"][exp] = tables._sources(dataset, exp, map(paths.run_name, SEEDS), "test")
+    lines += [
+        "",
+        "Aturan ini dibekukan sebelum B3θ dilatih, tetapi perbandingannya ditambahkan setelah hasil Fase 6–9 ada, jadi",
+        "**bukan klaim** `docs/EXPERIMENTS.md` §8 (poin 7) dan tidak mengubah keputusan N1.",
+        "",
+        f"# B3θ terhadap metode lain: {dataset}/test ({len(SEEDS)} seed)",
+        "",
+        f"Δ = kanan − kiri, rata-rata seed, CI 95% bootstrap per tile ({n_rep} replikasi). AP, C-IoU, dan laju dalam",
+        "poin persen; PoLiS dalam piksel; MTA dalam derajat.",
+        *sections,
+    ]
+    return payload, lines
+
+
+def _missing_n1_binary(dataset: str) -> list[str]:
+    if dataset not in BINARY_THETA_WIDER:
+        return [f"the binary route with a θ head was not run on {dataset}"]
+    exps = dict.fromkeys([*BINARY_THETA_METHODS, *(exp for a, b, _ in BINARY_THETA_WIDER[dataset] for exp in (a, b))])
+    return tables.missing_runs(dataset, exps, "test")
+
+
 tables.BUILDERS.update({
         "sota": sota,
         "paper": paper,
@@ -602,6 +667,7 @@ tables.BUILDERS.update({
         "p2p": p2p,
         "efficiency": efficiency,
         "exploratory": exploratory,
+        "n1_binary": n1_binary,
     })
 tables.MISSING.update(
     {
@@ -612,5 +678,6 @@ tables.MISSING.update(
         "p2p": _missing_p2p,
         "efficiency": _missing_efficiency,
         "exploratory": _missing_exploratory,
+        "n1_binary": _missing_n1_binary,
     }
 )

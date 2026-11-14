@@ -9,11 +9,11 @@ from torch import nn
 from densepoly.config import load_config
 from densepoly.labels.targets import targets_from_config
 from densepoly.losses import SegmentationLoss
-from densepoly.models.factory import build_model
+from densepoly.models.factory import CONTACT_OFF, build_model
 from tests.fixtures.synthetic import make_scene
 
 IGNORE = 255
-EXPERIMENTS = ("b2", "b3", "b4", "full_p0")  # bce_dice, weighted bce_dice, ce_dice, ce_dice_theta
+EXPERIMENTS = ("b2", "b3", "b4", "full_p0", "b3t")  # (weighted) bce_dice, ce_dice, ce_dice_theta, bce_dice_theta
 
 
 def criterion(exp, *overrides):
@@ -21,7 +21,13 @@ def criterion(exp, *overrides):
 
 
 def output_channels(exp):
-    return {"b2": 1, "b3": 1, "b4": 3, "full_p0": 5}[exp]
+    return {"b2": 1, "b3": 1, "b4": 3, "full_p0": 5, "b3t": 5}[exp]
+
+
+def full_layout(building, orientation):
+    """The output of a binary model with a θ head (models/factory.py): logits (0, z, off) and the raw (ŝ, ĉ)."""
+    zero = torch.zeros_like(building)
+    return torch.cat([zero, building, zero + CONTACT_OFF, orientation], dim=1)
 
 
 def toy_batch():
@@ -58,6 +64,34 @@ def test_theta_term_is_the_mean_squared_error_over_valid_pixels():
     terms = criterion("full_p0", "loss.theta_lambda=2.0")(output, toy_batch())
     assert terms["theta"].item() == pytest.approx(1.0)
     assert terms["loss"].item() == pytest.approx(terms["ce"].item() + terms["dice"].item() + 2.0, abs=1e-6)
+
+
+def test_binary_theta_loss_is_the_b3_loss_plus_the_theta_term():
+    batch = toy_batch()
+    torch.manual_seed(0)
+    batch["weight"] = (1 + 5 * torch.rand(batch["classes"].shape)) * (batch["classes"] != IGNORE)
+    building, raw = torch.randn(1, 1, 2, 4), torch.randn(1, 2, 2, 4)
+    output = full_layout(building, raw)
+    b3 = criterion("b3")(building, batch)
+    terms = criterion("b3t", "loss.theta_lambda=2.0")(output, batch)
+    assert terms["ce"].item() == pytest.approx(b3["ce"].item(), abs=1e-6)
+    assert terms["dice"].item() == pytest.approx(b3["dice"].item(), abs=1e-6)
+    assert terms["theta"].item() == pytest.approx(criterion("full_p0")(output, batch)["theta"].item(), abs=1e-6)
+    assert terms["theta"].item() > 0
+    assert terms["loss"].item() == pytest.approx(b3["loss"].item() + 2.0 * terms["theta"].item(), abs=1e-6)
+
+
+def test_binary_theta_loss_reads_only_the_building_logit_of_the_classes():
+    batch = toy_batch()
+    torch.manual_seed(0)
+    output = full_layout(torch.randn(1, 1, 2, 4), torch.randn(1, 2, 2, 4))
+    changed = output.clone()
+    changed[:, 0], changed[:, 2] = 3.0, -3.0
+    loss = criterion("b3t")
+    first, second = loss(output, batch), loss(changed, batch)
+    assert all(first[key].item() == pytest.approx(second[key].item(), abs=1e-6) for key in first)
+    with pytest.raises(ValueError, match="one building logit"):
+        loss(torch.zeros(1, 3, 2, 4), batch)
 
 
 def test_theta_term_is_zero_without_valid_pixels():

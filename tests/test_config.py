@@ -16,6 +16,8 @@ MATRIX = {
     "b3": ("unetplusplus", 1, [], "bce_dice", True, "cc", "raw", True),
     "b3m": ("unetplusplus", 1, [], "none", False, "cc", "mar", False),  # exploratory, not in the frozen comparisons
     "b3my": ("unetplusplus", 1, [], "none", False, "cc_yolo", "mar", False),  # exploratory
+    "b3t": ("unetplusplus", 5, [], "bce_dice_theta", True, "cc", "theta", True),  # exploratory: B3 + θ head
+    "b3tp": ("unetplusplus", 5, [], "none", False, "cc", "mar", False),  # exploratory
     "b4": ("unetplusplus", 3, [], "ce_dice", True, "watershed", "raw", True),
     "b5": ("unetplusplus", 3, [], "none", False, "watershed", "mar", False),
     "b5p": ("unetplusplus", 5, [], "none", False, "watershed", "mar", False),
@@ -55,12 +57,12 @@ def test_configs_encode_the_scenario_matrix(exp):
     assert row == MATRIX[exp]
 
 
-@pytest.mark.parametrize("exp", ["b3m", "b3my", "b5", "b5p", "full_y"])
+@pytest.mark.parametrize("exp", ["b3m", "b3my", "b3tp", "b5", "b5p", "full_y"])
 def test_inference_only_configs_mirror_their_source(exp):
     cfg = load_config("crowdai", exp)
     src = load_config("crowdai", cfg.model.source_exp)
     assert src.train.enabled and not cfg.train.enabled
-    assert (cfg.model.arch, cfg.model.classes) == (src.model.arch, src.model.classes)
+    assert (cfg.model.arch, cfg.model.classes, cfg.model.head) == (src.model.arch, src.model.classes, src.model.head)
     assert list(cfg.input.priors) == list(src.input.priors)
 
 
@@ -153,3 +155,9 @@ def test_seeded_configs_keep_the_polygons_of_their_base(exp, base):
     assert cfg.postproc.base_exp == base and cfg.postproc.instance.endswith("_yolo")
     assert cfg.postproc.polygon == src.postproc.polygon
     assert cfg.model.source_exp == (src.model.source_exp or base)
+
+
+def test_only_the_binary_theta_experiments_have_their_own_head():
+    heads = {exp: load_config("crowdai", exp).model.head for exp in MATRIX}
+    assert {exp for exp, head in heads.items() if head is not None} == {"b3t", "b3tp"}
+    assert heads["b3t"] == heads["b3tp"] == "binary_theta"

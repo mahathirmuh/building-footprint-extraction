@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from densepoly.config import load_config
-from densepoly.models.factory import build_model, input_channels, split_output
+from densepoly.models.factory import CONTACT_OFF, build_model, input_channels, split_output
 from densepoly.models.first_conv import expand_first_conv
 
 NO_WEIGHTS = ["model.encoder_weights=null"]
@@ -106,3 +106,61 @@ def test_split_output_separates_logits_from_the_bounded_orientation():
     assert orientation.abs().max() <= 1
     three = torch.randn(2, 3, 8, 8)
     assert split_output(three)[0] is three and split_output(three)[1] is None
+
+
+# --- binary model with a θ head (B3θ, exploratory): 3 learned channels in the layout of FULL
+
+
+def binary_theta_model():
+    return build_model(load_config("crowdai", "b3t", NO_WEIGHTS)).eval()
+
+
+def test_binary_theta_head_writes_the_layout_of_full():
+    torch.manual_seed(0)
+    model = binary_theta_model()
+    with torch.inference_mode():
+        output = model(torch.randn(2, 3, SIZE, SIZE))
+    assert output.shape == (2, 5, SIZE, SIZE)
+    assert (output[:, 0] == 0).all() and (output[:, 2] == CONTACT_OFF).all()
+    logits, orientation = split_output(output)
+    probabilities, building = torch.softmax(logits, dim=1), torch.sigmoid(output[:, 1])
+    assert torch.allclose(probabilities[:, 1], building, atol=1e-6)
+    assert torch.allclose(probabilities[:, 0], 1 - building, atol=1e-6)
+    assert (probabilities[:, 2] == 0).all()  # the contact class is never predicted
+    assert orientation.shape == (2, 2, SIZE, SIZE) and orientation.abs().max() <= 1
+
+
+def test_the_contact_logit_stays_off_in_half_precision():
+    logits = torch.tensor([[0.0, 30.0, CONTACT_OFF], [0.0, -30.0, CONTACT_OFF]]).half()
+    assert torch.isfinite(logits).all()
+    probabilities = torch.softmax(logits.float(), dim=1)
+    assert (probabilities[:, 2] == 0).all() and torch.isfinite(probabilities).all()
+
+
+def test_binary_theta_model_is_the_b3_network_with_two_more_output_channels():
+    b3 = build_model(load_config("crowdai", "b3", NO_WEIGHTS))
+    model = binary_theta_model()
+    head = [m for m in model.segmentation_head.modules() if isinstance(m, nn.Conv2d)]
+    assert [conv.out_channels for conv in head] == [3]
+    count = lambda net: sum(p.numel() for p in net.parameters())  # noqa: E731
+    assert count(model) - count(b3) == 2 * (head[0].in_channels * 9 + 1)
+    twin = binary_theta_model()
+    twin.load_state_dict(model.state_dict())
+    x = torch.randn(1, 3, SIZE, SIZE)
+    with torch.inference_mode():
+        assert torch.equal(twin(x), model(x))
+
+
+def test_binary_theta_head_gets_gradients_only_on_its_learned_channels():
+    torch.manual_seed(0)
+    model = binary_theta_model()
+    output = model(torch.randn(2, 3, SIZE, SIZE))
+    output.square().mean().backward()
+    conv = next(m for m in model.segmentation_head.modules() if isinstance(m, nn.Conv2d))
+    assert conv.weight.grad.abs().sum(dim=(1, 2, 3)).min() > 0
+
+
+@pytest.mark.parametrize("overrides", [["model.head=two_heads"], ["model.classes=3"]])
+def test_binary_theta_head_rejects_a_wrong_config(overrides):
+    with pytest.raises(ValueError):
+        build_model(load_config("crowdai", "b3t", [*NO_WEIGHTS, *overrides]))
