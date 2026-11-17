@@ -1,0 +1,54 @@
+# Compiles paper/main.tex to a PDF on GitHub's runners, because the lab server has no TeX (approved 17 Nov 2026).
+# The PDF, the LaTeX log and the exit code go to the branch paper-pdf: one commit, replaced by every build. That branch
+# holds build output only. A PDF that compiled is then copied by hand to paper/main.pdf on main.
+name: paper
+on:
+  push:
+    branches: [main]
+    paths: ["paper/**", "!paper/main.pdf", ".github/workflows/paper.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: paper
+  cancel-in-progress: true
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install TeX Live
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-publishers texlive-pictures \
+            texlive-fonts-recommended texlive-bibtex-extra cm-super latexmk
+      - name: Compile
+        working-directory: paper
+        run: |
+          set +e
+          latexmk -pdf -f -interaction=nonstopmode -file-line-error main.tex > build.txt 2>&1
+          echo $? > exit_code.txt
+          tail -n 40 build.txt
+      - name: Publish the build to the branch paper-pdf
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          name=$(git log -1 --format=%an)
+          email=$(git log -1 --format=%ae)
+          mkdir out
+          for file in main.pdf main.log main.blg build.txt exit_code.txt; do
+            if [ -f "paper/$file" ]; then cp "paper/$file" out/; fi
+          done
+          echo "$GITHUB_SHA" > out/source_commit.txt
+          cd out
+          git init -q -b paper-pdf
+          git config user.name "$name"
+          git config user.email "$email"
+          git add -A
+          git commit -q -m "Paper build of ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" paper-pdf
+      - name: Fail when the paper did not compile
+        run: test "$(cat paper/exit_code.txt)" = 0
