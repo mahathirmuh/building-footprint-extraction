@@ -1,0 +1,76 @@
+# Converts slides/densepoly.pptx to a PDF with LibreOffice on GitHub's runners, because the lab server has neither
+# PowerPoint nor LibreOffice (asked for on 17 Nov 2026). The PDF and the conversion log go to the branch slides-pdf: one
+# commit, replaced by every build, build output only. The PDF is then copied by hand to slides/densepoly.pdf on main.
+# The deck names the fonts Raleway and Raleway Black, which a .pptx does not carry: they are installed first, and
+# fonts.txt on the branch lists the fonts that the PDF really embeds.
+name: slides
+on:
+  push:
+    branches: [main]
+    paths: ["slides/densepoly.pptx", ".github/workflows/slides.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: slides
+  cancel-in-progress: true
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LibreOffice
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            libreoffice-impress fonts-liberation fonts-dejavu-core poppler-utils unzip
+      - name: Install the Raleway fonts
+        run: |
+          mkdir -p ~/.fonts fonts_src
+          # The font files of the CTAN package "raleway" (SIL Open Font License); TeX Live's copy is the fallback.
+          if curl -fsSL --retry 3 -o fonts_src/raleway.zip https://mirrors.ctan.org/fonts/raleway.zip; then
+            unzip -q -o fonts_src/raleway.zip -d fonts_src
+          fi
+          find fonts_src \( -iname 'Raleway*.otf' -o -iname 'Raleway*.ttf' \) -exec cp {} ~/.fonts/ \;
+          if ! ls ~/.fonts | grep -qi raleway; then
+            sudo apt-get install -y -qq --no-install-recommends texlive-fonts-extra
+            find /usr/share/texlive /usr/share/fonts \( -iname 'Raleway*.otf' -o -iname 'Raleway*.ttf' \) -exec cp {} ~/.fonts/ \;
+          fi
+          fc-cache -f
+          {
+            echo "# files"; ls ~/.fonts
+            echo "# fontconfig"; fc-list : family style | grep -i raleway | sort
+            echo "# matches"; fc-match "Raleway"; fc-match "Raleway:bold"; fc-match "Raleway Black"
+          } > fontconfig.txt 2>&1
+          cat fontconfig.txt
+      - name: Convert
+        run: |
+          set +e
+          mkdir out
+          soffice --headless --convert-to pdf --outdir out slides/densepoly.pptx > out/convert.txt 2>&1
+          echo $? > out/exit_code.txt
+          test -s out/densepoly.pdf || echo 1 > out/exit_code.txt
+          cat out/convert.txt
+          pdfinfo out/densepoly.pdf > out/pdfinfo.txt 2>&1
+          pdffonts out/densepoly.pdf > out/fonts.txt 2>&1
+          cp fontconfig.txt out/
+          cat out/pdfinfo.txt out/fonts.txt
+      - name: Publish the build to the branch slides-pdf
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          name=$(git log -1 --format=%an)
+          email=$(git log -1 --format=%ae)
+          mkdir -p out
+          echo "$GITHUB_SHA" > out/source_commit.txt
+          cd out
+          git init -q -b slides-pdf
+          git config user.name "$name"
+          git config user.email "$email"
+          git add -A
+          git commit -q -m "Slides build of ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" slides-pdf
+      - name: Fail when the deck was not converted
+        run: test "$(cat out/exit_code.txt)" = 0
