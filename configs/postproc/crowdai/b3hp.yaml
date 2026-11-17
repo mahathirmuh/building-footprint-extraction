@@ -1,0 +1,213 @@
+# Frozen post-processing of b3hp on crowdai (docs/EXPERIMENTS.md §4), tuned on val_tune_sub and
+# written by scripts/tune_postproc.py; do not edit. load_config merges the postproc section only.
+postproc:
+  instance_min_px: 5
+  rect_iou: 0.93
+  dp_k: 0.02
+  snap_deg: 10
+tuning:
+  split: val_tune_sub
+  images: 1000
+  created: '2026-11-18T00:46:21+07:00'
+  git: 53943de4075c2921ef02dd698a172010aa827f87
+  grid:
+    file: configs/postproc/grid.yaml
+    sha256: 8c2f5528c9fbf8d04f55fcef803996cb6f92862dc4e3fbaf4ebeaf44cd28d5b8
+  score:
+    AP: 0.6499798914847503
+    PoLiS_paired: 1.4812610594168614
+  stage1:
+  - instance_min_px: 5
+    AP: 0.6586394434947025
+    PoLiS_paired: 1.519758026275549
+  - instance_min_px: 10
+    AP: 0.6586394434947025
+    PoLiS_paired: 1.519758026275549
+  - instance_min_px: 20
+    AP: 0.6586328696371898
+    PoLiS_paired: 1.5204021307236004
+  stage2:
+  - rect_iou: 0.85
+    dp_k: 0.02
+    snap_deg: 10
+    AP: 0.6327072370981888
+    PoLiS_paired: 1.6449070294350374
+  - rect_iou: 0.85
+    dp_k: 0.02
+    snap_deg: 15
+    AP: 0.6316443510496684
+    PoLiS_paired: 1.6495718787048304
+  - rect_iou: 0.85
+    dp_k: 0.02
+    snap_deg: 20
+    AP: 0.6307385505449395
+    PoLiS_paired: 1.6521167999093667
+  - rect_iou: 0.85
+    dp_k: 0.03
+    snap_deg: 10
+    AP: 0.6320734778133461
+    PoLiS_paired: 1.6610931129542357
+  - rect_iou: 0.85
+    dp_k: 0.03
+    snap_deg: 15
+    AP: 0.6310310496811354
+    PoLiS_paired: 1.6670518709010067
+  - rect_iou: 0.85
+    dp_k: 0.03
+    snap_deg: 20
+    AP: 0.6295046824544637
+    PoLiS_paired: 1.6698093498060131
+  - rect_iou: 0.85
+    dp_k: 0.04
+    snap_deg: 10
+    AP: 0.6289791026586257
+    PoLiS_paired: 1.675128569026616
+  - rect_iou: 0.85
+    dp_k: 0.04
+    snap_deg: 15
+    AP: 0.6280611892029554
+    PoLiS_paired: 1.683971453000827
+  - rect_iou: 0.85
+    dp_k: 0.04
+    snap_deg: 20
+    AP: 0.6271276262646259
+    PoLiS_paired: 1.6879950710198477
+  - rect_iou: 0.85
+    dp_k: 0.06
+    snap_deg: 10
+    AP: 0.6234928569270627
+    PoLiS_paired: 1.712676561478937
+  - rect_iou: 0.85
+    dp_k: 0.06
+    snap_deg: 15
+    AP: 0.6211179160939235
+    PoLiS_paired: 1.7240476378829397
+  - rect_iou: 0.85
+    dp_k: 0.06
+    snap_deg: 20
+    AP: 0.6198837549160084
+    PoLiS_paired: 1.735671050574094
+  - rect_iou: 0.9
+    dp_k: 0.02
+    snap_deg: 10
+    AP: 0.6474447616306258
+    PoLiS_paired: 1.5144886214052293
+  - rect_iou: 0.9
+    dp_k: 0.02
+    snap_deg: 15
+    AP: 0.6454733855322038
+    PoLiS_paired: 1.519122203454861
+  - rect_iou: 0.9
+    dp_k: 0.02
+    snap_deg: 20
+    AP: 0.6435342538854063
+    PoLiS_paired: 1.5216593856451168
+  - rect_iou: 0.9
+    dp_k: 0.03
+    snap_deg: 10
+    AP: 0.6459193209209029
+    PoLiS_paired: 1.5337487051714733
+  - rect_iou: 0.9
+    dp_k: 0.03
+    snap_deg: 15
+    AP: 0.6439356604249773
+    PoLiS_paired: 1.5394157401290447
+  - rect_iou: 0.9
+    dp_k: 0.03
+    snap_deg: 20
+    AP: 0.6425518660744926
+    PoLiS_paired: 1.542135398368661
+  - rect_iou: 0.9
+    dp_k: 0.04
+    snap_deg: 10
+    AP: 0.6418350832747741
+    PoLiS_paired: 1.5513049886939811
+  - rect_iou: 0.9
+    dp_k: 0.04
+    snap_deg: 15
+    AP: 0.6402954181501956
+    PoLiS_paired: 1.5615077904241736
+  - rect_iou: 0.9
+    dp_k: 0.04
+    snap_deg: 20
+    AP: 0.6387204136295195
+    PoLiS_paired: 1.5662553716886947
+  - rect_iou: 0.9
+    dp_k: 0.06
+    snap_deg: 10
+    AP: 0.6324952842197346
+    PoLiS_paired: 1.6011747742528997
+  - rect_iou: 0.9
+    dp_k: 0.06
+    snap_deg: 15
+    AP: 0.63067155769179
+    PoLiS_paired: 1.6161562133872367
+  - rect_iou: 0.9
+    dp_k: 0.06
+    snap_deg: 20
+    AP: 0.6284151712187154
+    PoLiS_paired: 1.6301381724037631
+  - rect_iou: 0.93
+    dp_k: 0.02
+    snap_deg: 10
+    AP: 0.6499798914847503
+    PoLiS_paired: 1.4812610594168614
+  - rect_iou: 0.93
+    dp_k: 0.02
+    snap_deg: 15
+    AP: 0.6477606608829017
+    PoLiS_paired: 1.4864241247121996
+  - rect_iou: 0.93
+    dp_k: 0.02
+    snap_deg: 20
+    AP: 0.6460675340936026
+    PoLiS_paired: 1.4889784934491992
+  - rect_iou: 0.93
+    dp_k: 0.03
+    snap_deg: 10
+    AP: 0.6488624792948594
+    PoLiS_paired: 1.5018327275616534
+  - rect_iou: 0.93
+    dp_k: 0.03
+    snap_deg: 15
+    AP: 0.6473139137000978
+    PoLiS_paired: 1.5080874113441791
+  - rect_iou: 0.93
+    dp_k: 0.03
+    snap_deg: 20
+    AP: 0.6455375713891003
+    PoLiS_paired: 1.5109485988793196
+  - rect_iou: 0.93
+    dp_k: 0.04
+    snap_deg: 10
+    AP: 0.6441001842120463
+    PoLiS_paired: 1.521904602675975
+  - rect_iou: 0.93
+    dp_k: 0.04
+    snap_deg: 15
+    AP: 0.6423713830343157
+    PoLiS_paired: 1.532770994763322
+  - rect_iou: 0.93
+    dp_k: 0.04
+    snap_deg: 20
+    AP: 0.6402411974129107
+    PoLiS_paired: 1.537869364938411
+  - rect_iou: 0.93
+    dp_k: 0.06
+    snap_deg: 10
+    AP: 0.6330442164820436
+    PoLiS_paired: 1.5833183110522413
+  - rect_iou: 0.93
+    dp_k: 0.06
+    snap_deg: 15
+    AP: 0.6308914315627683
+    PoLiS_paired: 1.600340776405513
+  - rect_iou: 0.93
+    dp_k: 0.06
+    snap_deg: 20
+    AP: 0.6272646520950449
+    PoLiS_paired: 1.6156462977695714
+  seconds:
+    stage1: 21.8
+    stage2: 117.2
+  workers: 12
