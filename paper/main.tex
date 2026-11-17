@@ -11,6 +11,8 @@
 \usepackage{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
+% A table at its natural size, shrunk only when it is wider than the text block (never enlarged).
+\newcommand{\fittable}[1]{\resizebox{\ifdim\width>\textwidth\textwidth\else\width\fi}{!}{#1}}
 
 \input{tables/numbers}
 
@@ -261,13 +263,13 @@ B4, but they also split more buildings and cost AP: the plain binary model B3 ha
 
 \subsection{Orientation head}
 \label{sec:n1}
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \caption{Paired differences in the dense stratum of the test split (\NTilesDense{} tiles, three seeds), with 95\%
 bootstrap intervals.}
 \label{tab:n1}
-\resizebox{\columnwidth}{!}{\input{tables/n1}}
-\end{table}
+\footnotesize\fittable{\input{tables/n1}}
+\end{table*}
 Table~\ref{tab:n1} decomposes the step from B5 to FULL-P0. Training with the orientation head already improves the
 polygons that mode \emph{mar} draws, and guiding the regularization with the head improves them further. In total the
 paired PoLiS changes by $\NNoneTotalPolis$\,px, 95\% interval $\NNoneTotalPolisCi$, and the per-instance MTA by
@@ -276,12 +278,12 @@ contribution is supported. The effect is small: a few percent of either metric (
 
 \subsection{Morphological priors}
 \label{sec:n3}
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \caption{Effect of the priors in the dense stratum: paired differences with 95\% bootstrap intervals.}
 \label{tab:priors}
-\resizebox{\columnwidth}{!}{\input{tables/priors}}
-\end{table}
+\footnotesize\fittable{\input{tables/priors}}
+\end{table*}
 The priors were meant to reduce merged buildings. They do not (Table~\ref{tab:priors}): with both priors the merge rate
 changes by $\NNthreeDeltaMerge$ points, $\NNthreeDeltaMergeCi$, in the wrong direction and not in every seed. Neither
 MBI alone nor the gap map on top of it helps. The contribution is not supported.
@@ -322,13 +324,13 @@ without a duplicate in the training set. Same evaluation code for both.}
 \label{tab:sota}
 \resizebox{\textwidth}{!}{\input{tables/sota}}
 \end{table*}
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \caption{Numbers \emph{reported in the cited papers} on the full CrowdAI validation set, which leaks from the training
 set. They are not comparable with Tables~\ref{tab:ablation} and~\ref{tab:sota}.}
 \label{tab:reported}
-\resizebox{\columnwidth}{!}{\input{tables/reported}}
-\end{table}
+\footnotesize\fittable{\input{tables/reported}}
+\end{table*}
 Our evaluation reproduces the reported AP of HiSup on the full validation set, \NLeakyApHisup{}
 (Table~\ref{tab:reported} lists the reported numbers). On the clean tiles the same predictions score \NCleanApHisup{}
 (Table~\ref{tab:sota}). The clean tiles are not a random sample of the validation set, so part of the drop may come from
@@ -339,13 +341,13 @@ AP$_{50}$ (\NCleanApfiftyFull{} against \NCleanApfiftyHisup) and apart in bounda
 buildings and places their outlines less precisely.
 
 \subsection{WHU}
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \caption{WHU test patches under the rules of Pix2Poly. $^\dagger$Reported in~\cite{adimoolam2025pix2poly}; their test
 tiles are not exactly ours, so the comparison is approximate.}
 \label{tab:whu}
-\resizebox{\columnwidth}{!}{\input{tables/whu}}
-\end{table}
+\footnotesize\fittable{\input{tables/whu}}
+\end{table*}
 On WHU (one seed) FULL-P0 reaches \NWhuAp{} AP and \NWhuCiouMain{} C-IoU against the official per-building ground
 truth. Under the rules of Pix2Poly its C-IoU is \NWhuCiou, between the reported values of frame field learning and of
 HiSup (\NWhuCiouHisup) and Pix2Poly (\NWhuCiouPixtopoly), see Table~\ref{tab:whu}. The effect of guiding the
@@ -387,14 +389,14 @@ contours; the other models regularize them.}
 
 \subsection{Exploratory: the orientation head on the binary baseline}
 \label{sec:binarytheta}
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \caption{Orientation head on the binary route: paired differences in the dense stratum of the test split (\NTilesDense{}
 tiles, three seeds), with 95\% bootstrap intervals. B3$\theta'$ and B3$\theta$ share one network; the first is
 regularized with minimum-area rectangles, the second with the predicted orientation.}
 \label{tab:binarytheta}
-\resizebox{\columnwidth}{!}{\input{tables/binary_theta}}
-\end{table}
+\footnotesize\fittable{\input{tables/binary_theta}}
+\end{table*}
 B3m has the best masks, but the orientation head was tested on the three-class route only. We therefore trained the
 binary model with the orientation head (B3$\theta$, three seeds, the same budget) and asked the question of
 Section~\ref{sec:n1} again, with B3m in the place of B5. The rule is not met (Table~\ref{tab:binarytheta}): in the dense
