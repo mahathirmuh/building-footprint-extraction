@@ -75,7 +75,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   FULL-P0 seed 0 AP 62,72, run beku 62,73), `notebooks/demo_hasil.ipynb`, `paper/` (naskah IEEEtran, **belum dikompilasi ke PDF**:
   server tidak punya LaTeX), `slides/densepoly.pptx` (belum diperiksa visual), dan ringkasan keterbatasan sudah ada. Rinciannya dan
   daftar yang masih butuh pemilik proyek ada di akhir `docs/progress.md`.
-  Fase 11 (eksploratif, disetujui 14 Nov 2026; hasil ada 15 Nov 2026, menunggu persetujuan): B3θ = B3 + head θ, 3 seed,
+  Fase 11 (eksploratif; mulai 14 Nov 2026) selesai dan disetujui (17 Nov 2026), tanpa eksperimen lanjutan: B3θ = B3 + head θ, 3 seed,
   aturan beku `docs/EXPERIMENTS.md` §10. "Head θ membantu di jalur biner" **tidak didukung**: di strata padat `test`,
   B3m → B3θ `PoLiS_paired` +0,084 px, `MTA_inst` +0,30°, AP −2,26. Pemanduan θ tetap membantu (B3θ′ → B3θ: −0,016 px, −0,18°),
   tetapi melatih head θ menurunkan mutu mask biner (`fg_iou` `val_select` 0,888 lawan 0,897–0,899 pada B3). B3θ `test`: AP 62,51,

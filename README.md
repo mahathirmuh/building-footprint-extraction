@@ -8,7 +8,7 @@ poligon rapi per rumah (COCO JSON / GeoJSON), dilatih **tanpa anotasi poligon**.
 | File | Isi |
 |---|---|
 | `CLAUDE.md` | konteks proyek, aturan kerja, keputusan metodologi, jebakan teknis (dibaca Claude Code tiap sesi) |
-| `PLAN.md` | rencana Fase 0–10 dengan kriteria "Selesai jika" |
+| `PLAN.md` | rencana Fase 0–11 dengan kriteria "Selesai jika" |
 | `docs/METHOD.md` | spesifikasi algoritma: prior, label, model, loss, watershed, regularisasi, parameter |
 | `docs/DATA.md` | unduhan, deduplikasi CrowdAI, protokol WHU, strata kepadatan |
 | `docs/EXPERIMENTS.md` | skenario B0–FULL+Y, training, tuning, prioritas, kriteria keputusan |

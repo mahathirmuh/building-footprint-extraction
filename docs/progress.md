@@ -1866,6 +1866,7 @@ Semua selisih searah di ketiga seed. Di strata padat polanya sama (B3m → FULL-
   di jalur itu. Tetapi klaim yang lebih luas, bahwa pipeline FULL adalah cara terbaik menghasilkan poligon rapi tanpa anotasi poligon, **tidak
   didukung**: baseline biner dengan regularisasi yang sama lebih baik. Ini harus ditulis terang di paper.
 - **Yang belum diuji:** head θ di atas model biner (B3 + head θ, lalu `theta`). Itu butuh training baru dan di luar rencana.
+  (Catatan 17 Nov 2026: sudah diuji di Fase 11; hasilnya tidak didukung.)
 
 ---
 
@@ -2035,8 +2036,9 @@ Di luar daftar klaim (eksploratif, kecuali FULL+Y yang direncanakan di Fase 9):
 3. **WHU.** Hanya satu seed dan satu model. Tile uji direkonstruksi dari rilisan resmi 1024², jadi daftarnya tidak sama persis dengan
    test Pix2Poly, dan perbandingan dengan angka paper hanya kira-kira. GT `p2p` dibuat dari connected component label raster, sehingga
    bangunan yang bersentuhan menyatu; klaim rumah berdempetan di WHU hanya memakai GT utama.
-4. **Efek N1 kecil dan baru diuji di jalur tiga kelas.** Apakah head θ juga membantu jalur biner yang lebih kuat (B3 + head θ) belum diuji,
-   karena butuh training baru.
+4. **Efek N1 kecil dan hanya positif di jalur tiga kelas.** (Diperbarui 17 Nov 2026.) Di jalur biner yang lebih kuat, head θ tidak
+   memberi perbaikan bersih (Fase 11, eksploratif): pemanduan θ tetap membantu, tetapi melatih head itu menurunkan mutu mask. Hanya
+   satu konfigurasi (λ = 1) yang dilatih, jadi penyebabnya belum diketahui.
 5. **Kelas kontak.** Mekanisme pemisah yang diadopsi (kelas kontak + watershed) hampir tidak bekerja lewat kelas kontaknya; pemisahan
    datang dari celah latar. Penyebab tidak aktifnya kelas itu belum dipisahkan (kelangkaan piksel kontak, atau pengaruh head θ).
 6. **Detektor.** Dilatih sekali dan dipakai untuk ketiga seed jaringan, jadi SD tidak memuat variasi detektor. `c_y` terpilih di ujung
@@ -2098,7 +2100,7 @@ sampai tabel bisa diulang dan memberi angka yang setara.
 logo IF di sampul, ornamen di slide penutup. Tidak ada logo yang digambar ulang. Foto latar slide penutup tidak tersedia, jadi slide itu
 memakai biru ITS polos. Deck tetap 18 slide; pemeriksaan visual masih belum dilakukan (server tidak punya LibreOffice).
 
-## Fase 11 — (Eksploratif) Head θ di jalur biner: B3θ (hasil ada 15 November 2026; menunggu persetujuan)
+## Fase 11 — (Eksploratif) Head θ di jalur biner: B3θ (selesai dan disetujui 17 November 2026)
 
 **Persetujuan.** 14 Nov 2026 pemilik proyek meminta proyek dilanjutkan ("maksud saya lanjut project ini"), lalu menyetujui
 usulan eksperimen B3 + head θ dengan 3 seed, kira-kira 6 jam GPU ("iya melanjutkan penelitian"). Fase 10 tidak berubah:
@@ -2245,4 +2247,16 @@ FULL final tidak diubah.
 **Cek "Selesai jika" Fase 11:** tabel `n1_binary` ada beserta keputusan aturan §10 (ya); hasil tercatat di sini dan di bahan
 laporan (ya). Fase 11 menunggu persetujuan pemilik proyek untuk ditutup. Fase 10 masih menunggu hal yang sama seperti
 sebelumnya (PDF paper, pemeriksaan visual PPT, judul akhir, persetujuan).
+
+**Penutupan Fase 11 (17 Nov 2026, 22.30 WIB).** Pemilik proyek menyetujui rekomendasi penutupan ("lanjut sesuai rekomendasimu"):
+Fase 11 ditutup dengan hasil negatif apa adanya, dan **tidak ada eksperimen lanjutan yang dijalankan**. Gagasan lanjutan
+(λ lebih kecil, head θ dengan cabang sendiri) tetap tercatat di atas sebagai kemungkinan, bukan rencana. Fase 10 **belum**
+ditutup: PDF paper masih belum dikompilasi (server tetap tanpa LaTeX, Tectonic, dan LibreOffice saat dicek 17 Nov 2026).
+
+Yang ikut dirapikan saat penutupan, supaya bahan laporan tidak memuat pernyataan yang sudah usang:
+- `notebooks/demo_hasil.ipynb` (38 sel): subbab baru 7.7 yang membaca tabel `n1_binary`, satu butir baru di "Yang tidak didukung",
+  dan butir keterbatasan "head θ belum diuji di jalur biner" diganti. Dieksekusi ulang di server (18 sel kode, tanpa galat, 22 s);
+  ekspornya `outputs/report/demo_hasil.html` dan `demo_hasil.executed.ipynb` diperbarui.
+- Butir keterbatasan nomor 4 di ringkasan Fase 10 dan catatan "yang belum diuji" di entri B3m diberi keterangan hasil Fase 11.
+- `README.md`: rencana sekarang Fase 0–11.
 
