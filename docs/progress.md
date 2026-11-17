@@ -2301,3 +2301,37 @@ supaya bisa dilihat di editor.
 notebook dieksekusi dan diekspor, PDF paper dikompilasi, PPT ada dan sudah diperiksa lewat PDF-nya. Yang tersisa hanya
 persetujuan pemilik proyek untuk menutup Fase 10.
 
+## Fase 12 — (Eksploratif) Cabang θ di atas B3 beku: B3+θ (berjalan sejak 17 November 2026)
+
+**Persetujuan.** 17 Nov 2026 pemilik proyek bertanya apakah hasilnya jelek dan apakah paper masih punya kebaruan. Dari dua
+pilihan yang ditawarkan (berhenti, atau mencoba memperkuat sisi metode dengan pilot satu seed, ±2 jam GPU), ia memilih yang
+kedua ("coba pilihan 2"). Persetujuan itu mencakup **pilot satu seed**; seed 1–2 dan evaluasi `test` butuh persetujuan lagi.
+Fase 10 tetap menunggu persetujuan penutupan.
+
+**Alasan dan rancangan.** Fase 11 menunjukkan bahwa di jalur biner pemanduan θ membantu, sedangkan pelatihan head θ bersama
+segmentasi menurunkan mutu mask. Jadi di sini jaringan B3 **dibekukan** (bobot dan statistik BatchNorm) dan hanya sebuah cabang
+kecil di atas fitur decoder-nya yang belajar θ. Mask-nya dijamin sama dengan B3, sehingga yang diuji murni manfaat pemanduan θ.
+Rancangan lengkap, gerbang pilot di `val_select`, dan aturan keputusan akhir ada di `docs/EXPERIMENTS.md` §11; semuanya
+**dibekukan sebelum training** (commit `864dbbc`).
+
+**Yang dibuat (sebelum ada hasil).**
+- `models/factory.py`: `FrozenThetaModel` (head `frozen_theta`). Jaringan B3 tanpa head-nya menjadi `base`, head 1 kanalnya
+  `head`, dan cabang `theta` (4 konvolusi 3 × 3 berdilatasi 1, 2, 4, 8 dengan 32 kanal, lalu 1 × 1; 32.578 parameter, total
+  model 20.845.691). `base` dan `head` selalu dalam mode eval dan `requires_grad = False`. Keluaran ditulis dalam susunan FULL.
+- `train.py`: checkpoint B3 dengan seed yang sama dimuat ke bagian beku (`load_frozen_network`); optimizer hanya menerima
+  parameter yang dilatih; `train.select_metric: last` menyimpan epoch terakhir, karena `fg_iou` validasi konstan.
+- Config `exp/b3h` (B3+θ) dan `exp/b3hp` (B3+θ′: checkpoint yang sama, θ minAreaRect).
+- `eval/reports.py`: tabel `n1_frozen` (pembangun tabel §10 digeneralisasi) dan `pilot_gate`; `scripts/pilot_gate.py`.
+- Tes sintetis membuktikan: logit bangunan sama persis dengan B3 dalam mode eval maupun train; setelah langkah optimizer hanya
+  bobot cabang yang berubah (tidak ada bobot atau statistik BatchNorm jaringan beku yang bergeser); `fg_iou` validasi tiap
+  epoch sama dengan milik checkpoint B3; gerbang menolak `test`. `pytest -q`: 773 lolos (17 tes baru).
+
+**Benchmark sebelum training** (200 iterasi, RTX 5090, GPU kosong, 4 worker): 19,50 langkah/s, 0,0209 jam per epoch, jadi E = 60
+kira-kira 1,25 jam per seed ditambah validasi; memori GPU puncak 1,3 GB. Loss awal: BCE 0,191 dan Dice 0,049 (nilai B3 yang
+sudah terlatih, tanda checkpoint beku termuat), θ 0,373.
+
+**Antrean.** `densepoly-work/phase12.sh` (lepas dari sesi; log `logs/phase12.log`, penanda `logs/phase12_done/`). Tahap 1
+(disetujui): training seed 0 → cek mask tidak berubah → tuning B3+θ dan B3+θ′ di `val_tune_sub`, di-commit dan di-push →
+evaluasi keduanya di `val_select` → gerbang. Tahap 2 (seed 1–2, `test`, tabel) hanya jalan bila gerbang lolos **dan** pemilik
+proyek menyetujuinya (berkas `logs/phase12_go`).
+
