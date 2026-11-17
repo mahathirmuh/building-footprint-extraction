@@ -14,7 +14,15 @@ Compile with any TeX distribution that has IEEEtran, booktabs and TikZ (TeX Live
 
 The lab server has no TeX, so `.github/workflows/paper.yml` compiles the paper on GitHub at every push that changes
 `paper/`. The PDF, the LaTeX log (`main.log`, `build.txt`) and the exit code land on the branch `paper-pdf`, which holds
-build output only and is replaced by every build; a PDF that compiled is copied to `paper/main.pdf`.
+build output only and is replaced by every build; a PDF that compiled is copied to `paper/main.pdf`:
+
+    git fetch origin paper-pdf
+    git show FETCH_HEAD:exit_code.txt          # 0 = compiled; main.log and build.txt hold the messages
+    git show FETCH_HEAD:source_commit.txt      # the commit of main that was compiled
+    git show FETCH_HEAD:main.pdf > paper/main.pdf
+
+`main.pdf` is the compiled paper (8 pages). After a change of `main.tex` or of the tables it is stale until it is copied
+again; the push of `main.pdf` itself does not start a build.
 
 `\papertitle` holds the English title of the paper (decided 17 Nov 2026); the registered title of the course project, in
 Indonesian, is in `CLAUDE.md` and does not change.

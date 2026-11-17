@@ -72,9 +72,10 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   Fase 9 selesai dan disetujui (12 Nov 2026; FULL+Y masuk laporan): seed YOLOv8n-OBB menurunkan merge rate FULL-P0 1,96% → 1,52% (Δ −0,45 [−0,56; −0,35]) dan B3m
   2,81% → 2,14%, dengan AP setara dan split rate naik (+0,24 dan +0,37 poin). B3m+Y tetap di atas FULL+Y di AP (64,79 lawan 61,87).
   Fase 10 berjalan sejak 12 Nov 2026 dan tinggal menunggu pemilik proyek: `notebooks/full_pipeline.ipynb` (dieksekusi; run dari awal
-  FULL-P0 seed 0 AP 62,72, run beku 62,73), `notebooks/demo_hasil.ipynb`, `paper/` (naskah IEEEtran, **belum dikompilasi ke PDF**:
-  server tidak punya LaTeX), `slides/densepoly.pptx` (belum diperiksa visual), dan ringkasan keterbatasan sudah ada. Rinciannya dan
-  daftar yang masih butuh pemilik proyek ada di akhir `docs/progress.md`.
+  FULL-P0 seed 0 AP 62,72, run beku 62,73), `notebooks/demo_hasil.ipynb`, `paper/` (naskah IEEEtran; `paper/main.pdf`, 8 halaman,
+  dikompilasi 17 Nov 2026 lewat GitHub Actions `.github/workflows/paper.yml` karena server tidak punya LaTeX),
+  `slides/densepoly.pptx` (belum diperiksa visual), dan ringkasan keterbatasan sudah ada. Rinciannya dan daftar yang masih butuh
+  pemilik proyek ada di akhir `docs/progress.md`.
   Fase 11 (eksploratif; mulai 14 Nov 2026) selesai dan disetujui (17 Nov 2026), tanpa eksperimen lanjutan: B3θ = B3 + head θ, 3 seed,
   aturan beku `docs/EXPERIMENTS.md` §10. "Head θ membantu di jalur biner" **tidak didukung**: di strata padat `test`,
   B3m → B3θ `PoLiS_paired` +0,084 px, `MTA_inst` +0,30°, AP −2,26. Pemanduan θ tetap membantu (B3θ′ → B3θ: −0,016 px, −0,18°),
@@ -204,7 +205,8 @@ densepoly/
 ├── notebooks/       # colab_train.ipynb (menjalankan skrip di Colab), demo_hasil.ipynb (demo untuk dosen, Fase 10),
 │                    # full_pipeline.ipynb (seluruh alur termasuk training, Fase 10);
 │                    # semuanya tipis: logika tetap di src/, notebook hanya memanggil dan memplot
-├── paper/           # naskah template IEEE (IEEEtran): main.tex, refs.bib; tables/ dan figures/ dibuat scripts/paper_tables.py
+├── .github/workflows/paper.yml              # mengompilasi paper di GitHub (server tanpa LaTeX); hasil di cabang paper-pdf
+├── paper/           # naskah template IEEE (IEEEtran): main.tex, main.pdf, refs.bib; tables/ dan figures/ dibuat scripts/paper_tables.py
 ├── slides/          # PPT presentasi gaya template ITS: build.js, numbers.json (dibuat skrip), densepoly.pptx
 ├── tests/           # fixtures/ sintetis + test_*.py
 ├── reference/       # demo/ (kode demo ETS) dan prototypes/ (uji spesifikasi); hanya referensi

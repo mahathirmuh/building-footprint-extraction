@@ -2269,3 +2269,19 @@ Institut Teknologi Sepuluh Nopember, Surabaya, tanpa email.
 tidak punya LaTeX, kontainer, maupun LibreOffice. Upaya mengompilasi lewat GitHub Actions (workflow baru di repo yang menulis PDF
 ke sebuah cabang) ditolak pengaman mode otomatis karena belum diminta pemilik proyek; tidak ada yang diubah dan tidak diakali.
 
+**PDF paper dikompilasi (17 Nov 2026, 22.50 WIB).** Pemilik proyek menyetujui GitHub Actions ("iya pakai github actions") dan
+meminta paper tersedia sebagai `.tex` dan PDF.
+- `.github/workflows/paper.yml`: setiap push yang mengubah `paper/` mengompilasi `main.tex` dengan `latexmk` (TeX Live di runner
+  GitHub), lalu menaruh `main.pdf`, `main.log`, `build.txt`, dan kode keluar di cabang `paper-pdf`. Cabang itu hanya berisi
+  keluaran build dan diganti tiap build. Push `paper/main.pdf` sendiri tidak memicu build.
+- Build pertama (commit `d47e001`) langsung berhasil: kode keluar 0, 7 halaman, tanpa galat, tanpa rujukan atau sitasi yang tidak
+  terdefinisi, BibTeX 0 peringatan, tanpa `Overfull`.
+- Pemeriksaan halaman demi halaman menemukan satu masalah tampilan: lima tabel satu-kolom (II, III, VI, VII, IX) diperkecil
+  `\resizebox` sampai kira-kira setengah ukuran. Kelimanya dijadikan tabel dua-kolom berukuran `\footnotesize` yang hanya
+  diperkecil bila lebih lebar dari blok teks (makro `\fittable`). Build kedua (commit `b56ba71`): kode keluar 0, **8 halaman**,
+  tanpa galat; sisa peringatan hanya dua `Underfull \vbox`.
+- `paper/main.pdf` (2,2 MB) disalin dari build kedua ke repo, di sebelah `main.tex`. Cara menyalin ulang ada di `paper/README.md`.
+
+**Cek "Selesai jika" Fase 10 (diperbarui):** PDF paper dikompilasi dari sumber LaTeX: **ya**. Yang tersisa hanya pemeriksaan
+visual `slides/densepoly.pptx` (19 slide; server tidak punya PowerPoint atau LibreOffice) dan persetujuan penutupan Fase 10.
+
