@@ -12,4 +12,5 @@ Compile with any TeX distribution that has IEEEtran, booktabs and TikZ (TeX Live
 
     pdflatex main && bibtex main && pdflatex main && pdflatex main
 
-The title in `\papertitle` is a working title in English; the registered title of the course project is in `CLAUDE.md`.
+`\papertitle` holds the English title of the paper (decided 17 Nov 2026); the registered title of the course project, in
+Indonesian, is in `CLAUDE.md` and does not change.

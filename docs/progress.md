@@ -2260,3 +2260,12 @@ Yang ikut dirapikan saat penutupan, supaya bahan laporan tidak memuat pernyataan
 - Butir keterbatasan nomor 4 di ringkasan Fase 10 dan catatan "yang belum diuji" di entri B3m diberi keterangan hasil Fase 11.
 - `README.md`: rencana sekarang Fase 0–11.
 
+**Judul dan blok penulis paper (17 Nov 2026, 22.45 WIB).** Pemilik proyek menyerahkan keputusan ini ("oke, ikuti rekomendasimu
+saja"), jadi rekomendasi 12 Nov 2026 ditetapkan: judul berbahasa Inggris di `\papertitle` menjadi judul paper, dan judul
+terdaftar proyek kuliah (bahasa Indonesia, di `CLAUDE.md`) tidak berubah. Blok penulis tetap: nama, Department of Informatics,
+Institut Teknologi Sepuluh Nopember, Surabaya, tanpa email.
+
+**Sisa Fase 10:** (1) PDF paper belum dikompilasi; (2) PPT belum diperiksa secara visual; (3) persetujuan penutupan. Server tetap
+tidak punya LaTeX, kontainer, maupun LibreOffice. Upaya mengompilasi lewat GitHub Actions (workflow baru di repo yang menulis PDF
+ke sebuah cabang) ditolak pengaman mode otomatis karena belum diminta pemilik proyek; tidak ada yang diubah dan tidak diakali.
+
