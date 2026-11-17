@@ -30,10 +30,11 @@ from omegaconf import OmegaConf
 from torch import nn
 from torch.utils.data import DataLoader
 
+from densepoly import paths
 from densepoly.config import save_config
 from densepoly.data.dataset import EpochSampler, TileDataset
 from densepoly.losses import SegmentationLoss
-from densepoly.models.factory import build_model, split_output
+from densepoly.models.factory import build_model, model_head, split_output
 from densepoly.utils.io import read_json, write_json
 from densepoly.utils.provenance import git_revision, timestamp
 
@@ -134,16 +135,18 @@ def prepare(cfg, splits_dir: Path | None = None) -> Parts:
     amp = bool(cfg.train.amp) and device.type == "cuda"
     seed = int(cfg.seed)
     seed_everything(seed)
-    model = build_model(cfg).to(device).train()
+    model = build_model(cfg)
+    if model_head(cfg) == "frozen_theta":
+        load_frozen_network(model, cfg)
+    model = model.to(device).train()
     dataset = TileDataset(cfg, "train_dedup", "train", seed, splits_dir)
     sampler = EpochSampler(len(dataset), seed)
     loader = make_loader(dataset, micro, cfg, sampler=sampler, drop_last=True)
     steps_per_epoch = len(dataset) // micro // accumulate
     if steps_per_epoch == 0:
         raise ValueError(f"{len(dataset)} tiles do not fill one optimizer step of {int(cfg.train.batch_size)}")
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=float(cfg.train.lr), weight_decay=float(cfg.train.weight_decay)
-    )
+    learned = [parameter for parameter in model.parameters() if parameter.requires_grad]
+    optimizer = torch.optim.AdamW(learned, lr=float(cfg.train.lr), weight_decay=float(cfg.train.weight_decay))
     return Parts(
         device,
         amp,
@@ -156,6 +159,18 @@ def prepare(cfg, splits_dir: Path | None = None) -> Parts:
         loader,
         steps_per_epoch,
     )
+
+
+def load_frozen_network(model: nn.Module, cfg) -> None:
+    """The selected checkpoint of model.frozen_exp, same dataset and seed, into the frozen part of the model."""
+    source, run = str(cfg.model.frozen_exp), paths.run_name(int(cfg.seed))
+    checkpoint = paths.checkpoint_file(str(cfg.data.name), source, run)
+    if not checkpoint.exists():
+        raise FileNotFoundError(f"{checkpoint} does not exist: train {source} with seed {int(cfg.seed)} first")
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    model.load_frozen(state["model"])
+    about = {"frozen": f"{source}/{run}/{checkpoint.name}", "epoch": state.get("epoch"), "fg_iou": state.get("fg_iou")}
+    print(json.dumps(about), flush=True)
 
 
 def optimizer_step(parts: Parts, iterator, lr: float) -> tuple[dict[str, torch.Tensor], float]:
@@ -376,9 +391,11 @@ def fit(
                     return outcome("stopped")
 
         scores = validate(parts.model, select_loader, parts.device, parts.amp, int(cfg.data.ignore_index))
-        improved = scores[select_metric] > position.best
+        keep_last = select_metric == "last"  # nothing to select on (frozen masks): the last epoch is the model
+        value = scores["fg_iou"] if keep_last else scores[select_metric]
+        improved = keep_last or value > position.best
         if improved:
-            position.best = scores[select_metric]
+            position.best = value
             state = {"model": parts.model.state_dict(), "epoch": position.epoch, **scores, "git": git_revision()}
             save_atomically(state, best)
         val_log.write({"epoch": position.epoch, "step": position.step, **scores, "best": int(improved),

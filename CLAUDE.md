@@ -82,6 +82,8 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   B3m → B3θ `PoLiS_paired` +0,084 px, `MTA_inst` +0,30°, AP −2,26. Pemanduan θ tetap membantu (B3θ′ → B3θ: −0,016 px, −0,18°),
   tetapi melatih head θ menurunkan mutu mask biner (`fg_iou` `val_select` 0,888 lawan 0,897–0,899 pada B3). B3θ `test`: AP 62,51,
   C-IoU 75,52, merge rate 2,88%. Keputusan N1–N3 tidak berubah; B3m tetap terbaik kecuali di merge rate.
+  Fase 12 (eksploratif, disetujui 17 Nov 2026) berjalan: B3+θ = jaringan B3 beku + cabang θ yang dilatih sendiri, supaya mask
+  tidak berubah; gerbang pilot di `val_select` dan aturan beku di `docs/EXPERIMENTS.md` §11.
 
 ## Cara bekerja di proyek ini
 
@@ -185,7 +187,7 @@ densepoly/
 ├── configs/
 │   ├── base.yaml
 │   ├── data/{crowdai,whu}.yaml
-│   ├── exp/{b0,b1,b2,b3,b3m,b3my,b3t,b3tp,b4,b5,b5p,full_p0,full_p1,full_p2,full_y}.yaml   # b3m, b3my, b3t, b3tp: eksploratif
+│   ├── exp/{b0,b1,b2,b3,b3h,b3hp,b3m,b3my,b3t,b3tp,b4,b5,b5p,full_p0,full_p1,full_p2,full_y}.yaml   # b3h … b3tp: eksploratif
 │   ├── postproc/<dataset>/<exp>.yaml        # hasil tuning di val_tune (dibekukan)
 │   └── paper_numbers.yaml                   # angka dari paper lain + sumber (tabel, halaman)
 ├── src/densepoly/

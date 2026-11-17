@@ -31,6 +31,8 @@ model:                        # docs/METHOD.md §4
   encoder_weights: imagenet   # tests always use null
   classes: ???                # output channels: 1 binary | 3 classes | 5 = 3 classes + (sin 4θ, cos 4θ)
   head: null                  # binary_theta (B3θ): 3 learned channels (z, ŝ, ĉ) written in the 5-channel layout of FULL
+                              # frozen_theta (B3+θ): the frozen binary network of frozen_exp + a trainable θ branch
+  frozen_exp: null            # head frozen_theta: experiment whose selected checkpoint (same seed) is frozen
   source_exp: null            # inference-only configs: experiment whose checkpoint (same seed) is used
 
 loss:                         # docs/METHOD.md §5
@@ -55,7 +57,7 @@ train:                        # docs/EXPERIMENTS.md §3
   checkpoint_every_min: 20
   log_every_steps: 50
   select_split: val_select    # checkpoint selection
-  select_metric: fg_iou
+  select_metric: fg_iou       # last: keep the checkpoint of the last epoch (frozen masks leave nothing to select on)
 
 augment:                      # geometric: RGB + priors + instance map; photometric: RGB only
   p_flip_h: 0.5

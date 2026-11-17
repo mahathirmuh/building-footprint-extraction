@@ -385,3 +385,49 @@ def test_binary_theta_table_applies_the_n1_rule_to_the_binary_route(splits):
     assert any("bukan" in line for line in lines) and any("FULL-P0 → B3θ" in line for line in lines)
     paths.metrics_file("crowdai", "b3t", "seed1", "test").unlink()
     assert tables.missing_for("crowdai", "n1_binary") != []
+
+
+def test_frozen_theta_table_applies_the_n1_rule_to_the_frozen_network(splits):
+    """B3m → B3+θ′ → B3+θ: the rule of §8 point 1 on b3m → b3h in the dense stratum, then B3+θ against the others."""
+    assert tables.missing_for("whu", "n1_frozen") != []
+    install(b3="a", b3m="a", b3hp="a", b3h="gt", b3t="a", full_p0="a")
+    assert tables.missing_for("crowdai", "n1_frozen") == []
+    payload, lines = reports.n1_frozen("crowdai", n_rep=10, splits_dir=splits)
+    assert list(payload["steps"]) == ["b3m->b3hp", "b3hp->b3h", "b3m->b3h"]
+    runs = tables.load_runs("crowdai", ("b3m", "b3h"), "test")
+    dense = tables.dense_image_ids("crowdai", "test", splits)
+    total = {m: stats.compare(runs["b3m"], runs["b3h"], m, dense, 10, tables.BOOTSTRAP_SEED) for m in tables.N1_METRICS}
+    assert payload["decision"] == {**tables.decide_n1(total), "rule": reports.FROZEN_THETA_RULE}
+    assert payload["steps"]["b3m->b3hp"]["AP"]["delta"] == 0  # the same masks and the same θ
+    assert list(payload["wider"]) == ["b3m->b3h", "b3->b3h", "b3t->b3h", "full_p0->b3h"]
+    assert any("B3m → B3+θ′ (mask yang sama, cek kewarasan)" in line for line in lines)
+    assert any("sebelum B3+θ dilatih" in line for line in lines)
+    paths.metrics_file("crowdai", "b3h", "seed2", "test").unlink()
+    assert tables.missing_for("crowdai", "n1_frozen") != []
+    payload, _ = reports.n1_binary("crowdai", n_rep=10, splits_dir=splits)  # the table of §10 is built as before
+    assert payload["decision"]["rule"] == reports.BINARY_THETA_RULE and list(payload["wider"])[0] == "b3m->b3t"
+
+
+def test_pilot_gate_is_decided_on_one_seed_away_from_test(splits, capsys):
+    """§11: the pilot passes when PoLiS_paired and MTA_inst fall and AP is kept, on a split that is not test."""
+    install(b3hp="a", b3h="gt", runs=("seed0",))
+    passed = reports.pilot_gate("crowdai", "b3hp", "b3h", "seed0", "val_clean", n_rep=10)
+    assert passed["passed"] and all(check["passed"] for check in passed["checks"].values())
+    assert passed["checks"]["PoLiS_paired"]["delta"] < 0 and passed["n_images"] == len(HOUSES)
+    assert set(passed["comparisons"]) == {"PoLiS_paired", "MTA_inst", "AP"}
+    failed = reports.pilot_gate("crowdai", "b3h", "b3hp", "seed0", "val_clean", n_rep=10)  # the other way round
+    assert not failed["passed"] and not failed["checks"]["PoLiS_paired"]["passed"]
+    same = reports.pilot_gate("crowdai", "b3hp", "b3hp", "seed0", "val_clean", n_rep=10)
+    assert not same["passed"]  # no change is not an improvement
+    with pytest.raises(ValueError, match="never on test"):
+        reports.pilot_gate("crowdai", "b3hp", "b3h", "seed0", "test", n_rep=10)
+    spec = importlib.util.spec_from_file_location("pilot_gate", paths.REPO_ROOT / "scripts" / "pilot_gate.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.main(["--data", "crowdai", "--a", "b3hp", "--b", "b3h", "--seed", "0", "--split", "val_clean",
+                 "--n-rep", "10"])  # fmt: skip
+    assert capsys.readouterr().out.strip().splitlines()[-1] == "GATE_PASSED"
+    record = read_json(paths.out_root() / "tables" / "crowdai" / "gate_b3h.json")
+    assert record["passed"] and record["split"] == "val_clean" and record["git"]
+    with pytest.raises(SystemExit):
+        module.main(["--data", "crowdai", "--a", "b3hp", "--b", "b3h", "--split", "test"])

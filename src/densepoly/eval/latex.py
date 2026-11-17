@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from densepoly.eval.tables import DECIMALS, LABELS, PERCENT
 
-TEX_LABELS = {**LABELS, "b5p": "B5$'$", "b3t": "B3$\\theta$", "b3tp": "B3$\\theta'$", "hisup_release": "HiSup"}
+TEX_LABELS = {**LABELS, "b5p": "B5$'$", "b3t": "B3$\\theta$", "b3tp": "B3$\\theta'$", "hisup_release": "HiSup",
+              "b3h": "B3+$\\theta$", "b3hp": "B3+$\\theta'$"}  # fmt: skip
 STRATA = {
     "semua": "all",
     "jarang": "sparse",
@@ -76,6 +77,7 @@ ABLATION_GROUPS = (
     ("full_p0", "full_p1", "full_p2"),
     ("full_y", "b3m", "b3my"),
     ("b3tp", "b3t"),
+    ("b3hp", "b3h"),
 )
 
 

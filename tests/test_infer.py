@@ -57,8 +57,8 @@ def crop_gt(scene_seeds):
 
 @pytest.fixture(scope="module")
 def trained(tmp_path_factory):
-    """One epoch of B4, of FULL-P0 and of B3θ on fake tiles, the GT of val_tune_sub, and a copy of configs/ without
-    frozen tunings: (splits folder, configs folder)."""
+    """One epoch of B4, of FULL-P0, of B3θ, of B3 and of B3+θ on its frozen network, on fake tiles; the GT of
+    val_tune_sub, and a copy of configs/ without frozen tunings: (splits folder, configs folder)."""
     root = tmp_path_factory.mktemp("trained")
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv("DENSEPOLY_DATA", str(root / "data"))
@@ -66,7 +66,7 @@ def trained(tmp_path_factory):
         folder = root / "splits"
         folder.mkdir()
         ids = write_tiles(folder, {"train_dedup": 2, "val_select": 1, "val_tune_sub": 2})
-        for exp in ("b4", "full_p0", "b3t"):
+        for exp in ("b4", "full_p0", "b3t", "b3", "b3h"):
             cfg = load_config("crowdai", exp, SMALL)
             train.fit(cfg, paths.run_dir("crowdai", exp, "seed0"), splits_dir=folder)
         write_json(paths.gt_file("crowdai", "val_tune_sub"), crop_gt(ids["val_tune_sub"]))
@@ -276,6 +276,37 @@ def test_binary_theta_runs_through_the_scripts_with_the_binary_grid(trained):
     assert all(r["kappa"] is not None for r in head) and all(r["kappa"] is None for r in rect)
     assert len(head) == len(rect)  # same instances, another θ
     for exp in ("b3t", "b3tp"):
+        postproc_file("crowdai", exp, configs).unlink()
+
+
+def test_the_frozen_network_gives_the_masks_of_b3_through_the_scripts(trained):
+    """B3+θ: the building probability is that of the B3 checkpoint; θ and κ come from the branch; B3+θ′ and B3m, both
+    with the minAreaRect θ, draw the same polygons."""
+    folder, configs = trained
+    predict(trained, "b3", "--save-channels")
+    predict(trained, "b3h", "--save-channels")
+    for image_id in (image["id"] for image in read_json(paths.gt_file("crowdai", "val_tune_sub"))["images"]):
+        binary = np.load(paths.channel_file("crowdai", "b3", "seed0", "val_tune_sub", image_id)).astype(np.float32)
+        frozen = np.load(paths.channel_file("crowdai", "b3h", "seed0", "val_tune_sub", image_id)).astype(np.float32)
+        assert frozen.shape[0] == 5 and (frozen[2] == 0).all()
+        assert np.allclose(frozen[1], binary[0], atol=1e-3) and np.allclose(1.0 - frozen[0], binary[0], atol=1e-3)
+    tune = load_script("tune_postproc")
+    for exp in ("b3m", "b3h", "b3hp"):
+        tune.main(["--data", "crowdai", "--exp", exp, "--workers", "1", "--configs-dir", str(configs)])
+        assert set(read_yaml(postproc_file("crowdai", exp, configs))["postproc"]) == {"instance_min_px", "rect_iou",
+                                                                                      "dp_k", "snap_deg"}  # fmt: skip
+    results = {}
+    for exp in ("b3m", "b3h", "b3hp"):
+        predict(trained, exp, "--from-channels")
+        results[exp] = read_json(paths.pred_file("crowdai", exp, "seed0", "val_tune_sub"))
+    assert all(r["kappa"] is not None for r in results["b3h"]) and all(r["kappa"] is None for r in results["b3hp"])
+    assert len(results["b3h"]) == len(results["b3hp"])  # same instances, another θ
+    if read_yaml(postproc_file("crowdai", "b3m", configs))["postproc"] == read_yaml(
+        postproc_file("crowdai", "b3hp", configs)
+    )["postproc"]:
+        rounding = sum(len(results[exp]) for exp in ("b3m", "b3hp")) * 0.1  # float16 can move a pixel at p = 0.5
+        assert abs(len(results["b3m"]) - len(results["b3hp"])) <= rounding
+    for exp in ("b3m", "b3h", "b3hp"):
         postproc_file("crowdai", exp, configs).unlink()
 
 

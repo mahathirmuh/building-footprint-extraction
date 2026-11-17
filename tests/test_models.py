@@ -164,3 +164,73 @@ def test_binary_theta_head_gets_gradients_only_on_its_learned_channels():
 def test_binary_theta_head_rejects_a_wrong_config(overrides):
     with pytest.raises(ValueError):
         build_model(load_config("crowdai", "b3t", [*NO_WEIGHTS, *overrides]))
+
+
+# --- frozen binary network with a θ branch (B3+θ, exploratory): only the branch learns
+
+
+def frozen_theta_pair():
+    """(the model with the weights of a B3 network in its frozen part, that B3 network)."""
+    torch.manual_seed(0)
+    b3 = build_model(load_config("crowdai", "b3", NO_WEIGHTS))
+    for module in b3.modules():  # statistics that differ from the initial ones, as in a trained network
+        if isinstance(module, nn.BatchNorm2d):
+            module.running_mean.normal_(0, 0.1)
+            module.running_var.uniform_(0.5, 1.5)
+    model = build_model(load_config("crowdai", "b3h", NO_WEIGHTS))
+    model.load_frozen(b3.state_dict())
+    return model, b3.eval()
+
+
+def test_frozen_theta_model_gives_the_building_logit_of_the_frozen_network_in_the_layout_of_full():
+    model, b3 = frozen_theta_pair()
+    x = torch.randn(2, 3, SIZE, SIZE)
+    with torch.inference_mode():
+        expected = b3(x)
+        for mode in (model.eval(), model.train()):  # the frozen part ignores the training mode
+            output = mode(x)
+            assert output.shape == (2, 5, SIZE, SIZE)
+            assert torch.equal(output[:, 1:2], expected)
+            assert (output[:, 0] == 0).all() and (output[:, 2] == CONTACT_OFF).all()
+    logits, orientation = split_output(output)
+    assert torch.allclose(torch.softmax(logits, dim=1)[:, 1], torch.sigmoid(expected[:, 0]), atol=1e-6)
+    assert orientation.abs().max() <= 1
+
+
+def test_frozen_theta_model_trains_its_branch_only():
+    model, b3 = frozen_theta_pair()
+    model.train()
+    assert not model.base.training and not model.head.training and model.theta.training
+    learned = {name for name, parameter in model.named_parameters() if parameter.requires_grad}
+    assert learned and all(name.startswith("theta.") for name in learned)
+    before = {name: value.clone() for name, value in model.state_dict().items()}
+    optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=0.1)
+    for _ in range(2):
+        optimizer.zero_grad()
+        model(torch.randn(4, 3, SIZE, SIZE))[:, 3:].square().mean().backward()
+        optimizer.step()
+    after = model.state_dict()
+    changed = {name for name in before if not torch.equal(before[name], after[name])}
+    assert changed and all(name.startswith("theta.") for name in changed)  # no weight, no BatchNorm statistic
+    x = torch.randn(1, 3, SIZE, SIZE)
+    with torch.inference_mode():
+        assert torch.equal(model.eval()(x)[:, 1:2], b3(x))
+
+
+def test_frozen_theta_model_reloads_and_is_the_b3_network_plus_the_branch():
+    model, b3 = frozen_theta_pair()
+    twin = build_model(load_config("crowdai", "b3h", NO_WEIGHTS))
+    twin.load_state_dict(model.state_dict())
+    x = torch.randn(1, 3, SIZE, SIZE)
+    with torch.inference_mode():
+        assert torch.equal(twin.eval()(x), model.eval()(x))
+    count = lambda net: sum(p.numel() for p in net.parameters())  # noqa: E731
+    assert count(model) - count(b3) == count(model.theta) > 0
+    with pytest.raises(RuntimeError):
+        model.load_frozen({"encoder.missing": torch.zeros(1)})
+
+
+@pytest.mark.parametrize("overrides", [["model.frozen_exp=null"], ["model.classes=1"]])
+def test_frozen_theta_head_rejects_a_wrong_config(overrides):
+    with pytest.raises(ValueError):
+        build_model(load_config("crowdai", "b3h", [*NO_WEIGHTS, *overrides]))

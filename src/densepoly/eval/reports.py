@@ -10,6 +10,8 @@
 - exploratory: comparisons added after the results (§8 point 7).
 - n1_binary: the θ head on the binary route, B3m → B3θ′ → B3θ (docs/EXPERIMENTS.md §10; exploratory, rule frozen before
   the runs).
+- n1_frozen: a θ branch on the frozen B3 network, B3m → B3+θ′ → B3+θ (docs/EXPERIMENTS.md §11; exploratory, rule frozen
+  before the runs). pilot_gate is the gate of §11 on val_select that decides whether test is touched at all.
 
 Importing this module registers the tables in eval/tables.py (BUILDERS), so scripts/tables.py writes them too.
 """
@@ -620,30 +622,29 @@ BINARY_THETA_WIDER = {
 }
 
 
-def n1_binary(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> tuple[dict, list[str]]:
-    """B3m → B3θ′ → B3θ in the dense stratum of test, decided with the rule of §8 point 1 moved to the binary route
-    (§10), then B3θ against B3m, B3 and FULL-P0 on all test tiles, the dense stratum and the touching tiles. Added after
-    the results of Phases 6-9, so none of it is a claim of §8."""
+def _theta_route(dataset: str, route: dict, n_rep: int, splits_dir: Path | None) -> tuple[dict, list[str]]:
+    """A chain baseline → same network with the minAreaRect θ → with the learned θ in the dense stratum of test,
+    decided with the rule of §8 point 1 on its total step, then the last model against others on all test tiles, the
+    dense stratum and the touching tiles. Added after the results of Phases 6-9, so none of it is a claim of §8."""
     payload = tables._comparison(
-        dataset, BINARY_THETA_METHODS, BINARY_THETA_STEPS, tables.N1_METRICS, n_rep, splits_dir, theta=True
+        dataset, route["methods"], route["steps"], tables.N1_METRICS, n_rep, splits_dir, theta=True
     )
-    payload["decision"] = {**tables.decide_n1(payload["steps"]["b3m->b3t"]), "rule": BINARY_THETA_RULE}
+    payload["decision"] = {**tables.decide_n1(payload["steps"][route["total"]]), "rule": route["rule"]}
     header = ("PoLiS_paired ↓", "MTA_inst ↓", "galat θ median ↓", "galat θ p90 ↓", "AP")
     names = ("PoLiS_paired", "MTA_inst", "theta_err_median", "theta_err_p90", "AP")
-    claim = 'Pernyataan eksploratif "head θ membantu di jalur biner"'
-    title = "Head θ di jalur biner (eksploratif)"
-    lines = tables._comparison_lines(title, payload, header, names, BINARY_THETA_NOTES, claim)
-    wider, sections, exps = _grouped_steps(dataset, BINARY_THETA_WIDER[dataset], n_rep, splits_dir)
+    lines = tables._comparison_lines(route["title"], payload, header, names, route["notes"], route["claim"])
+    wider, sections, exps = _grouped_steps(dataset, route["wider"][dataset], n_rep, splits_dir)
     payload["wider"] = wider
     for exp in exps:
         if exp not in payload["sources"]:
             payload["sources"][exp] = tables._sources(dataset, exp, map(paths.run_name, SEEDS), "test")
+    last = LABELS[route["methods"][-1]]
     lines += [
         "",
-        "Aturan ini dibekukan sebelum B3θ dilatih, tetapi perbandingannya ditambahkan setelah hasil Fase 6–9 ada, jadi",
-        "**bukan klaim** `docs/EXPERIMENTS.md` §8 (poin 7) dan tidak mengubah keputusan N1.",
+        f"Aturan ini dibekukan sebelum {last} dilatih, tetapi perbandingannya ditambahkan setelah hasil Fase 6–9 ada,",
+        "jadi **bukan klaim** `docs/EXPERIMENTS.md` §8 (poin 7) dan tidak mengubah keputusan N1.",
         "",
-        f"# B3θ terhadap metode lain: {dataset}/test ({len(SEEDS)} seed)",
+        f"# {last} terhadap metode lain: {dataset}/test ({len(SEEDS)} seed)",
         "",
         f"Δ = kanan − kiri, rata-rata seed, CI 95% bootstrap per tile ({n_rep} replikasi). AP, C-IoU, dan laju dalam",
         "poin persen; PoLiS dalam piksel; MTA dalam derajat.",
@@ -652,11 +653,101 @@ def n1_binary(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None 
     return payload, lines
 
 
-def _missing_n1_binary(dataset: str) -> list[str]:
-    if dataset not in BINARY_THETA_WIDER:
-        return [f"the binary route with a θ head was not run on {dataset}"]
-    exps = dict.fromkeys([*BINARY_THETA_METHODS, *(exp for a, b, _ in BINARY_THETA_WIDER[dataset] for exp in (a, b))])
+def _missing_theta_route(dataset: str, route: dict) -> list[str]:
+    if dataset not in route["wider"]:
+        return [f"{route['title']}: not run on {dataset}"]
+    exps = dict.fromkeys([*route["methods"], *(exp for a, b, _ in route["wider"][dataset] for exp in (a, b))])
     return tables.missing_runs(dataset, exps, "test")
+
+
+BINARY_THETA_ROUTE = {
+    "methods": BINARY_THETA_METHODS,
+    "steps": BINARY_THETA_STEPS,
+    "notes": BINARY_THETA_NOTES,
+    "total": "b3m->b3t",
+    "rule": BINARY_THETA_RULE,
+    "wider": BINARY_THETA_WIDER,
+    "title": "Head θ di jalur biner (eksploratif)",
+    "claim": 'Pernyataan eksploratif "head θ membantu di jalur biner"',
+}
+
+
+def n1_binary(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> tuple[dict, list[str]]:
+    """B3m → B3θ′ → B3θ (docs/EXPERIMENTS.md §10): the binary network trained together with a θ head."""
+    return _theta_route(dataset, BINARY_THETA_ROUTE, n_rep, splits_dir)
+
+
+def _missing_n1_binary(dataset: str) -> list[str]:
+    return _missing_theta_route(dataset, BINARY_THETA_ROUTE)
+
+
+# --- exploratory: a θ branch on the frozen B3 network (docs/EXPERIMENTS.md §11, rules frozen before the runs)
+
+FROZEN_THETA_RULE = "EXPERIMENTS §11: aturan §8 poin 1 pada B3m → B3+θ (eksploratif)"
+FROZEN_THETA_ROUTE = {
+    "methods": ("b3m", "b3hp", "b3h"),
+    "steps": (("b3m", "b3hp"), ("b3hp", "b3h"), ("b3m", "b3h")),
+    "notes": {
+        "b3m->b3hp": "mask yang sama, cek kewarasan",
+        "b3hp->b3h": "efek pemanduan θ",
+        "b3m->b3h": "efek total",
+    },
+    "total": "b3m->b3h",
+    "rule": FROZEN_THETA_RULE,
+    "wider": {
+        "crowdai": (
+            ("b3m", "b3h", "cabang θ di atas B3 beku, efek total"),
+            ("b3", "b3h", "terhadap B3 tanpa regularisasi"),
+            ("b3t", "b3h", "θ dilatih bersama lawan cabang θ di atas jaringan beku"),
+            ("full_p0", "b3h", "jalur 3 kelas + θ lawan B3 beku + θ"),
+        )
+    },
+    "title": "Cabang θ di atas B3 beku (eksploratif)",
+    "claim": 'Pernyataan eksploratif "cabang θ di atas B3 beku memperbaiki poligon B3m"',
+}
+
+
+def n1_frozen(dataset: str, n_rep: int = CI_REPLICATES, splits_dir: Path | None = None) -> tuple[dict, list[str]]:
+    """B3m → B3+θ′ → B3+θ (docs/EXPERIMENTS.md §11): the frozen B3 network with a trainable θ branch."""
+    return _theta_route(dataset, FROZEN_THETA_ROUTE, n_rep, splits_dir)
+
+
+def _missing_n1_frozen(dataset: str) -> list[str]:
+    return _missing_theta_route(dataset, FROZEN_THETA_ROUTE)
+
+
+GATE_METRICS = ("PoLiS_paired", "MTA_inst", "AP")
+
+
+def pilot_gate(dataset: str, a: str, b: str, run: str, split: str, n_rep: int = CI_REPLICATES) -> dict:
+    """The gate of §11 for one seed on a split that is not test: b passes when its paired PoLiS and its per-instance MTA
+    are lower than those of a (same masks, minAreaRect θ) and its AP is at most 0.5 points lower. Only a passed gate
+    lets the remaining seeds train and test be touched."""
+    if split == "test":
+        raise ValueError("the pilot gate is decided on a tuning or selection split, never on test")
+    runs_a, runs_b = [stats.load_run(dataset, a, run, split)], [stats.load_run(dataset, b, run, split)]
+    image_ids = sorted(int(i) for i in runs_a[0].per_image.index)
+    results = {m: stats.compare(runs_a, runs_b, m, image_ids, n_rep, BOOTSTRAP_SEED) for m in GATE_METRICS}
+    checks = {
+        "PoLiS_paired": {"delta": results["PoLiS_paired"]["delta"], "passed": results["PoLiS_paired"]["delta"] < 0},
+        "MTA_inst": {"delta": results["MTA_inst"]["delta"], "passed": results["MTA_inst"]["delta"] < 0},
+        "AP": tables.ap_kept(results["AP"]),
+    }
+    return {
+        "rule": "EXPERIMENTS §11: gerbang pilot",
+        "dataset": dataset,
+        "split": split,
+        "run": run,
+        "a": a,
+        "b": b,
+        "n_images": len(image_ids),
+        "n_rep": n_rep,
+        "bootstrap_seed": BOOTSTRAP_SEED,
+        "comparisons": results,
+        "checks": checks,
+        "passed": all(check["passed"] for check in checks.values()),
+        "sources": {exp: tables._sources(dataset, exp, [run], split) for exp in (a, b)},
+    }
 
 
 tables.BUILDERS.update({
@@ -668,6 +759,7 @@ tables.BUILDERS.update({
         "efficiency": efficiency,
         "exploratory": exploratory,
         "n1_binary": n1_binary,
+        "n1_frozen": n1_frozen,
     })
 tables.MISSING.update(
     {
@@ -679,5 +771,6 @@ tables.MISSING.update(
         "efficiency": _missing_efficiency,
         "exploratory": _missing_exploratory,
         "n1_binary": _missing_n1_binary,
+        "n1_frozen": _missing_n1_frozen,
     }
 )

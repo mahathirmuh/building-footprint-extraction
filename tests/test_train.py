@@ -224,6 +224,30 @@ class Fixed(nn.Module):
         return self.output
 
 
+def test_a_frozen_network_keeps_its_masks_while_the_theta_branch_trains(splits, tmp_path, monkeypatch):
+    """B3+θ: the B3 checkpoint of the same seed is frozen, only L_θ moves weights, and the last epoch is kept."""
+    with pytest.raises(FileNotFoundError, match="train b3"):
+        train.fit(config("b3h"), tmp_path / "early", splits_dir=splits)
+    b3_dir = paths.run_dir("crowdai", "b3", "seed0")
+    train.fit(config("b3"), b3_dir, splits_dir=splits)
+    b3 = torch.load(b3_dir / "best.pt", map_location="cpu", weights_only=True)
+    run_dir = tmp_path / "run"
+    outcome = train.fit(config("b3h"), run_dir, splits_dir=splits)
+    assert outcome["status"] == "finished"
+    validation = rows(run_dir / "val_log.csv")
+    assert [float(row["fg_iou"]) for row in validation] == [pytest.approx(b3["fg_iou"], abs=1e-12)] * 2
+    assert [int(row["best"]) for row in validation] == [1, 1]
+    best = torch.load(run_dir / "best.pt", map_location="cpu", weights_only=True)
+    last = torch.load(run_dir / "last.pt", map_location="cpu", weights_only=False)
+    assert best["epoch"] == 1 and all(torch.equal(value, last["model"][key]) for key, value in best["model"].items())
+    for key, value in b3["model"].items():
+        twin = "head." + key[len("segmentation_head.") :] if key.startswith("segmentation_head.") else "base." + key
+        assert torch.equal(best["model"][twin], value), key
+    log = rows(run_dir / "train_log.csv")
+    assert all(float(row["theta"]) > 0 for row in log)
+    assert float(log[0]["ce"]) > 0 and float(log[0]["dice"]) > 0  # the terms of B3, reported though nothing learns them
+
+
 def one_batch(classes):
     return [{"image": torch.zeros(1, 3, *classes.shape[1:]), "classes": classes}]
 

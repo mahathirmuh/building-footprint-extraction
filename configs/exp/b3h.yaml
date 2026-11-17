@@ -1,0 +1,9 @@
+# B3+θ (exploratory, added 17 Nov 2026 after the results; docs/EXPERIMENTS.md §11): the trained B3 network of the same
+# seed with every weight frozen, plus a small trainable branch that predicts θ from its decoder features. Only L_θ
+# moves weights, so the masks are those of B3; connected components as B3, regularization guided by the branch θ.
+exp: b3h
+input: {priors: []}
+model: {arch: unetplusplus, classes: 5, head: frozen_theta, frozen_exp: b3}
+loss: {type: bce_dice_theta, edge_weight: true}
+train: {enabled: true, select_metric: last}
+postproc: {instance: cc, polygon: theta}

@@ -273,6 +273,21 @@ Disetujui 14 Nov 2026, setelah hasil Fase 9. Rancangan dan aturan keputusan beku
 
 ---
 
+## Fase 12 — (Eksploratif) Cabang θ di atas B3 beku: B3+θ
+
+Disetujui 17 Nov 2026, setelah hasil Fase 11. Rancangan, gerbang pilot, dan aturan keputusan beku: `docs/EXPERIMENTS.md` §11.
+
+**Tugas**
+- Head `frozen_theta`: jaringan B3 beku + cabang θ yang dilatih sendiri; pemuatan checkpoint B3; `select_metric: last`;
+  semuanya dengan tes sintetis yang membuktikan mask tidak berubah.
+- Pilot seed 0, tuning di `val_tune_sub`, lalu gerbang di `val_select` (`scripts/pilot_gate.py`).
+- Hanya bila gerbang lolos: seed 1 dan 2, evaluasi `test`, tabel `n1_frozen` dengan aturan §11.
+
+**Selesai jika:** hasil gerbang tercatat; bila lolos, tabel `n1_frozen` ada beserta keputusan aturan §11; hasilnya (positif
+atau negatif) tercatat di `docs/progress.md` dan di bahan laporan.
+
+---
+
 ## Risiko dan cadangan
 
 | Risiko | Cadangan |

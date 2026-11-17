@@ -37,6 +37,8 @@ Definisi metrik ada di `docs/EVALUATION.md`.
 | B3m+Y | `exp/b3my` | model B3 + YOLOv8n-OBB | RGB | 1 | — | CC + seed YOLO | `mar` | tidak (YOLO yang sama) |
 | B3θ | `exp/b3t` | U-Net++ | RGB | 3 terlatih (z, ŝ, ĉ), ditulis 5 | w·BCE + Dice + λ·L_θ | CC | `theta` | ya |
 | B3θ′ | `exp/b3tp` | model B3θ | RGB | sama | — | CC | `mar` | tidak |
+| B3+θ | `exp/b3h` | model B3 beku + cabang θ | RGB | z dari B3; (ŝ, ĉ) dari cabang; ditulis 5 | hanya λ·L_θ yang melatih | CC | `theta` | cabang θ saja |
+| B3+θ′ | `exp/b3hp` | model B3+θ | RGB | sama | — | CC | `mar` | tidak |
 
 - **FULL final** = FULL-P0 atau FULL-P2, dipilih dengan aturan §8 poin 6 (dipakai untuk SOTA, WHU, dan FULL+Y).
 - **B5′ adalah tambahan** dari slide. Fungsinya memisahkan efek pelatihan dan efek pemanduan head θ.
@@ -44,8 +46,10 @@ Definisi metrik ada di `docs/EVALUATION.md`.
   Pertanyaannya: apakah AP tertinggi (B3) dan poligon rapi bisa didapat sekaligus, tanpa pipeline 3 kelas. Bukan bagian dari klaim N1–N3.
 - **B3θ dan B3θ′ eksploratif** (ditambahkan 14 Nov 2026, setelah hasil Fase 9; §10): head θ dipasang pada model biner B3.
   Aturan keputusannya dibekukan di §10 sebelum B3θ dilatih. Bukan bagian dari klaim N1–N3.
-- Config inferensi saja (`b5`, `b5p`, `full_y`, `b3m`, `b3my`, `b3tp`) menunjuk ke checkpoint run sumbernya dengan seed yang
-  sama; jangan menyalin bobot.
+- **B3+θ dan B3+θ′ eksploratif** (ditambahkan 17 Nov 2026, setelah hasil §10; §11): cabang θ dilatih di atas jaringan B3 yang
+  dibekukan, sehingga mask-nya tidak berubah. Gerbang pilot dan aturan keputusannya dibekukan di §11 sebelum training.
+- Config inferensi saja (`b5`, `b5p`, `full_y`, `b3m`, `b3my`, `b3tp`, `b3hp`) menunjuk ke checkpoint run sumbernya dengan seed
+  yang sama; jangan menyalin bobot.
 
 ## 3. Pengaturan training (default; sama untuk semua model yang dibandingkan)
 
@@ -266,3 +270,45 @@ FULL. Kelas kontak tidak pernah diprediksi, jadi F1 kontak di log validasi B3θ 
 [+0,075; +0,094], `MTA_inst` +0,30° [+0,14; +0,46], dan AP −2,26 [−2,55; −1,99]. Efek pemanduan (B3θ′ → B3θ) tetap positif
 (−0,016 px, −0,18°), tetapi efek pelatihan (B3m → B3θ′) negatif dan lebih besar (+0,100 px, +0,48°, AP −2,25). Rinciannya di
 `docs/progress.md` (Fase 11) dan tabel `n1_binary`.
+
+## 11. Eksperimen lanjutan kedua: cabang θ di atas B3 beku (B3+θ; eksploratif, disetujui 17 Nov 2026)
+
+**Latar.** §10 memisahkan dua efek di jalur biner. Pemanduan dengan θ dari head tetap memperbaiki poligon (B3θ′ → B3θ:
+`PoLiS_paired` −0,016 px, `MTA_inst` −0,18°), tetapi melatih head θ bersama segmentasi menurunkan mutu mask
+(B3m → B3θ′: AP −2,25). Jadi kerugiannya datang dari pelatihan bersama, bukan dari pemanduan.
+
+**Pertanyaan.** Bila mask B3 dijaga persis dan θ dipelajari oleh cabang terpisah, apakah pemanduan θ memperbaiki poligon B3m?
+
+**Model.**
+- **B3+θ** (`exp/b3h`): checkpoint B3 dengan seed yang sama; semua bobot dan statistik BatchNorm-nya dibekukan. Sebuah cabang
+  kecil membaca fitur decoder (16 kanal, resolusi penuh) dan memprediksi (ŝ, ĉ): empat konvolusi 3 × 3 berdilatasi 1, 2, 4, 8
+  (32 kanal, BatchNorm, ReLU; bidang reseptif 31 px), lalu satu konvolusi 1 × 1. Hanya λ·L_θ (λ = 1) yang menggerakkan bobot,
+  dan hanya bobot cabang itu. Instance = komponen terhubung; poligon mode `theta` dengan θ dan κ dari cabang.
+- **B3+θ′** (`exp/b3hp`): checkpoint yang sama, mode `mar`. Mask-nya sama dengan B3m sampai pembulatan float16, jadi langkah
+  B3m → B3+θ′ adalah cek kewarasan dan harus mendekati nol.
+
+**Pengaturan.** Satu konfigurasi saja, ditetapkan sebelum training: arsitektur cabang di atas, E = 60, batch 16, AdamW 2e-4
+dengan jadwal yang sama, 4 worker. Karena `fg_iou` validasi konstan (mask beku), tidak ada yang bisa dipilih: checkpoint yang
+dipakai adalah epoch terakhir (`train.select_metric: last`). Post-processing disetel per model dengan grid yang sama di
+`val_tune_sub` dari seed 0, lalu dibekukan dan di-commit.
+
+**Gerbang pilot (dibekukan 17 Nov 2026, sebelum training).** Seed 0 dilatih lebih dulu, lalu B3+θ dan B3+θ′ dievaluasi di
+`val_select` dengan post-processing beku. Gerbang lolos bila, untuk B3+θ dibanding B3+θ′ pada semua tile `val_select`,
+Δ `PoLiS_paired` < 0, Δ `MTA_inst` < 0, dan AP tidak turun lebih dari 0,5 poin (`scripts/pilot_gate.py`). **Hanya bila gerbang
+lolos**, seed 1 dan 2 dilatih dan `test` disentuh. Bila gagal, eksperimen berhenti, `test` tidak disentuh untuk model ini, dan
+hasil gerbang dilaporkan apa adanya. Varian lain (arsitektur cabang, λ) hanya boleh dibandingkan di `val_select` dan butuh
+persetujuan baru.
+
+**Aturan keputusan akhir (dibekukan 17 Nov 2026, sebelum training).** "Cabang θ di atas B3 beku memperbaiki poligon B3m"
+dinyatakan didukung bila di strata padat `crowdai/test` B3+θ lebih baik dari B3m pada `PoLiS_paired` **dan** `MTA_inst`
+(GT yang ter-match oleh kedua metode), CI 95% bootstrap selisih berpasangan tidak memuat 0, arahnya sama di ketiga seed, dan AP
+tidak turun lebih dari 0,5 poin. Ini aturan §8 poin 1 dengan B5 diganti B3m dan FULL-P0 diganti B3+θ, sama seperti §10.
+
+**Yang juga dilaporkan (deskriptif).** Tabel `n1_frozen`: rantai B3m → B3+θ′ → B3+θ dengan galat θ, dan B3+θ terhadap B3m,
+B3, B3θ, dan FULL-P0 pada semua tile `test`, strata padat, dan tile bersentuhan.
+
+**Yang diharapkan dan batasnya.** Mask tidak berubah, jadi AP hanya bisa bergeser lewat bentuk poligon, dan efek terbesar
+yang wajar diharapkan seukuran efek pemanduan di §10. Bila cabang di atas fitur beku tidak cukup akurat memprediksi θ,
+hasilnya bisa nol atau negatif.
+
+**Status.** Eksploratif (§8 poin 7). Hasilnya tidak mengubah keputusan N1–N3, kriteria §8, maupun FULL final (FULL-P0).

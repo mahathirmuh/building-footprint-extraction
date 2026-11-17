@@ -1,0 +1,8 @@
+# B3+θ′ (exploratory, docs/EXPERIMENTS.md §11): inference only; B3+θ checkpoint, regularized with the minAreaRect θ
+# instead of the branch θ. Same masks as B3+θ and, up to float16 rounding, as B3m: a check that the masks did not move.
+exp: b3hp
+input: {priors: []}
+model: {arch: unetplusplus, classes: 5, head: frozen_theta, frozen_exp: b3, source_exp: b3h}
+loss: {type: none, edge_weight: false}
+train: {enabled: false}
+postproc: {instance: cc, polygon: mar}

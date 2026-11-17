@@ -171,6 +171,9 @@ Tabel berikut dipakai sebagai **tes invarian** (label hasil turunan ulang harus 
   lapisan tanpa bobot menulisnya dalam susunan FULL: `out = (0, z, −10⁴, ŝ, ĉ)`. Softmax tiga logit pertama adalah
   `(1 − σ(z), σ(z), 0)`, jadi `P_bg` dan `P_b` sama dengan model biner dan kelas kontak tidak pernah diprediksi
   (`model.head: binary_theta`).
+- B3+θ (eksploratif, `docs/EXPERIMENTS.md` §11): jaringan B3 terlatih yang dibekukan (bobot dan statistik BatchNorm), ditambah
+  cabang θ yang membaca fitur decoder-nya: 4 konvolusi 3 × 3 berdilatasi (1, 2, 4, 8; 32 kanal) lalu 1 × 1. Keluarannya
+  ditulis dalam susunan FULL `(0, z, −10⁴, ŝ, ĉ)` dengan `z` persis milik B3 (`model.head: frozen_theta`).
 - P1/P2: buat model 3 kanal pretrained, lalu `expand_first_conv(model, 4 atau 5)`.
 - Semua model memakai encoder yang sama supaya perbandingan B1 → FULL hanya mengubah satu hal per langkah.
 - Satu konvolusi head 5 kanal setara dengan dua head konvolusi terpisah (3 + 2 kanal) yang berbagi decoder. Cara ini
@@ -189,6 +192,8 @@ Tabel berikut dipakai sebagai **tes invarian** (label hasil turunan ulang harus 
 - **FULL:** `L_B4 + λ · L_θ`, dengan `L_θ = Σ_{p∈V} [(ŝ − S)² + (ĉ − C)²] / max(|V|, 1)`, default `λ = 1`.
 - **B3θ (eksploratif):** `L_B3 + λ · L_θ`. `L_B3` dihitung persis seperti loss biner di atas pada logit `z`; `L_θ` dan `λ`
   sama dengan FULL.
+- **B3+θ (eksploratif):** rumus yang sama, tetapi `L_B3` konstan terhadap bobot yang dilatih (jaringan beku), jadi hanya
+  `λ · L_θ` yang melatih cabang θ. `L_B3` tetap dicatat di log sebagai bukti mask tidak berubah.
 - Dice dari `smp.losses.DiceLoss`; CE dari `F.cross_entropy(..., ignore_index=255, reduction="none")`.
 
 ## 6. Inferensi dan pemisahan instance

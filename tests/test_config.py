@@ -18,6 +18,8 @@ MATRIX = {
     "b3my": ("unetplusplus", 1, [], "none", False, "cc_yolo", "mar", False),  # exploratory
     "b3t": ("unetplusplus", 5, [], "bce_dice_theta", True, "cc", "theta", True),  # exploratory: B3 + θ head
     "b3tp": ("unetplusplus", 5, [], "none", False, "cc", "mar", False),  # exploratory
+    "b3h": ("unetplusplus", 5, [], "bce_dice_theta", True, "cc", "theta", True),  # exploratory: frozen B3 + θ branch
+    "b3hp": ("unetplusplus", 5, [], "none", False, "cc", "mar", False),  # exploratory
     "b4": ("unetplusplus", 3, [], "ce_dice", True, "watershed", "raw", True),
     "b5": ("unetplusplus", 3, [], "none", False, "watershed", "mar", False),
     "b5p": ("unetplusplus", 5, [], "none", False, "watershed", "mar", False),
@@ -57,7 +59,7 @@ def test_configs_encode_the_scenario_matrix(exp):
     assert row == MATRIX[exp]
 
 
-@pytest.mark.parametrize("exp", ["b3m", "b3my", "b3tp", "b5", "b5p", "full_y"])
+@pytest.mark.parametrize("exp", ["b3m", "b3my", "b3tp", "b3hp", "b5", "b5p", "full_y"])
 def test_inference_only_configs_mirror_their_source(exp):
     cfg = load_config("crowdai", exp)
     src = load_config("crowdai", cfg.model.source_exp)
@@ -159,5 +161,14 @@ def test_seeded_configs_keep_the_polygons_of_their_base(exp, base):
 
 def test_only_the_binary_theta_experiments_have_their_own_head():
     heads = {exp: load_config("crowdai", exp).model.head for exp in MATRIX}
-    assert {exp for exp, head in heads.items() if head is not None} == {"b3t", "b3tp"}
+    assert {exp for exp, head in heads.items() if head is not None} == {"b3t", "b3tp", "b3h", "b3hp"}
     assert heads["b3t"] == heads["b3tp"] == "binary_theta"
+    assert heads["b3h"] == heads["b3hp"] == "frozen_theta"
+
+
+def test_the_frozen_theta_experiments_name_their_frozen_network_and_keep_the_last_epoch():
+    cfg, mar = load_config("crowdai", "b3h"), load_config("crowdai", "b3hp")
+    assert cfg.model.frozen_exp == mar.model.frozen_exp == "b3" and mar.model.source_exp == "b3h"
+    assert cfg.train.select_metric == "last"
+    others = {exp: load_config("crowdai", exp) for exp in MATRIX if exp not in ("b3h", "b3hp")}
+    assert all(other.model.frozen_exp is None and other.train.select_metric == "fg_iou" for other in others.values())
