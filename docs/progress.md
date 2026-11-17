@@ -2285,3 +2285,19 @@ meminta paper tersedia sebagai `.tex` dan PDF.
 **Cek "Selesai jika" Fase 10 (diperbarui):** PDF paper dikompilasi dari sumber LaTeX: **ya**. Yang tersisa hanya pemeriksaan
 visual `slides/densepoly.pptx` (19 slide; server tidak punya PowerPoint atau LibreOffice) dan persetujuan penutupan Fase 10.
 
+**Deck sebagai PDF dan pemeriksaan visual (17 Nov 2026, 23.00 WIB).** Pemilik proyek meminta `.pptx` juga tersedia sebagai PDF
+supaya bisa dilihat di editor.
+- `.github/workflows/slides.yml`: setiap push yang mengubah `slides/densepoly.pptx` dikonversi dengan LibreOffice di runner
+  GitHub. Font Raleway dipasang dulu dari paket CTAN `raleway` (lisensi SIL OFL), karena `.pptx` tidak membawa font. Hasilnya
+  (PDF, daftar font yang tertanam, log) ada di cabang `slides-pdf`, yang hanya berisi keluaran build.
+- Build pertama (commit `e6ff137`) berhasil: 19 halaman, 960 × 540 pt, 0,96 MB. `pdffonts` menunjukkan Raleway Regular, Italic,
+  Bold, Bold Italic, dan Black tertanam; DejaVu Sans hanya dipakai untuk huruf yang tidak ada di Raleway (misalnya θ).
+- `slides/densepoly.pdf` disalin ke repo, di sebelah `densepoly.pptx`.
+- **Pemeriksaan visual:** ke-19 halaman dibaca satu per satu. Tidak ada teks yang terpotong atau tumpang-tindih; logo, header,
+  footer, tabel, grafik, dan slide baru nomor 13 tampil benar. Tidak ada yang perlu diubah di `build.js`. Catatan: ini render
+  LibreOffice; deck belum dibuka di PowerPoint, jadi detail kecil (font pengganti untuk θ, pemenggalan baris) bisa berbeda.
+
+**Cek "Selesai jika" Fase 10 (diperbarui):** semua kriteria terpenuhi: satu perintah membuat ulang tabel dan gambar, kedua
+notebook dieksekusi dan diekspor, PDF paper dikompilasi, PPT ada dan sudah diperiksa lewat PDF-nya. Yang tersisa hanya
+persetujuan pemilik proyek untuk menutup Fase 10.
+
