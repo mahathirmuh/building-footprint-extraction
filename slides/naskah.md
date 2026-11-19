@@ -1,7 +1,7 @@
 # Naskah presentasi: Ekstraksi Poligon Bangunan pada Permukiman Padat
 
-Naskah ucapan untuk tiap slide `densepoly.pptx` (24 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
-26 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
+Naskah ucapan untuk tiap slide `densepoly.pptx` (25 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
+28 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
 
 - Naskah ini dibuat `slides/build.js` bersama deck, jadi angkanya sama dengan yang tampil di slide. Untuk mengubahnya,
   ubah `say(...)` di `build.js` lalu bangun ulang; jangan menyunting file ini langsung.
@@ -271,7 +271,23 @@ Titik lemahnya sama dengan di CrowdAI: di *patch* yang berisi bangunan bersentuh
 
 Dari sisi biaya, modelnya 20,81 juta parameter. Alur penuh, dari citra sampai poligon, berjalan 42,3 *tile* per detik di RTX 5090, dan 36,4 bila detektor ikut dipakai.
 
-## Slide 21: Keterbatasan
+## Slide 21: Ringkasan hasil
+
+*±1 menit*
+
+Sebelum ke keterbatasan, ini seluruh hasil dalam satu tabel.
+
+Pertama, poligon yang rapi memang bisa dibuat dari *mask* saja: regularisasi menaikkan C-IoU dari 62,69 ke 73,87.
+
+Kedua, tentang tiga gagasan saya. *Head* θ didukung, dengan efek kecil: di *tile* padat PoLiS −0,037 piksel dan MTA −0,94 derajat. Prior morfologi tidak didukung: *merge rate* malah berubah +0,15 poin.
+
+Ketiga, model terbaik ternyata yang paling sederhana, B3m, dengan AP 64,89 dan C-IoU 76,97. Cabang θ di atas B3 yang dibekukan masih memperbaikinya sedikit di *tile* padat. Untuk memisahkan rumah, benih dari detektor menurunkan *merge rate* dari 1,96 ke 1,52 persen.
+
+Keempat, dibanding metode terbaik di data yang bersih, model saya masih di bawah HiSup: AP 61,14 lawan 65,60. Di dataset kedua, WHU, AP-nya 66,97, dan alur penuh berjalan 42,3 *tile* per detik.
+
+Jadi yang berhasil adalah regularisasi dan pemanduan θ. Yang tidak berhasil adalah prior morfologi, kelas kontak, dan upaya mengejar metode terbaik.
+
+## Slide 22: Keterbatasan
 
 *±1 menit*
 
@@ -287,7 +303,7 @@ Keempat, detektor YOLO hanya dilatih sekali dan dipakai untuk ketiga *seed*, jad
 
 Kelima, poligon yang dihasilkan hanya cincin luar bangunan. Bangunan yang punya halaman dalam, atau lubang, tidak terwakili.
 
-## Slide 22: Kesimpulan
+## Slide 23: Kesimpulan
 
 *±1 menit*
 
@@ -303,13 +319,13 @@ Keempat, *baseline* yang sederhana ternyata paling kuat. Hal ini baru terlihat k
 
 Kalau dirangkum dalam satu kalimat: sumbangan utama proyek ini bukan model yang mengalahkan metode terbaik, melainkan evaluasi yang jujur tentang seberapa jauh pendekatan berbasis *mask* bisa melangkah.
 
-## Slide 23: Referensi
+## Slide 24: Referensi
 
 *±0,5 menit*
 
 Ini rujukan utama yang saya pakai. Daftar lengkapnya ada di naskah paper.
 
-## Slide 24: Penutup
+## Slide 25: Penutup
 
 *±0,5 menit*
 

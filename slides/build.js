@@ -404,6 +404,26 @@ function writeScript(target, slides) {
     `Titik lemahnya sama dengan di CrowdAI: di *patch* yang berisi bangunan bersentuhan, ${n("NWhuMergeTouching")}% rumah masih tergabung.`,
     `Dari sisi biaya, modelnya ${n("NParamsFull")} juta parameter. Alur penuh, dari citra sampai poligon, berjalan ${n("NFpsFull")} *tile* per detik di RTX 5090, dan ${n("NFpsFullY")} bila detektor ikut dipakai.`);
 
+  s = d.slide("Ringkasan hasil", "Angka dari CrowdAI *test* kecuali disebut lain; rinciannya ada di slide-slide sebelumnya.");
+  d.table(s, ["Aspek", "Hasil", "Angka kunci"], [
+    ["Poligon dari *mask* saja", "Regularisasi merapikan poligon", `C-IoU ${n("NCiouBfour")} → ${n("NCiouBfive")}`],
+    ["*Head* θ (N1)", "Didukung; efeknya kecil", `PoLiS ${n("NNoneTotalPolis")} px, MTA ${n("NNoneTotalMta")}° di *tile* padat`],
+    ["Prior morfologi (N3)", "Tidak didukung", `*Merge rate* ${n("NNthreeDeltaMerge")} poin`],
+    ["Model terbaik", "B3m: segmentasi biner + regularisasi", `AP ${n("NApBthreem")}, C-IoU ${n("NCiouBthreem")}`],
+    ["Cabang θ di atas B3 beku", "Didukung (eksploratif)", `PoLiS ${n("NFrozThetaTotalPolis")} px, MTA ${n("NFrozThetaTotalMta")}° di *tile* padat`],
+    ["Pemisahan rumah", "*Seed* detektor mengurangi rumah tergabung", `*Merge rate* ${n("NMergeFull")}% → ${n("NMergeFullY")}%`],
+    ["Lawan SOTA, data bersih", "Masih di bawah HiSup", `AP ${n("NCleanApFull")} lawan ${n("NCleanApHisup")}`],
+    ["WHU dan kecepatan", "Dataset kedua, satu *seed*", `AP ${n("NWhuAp")}; ${n("NFpsFull")} *tile* per detik`],
+  ], { colW: [3.2, 4.6, 4.094], align: ["left", "left", "left"], rowH: 0.4,
+    callout: "Yang berhasil: regularisasi dan pemanduan θ. Yang tidak: prior morfologi, kelas kontak, dan mengejar SOTA." });
+  say("Ringkasan hasil",
+    "Sebelum ke keterbatasan, ini seluruh hasil dalam satu tabel.",
+    `Pertama, poligon yang rapi memang bisa dibuat dari *mask* saja: regularisasi menaikkan C-IoU dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}.`,
+    `Kedua, tentang tiga gagasan saya. *Head* θ didukung, dengan efek kecil: di *tile* padat PoLiS ${n("NNoneTotalPolis")} piksel dan MTA ${n("NNoneTotalMta")} derajat. Prior morfologi tidak didukung: *merge rate* malah berubah ${n("NNthreeDeltaMerge")} poin.`,
+    `Ketiga, model terbaik ternyata yang paling sederhana, B3m, dengan AP ${n("NApBthreem")} dan C-IoU ${n("NCiouBthreem")}. Cabang θ di atas B3 yang dibekukan masih memperbaikinya sedikit di *tile* padat. Untuk memisahkan rumah, benih dari detektor menurunkan *merge rate* dari ${n("NMergeFull")} ke ${n("NMergeFullY")} persen.`,
+    `Keempat, dibanding metode terbaik di data yang bersih, model saya masih di bawah HiSup: AP ${n("NCleanApFull")} lawan ${n("NCleanApHisup")}. Di dataset kedua, WHU, AP-nya ${n("NWhuAp")}, dan alur penuh berjalan ${n("NFpsFull")} *tile* per detik.`,
+    "Jadi yang berhasil adalah regularisasi dan pemanduan θ. Yang tidak berhasil adalah prior morfologi, kelas kontak, dan upaya mengejar metode terbaik.");
+
   s = d.slide("Keterbatasan", "Hal yang membatasi kesimpulan penelitian ini.");
   d.numbered(s, [
     { head: "Data bersih kecil", body: `Banding HiSup hanya di ${n("NTilesClean")} *tile*, dan bukan sampel acak.` },

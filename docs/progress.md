@@ -2475,3 +2475,7 @@ Angkanya dibaca dari HTML arXiv versi 1 (bukan per halaman PDF); PDF-nya diunduh
 MDPI menolak akses (HTTP 403), jadi angkanya tidak bisa diverifikasi. Referensi di deck menjadi 11 butir (ukuran huruf 12). Halaman 4
 dan 23 diperiksa di PDF.
 
+**Dua perubahan deck lagi (19 Nov 2026, permintaan pemilik proyek).** Slide 5 menjadi "Kebaruan penelitian: tiga gagasan yang
+diuji" (tabel N1–N3: apa yang baru dan hasil ujinya; komponen yang diadopsi disebut terpisah). Slide baru "Ringkasan hasil"
+sebelum "Keterbatasan" (delapan baris: aspek, hasil, angka kunci). Deck 25 slide.
+
