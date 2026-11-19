@@ -2463,3 +2463,15 @@ ekspornya di `outputs/report/` diperbarui. `pytest -q`: 779 lolos.
 yang sama: mencari metode SOTA 2026 untuk slide 4 ("2. boleh"), dan batas GPU diubah dari 65% menjadi **75%** ("3. ubah jadi 75%").
 Batas itu tetap diterapkan pada proses kita lewat `DENSEPOLY_GPU_DUTY`; nilai di atas 0.5 belum diukur.
 
+**SOTA 2026 untuk slide 4 (19 Nov 2026, pencarian literatur atas persetujuan pemilik proyek).** Dua baris ditambahkan, keduanya
+dengan sumber di `configs/paper_numbers.yaml` (ditandai `paper_table: false`, jadi tabel `reported` di paper tidak berubah):
+
+- RoIPoly (Jiao dkk.; arXiv:2407.14920v1, ISPRS JPRS 224, 2025), Swin-Base: AP 83,6 dan C-IoU 87,6 (dilaporkan di paper, Tabel 1 dan 2).
+- PolyBuild (Zhang dkk.; arXiv:2606.08920v1, 8 Jun 2026, menurut arXiv diterima di IEEE JSTARS): AP 60,6 (dilaporkan di paper,
+  Tabel III; tidak melaporkan C-IoU).
+
+Angkanya dibaca dari HTML arXiv versi 1 (bukan per halaman PDF); PDF-nya diunduh hanya untuk mencatat sha256. Keduanya diukur di
+60.317 tile val CrowdAI yang bocor. Metode 2026 lain yang ditemukan, PolyGeom (Remote Sensing 18(4):551), tidak dimasukkan: halaman
+MDPI menolak akses (HTTP 403), jadi angkanya tidak bisa diverifikasi. Referensi di deck menjadi 11 butir (ukuran huruf 12). Halaman 4
+dan 23 diperiksa di PDF.
+
