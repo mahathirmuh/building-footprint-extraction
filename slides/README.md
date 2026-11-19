@@ -5,6 +5,8 @@
   di GitHub Actions (`.github/workflows/slides.yml`), dengan font Raleway terpasang. Ini hasil render LibreOffice, jadi
   detail kecil bisa berbeda dari PowerPoint (misalnya huruf θ, yang tidak ada di Raleway dan memakai font pengganti).
 - `build.js`: isi deck. Tidak ada angka hasil yang diketik: semua dibaca dari `numbers.json`.
+- `naskah.md`: naskah ucapan per slide, untuk presentasi ke dosen dan rekan mahasiswa. Ditulis `build.js` dari `say(...)`
+  di samping tiap slide, dengan angka dari `numbers.json`; build berhenti bila ada slide tanpa naskah.
 - `numbers.json`: dibuat `python scripts/paper_tables.py` dari tabel hasil, sama dengan angka di paper.
 - `its_kit.js`: kit tata letak (pptxgenjs).
 
