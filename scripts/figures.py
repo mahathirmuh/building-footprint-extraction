@@ -486,7 +486,8 @@ def labels_excerpt(dataset: str) -> Path:
     white = (image.min(axis=2) > 245).mean(axis=1) > 0.985
     edges = np.flatnonzero(np.diff(white.astype(np.int8)))
     bands = [(a + 1, b + 1) for a, b in zip(edges[:-1], edges[1:], strict=True) if not white[a + 1] and b - a > 60]
-    parts = [image[: bands[0][0]]] + [image[bands[row][0] - 9 : bands[row][1] + 9] for row in LABELS_EXCERPT_ROWS]
+    used = np.flatnonzero(~white[: bands[0][0]])  # the title and the column names above the first row
+    parts = [image[max(used[0] - 12, 0) : bands[0][0]]] + [image[bands[row][0] - 9 : bands[row][1] + 9] for row in LABELS_EXCERPT_ROWS]
     target = paths.out_root() / "figures" / "results" / f"{dataset}_labels_excerpt.png"
     target.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(target), np.vstack(parts))

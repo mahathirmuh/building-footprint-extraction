@@ -209,7 +209,7 @@ function writeScript(target, slides) {
     { name: "Poligon", steps: [
       { head: "Marker + *watershed*", body: "Marker dari selisih peluang bangunan dan kontak; satu *instance* per rumah." },
       { head: "Kontur per rumah", body: "Batas tiap *instance* diambil dengan *marching squares*." },
-      { head: "Regularisasi terpandu θ", body: "Bangunan hampir persegi menjadi kotak searah θ; lainnya disederhanakan lalu sisinya diluruskan ke θ." },
+      { head: "Regularisasi terpandu θ", body: "Hampir persegi: kotak searah θ. Lainnya: disederhanakan, sisi diluruskan ke θ." },
       { head: "Keluaran", body: "Satu poligon per rumah, COCO JSON dan GeoJSON." },
     ] },
   ], [{ from: [0, 2], to: [1, 0], label: "peta kelas dan θ" }], { bottom: 5.95, headSize: 13.5, bodySize: 11.5 });
@@ -333,7 +333,7 @@ function writeScript(target, slides) {
     ["Evaluasi", `${n("NTestTiles")} *tile* *test* yang sama, kode metrik yang sama, selisih berpasangan per *tile*, *bootstrap* 1.000 replikasi`],
     ["Pretrained", "*Encoder* EfficientNet-B4 ImageNet, bobot awal identik di semua model jaringan"],
   ], { colW: [1.6, 5.75], w: 7.35, size: 12, rowH: 0.56, align: ["left", "left"],
-    callout: "Setelan identik, diperiksa dari `config.yaml` 23 *run* CrowdAI. Metrik: AP, AP *boundary*, IoU, C-IoU, PoLiS, MTA, *merge rate*." });
+    callout: "Setelan identik, diperiksa dari config.yaml 23 *run* CrowdAI. Metrik: AP, AP *boundary*, IoU, C-IoU, PoLiS, MTA, *merge rate*." });
   d.card(s, X0 + 7.6, 2.24, X1 - X0 - 7.6, 0.56 * 7, ACCENTS[5], "Yang berbeda (hanya ini)",
     "1. Komponen yang diuji di tiap langkah ablasi: arsitektur, *loss*, keluaran, atau input.\n2. B0 tidak dilatih; B1 dan B2 satu *seed*, model lain tiga *seed*.\n3. B3+θ memakai jaringan B3 yang dibekukan dan *checkpoint* *epoch* terakhir, karena *mask*-nya tidak berubah.",
     { headSize: 15, bodySize: 13, gap: 10 });

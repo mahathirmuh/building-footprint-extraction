@@ -494,12 +494,12 @@ class ITSDeck {
     return this._done(s, { ...o, tone: o.tone || "teal" }, top + 0.055 + (refs.length - 1) * pitch + 0.25);
   }
 
-  /** Simple table in ITS colours. header: [..], rows: [[..]], o: { colW, size, callout } */
+  /** Simple table in ITS colours. header: [..], rows: [[..]], o: { colW, size, callout, align, x, w, highlightRow (0-based body row) } */
   table(s, header, rows, o = {}) {
     const { top } = this._area(o, s);
     const size = o.size || 13;
     const cell = (v, i, head, r) => ({ text: rich(v, this.t({ fontSize: size, bold: head || undefined, color: head ? C.white : C.text })),
-      options: { fill: { color: head ? C.navy : o.highlightRow === r ? "FCE9D6" : r % 2 ? C.tint : C.white }, valign: "middle",  // highlightRow: 0-based body row align: Array.isArray(o.align) ? o.align[i] || "left" : i === 0 ? "left" : (o.align || "left"),  // align: one value or one per column
+      options: { fill: { color: head ? C.navy : o.highlightRow === r ? "FCE9D6" : r % 2 ? C.tint : C.white }, valign: "middle", align: Array.isArray(o.align) ? o.align[i] || "left" : i === 0 ? "left" : (o.align || "left"),  // align: one value or one per column
         border: [{ type: "solid", color: C.line, pt: 0.75 }, { type: "none" }, { type: "solid", color: C.line, pt: 0.75 }, { type: "none" }],
         margin: [4, 8, 4, 8] } });
     const data = [header.map((h, i) => cell(h, i, true, 0)), ...rows.map((r, ri) => r.map((v, i) => cell(v, i, false, ri)))];
