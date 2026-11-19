@@ -157,7 +157,7 @@ Dua baris terakhir adalah gagasan saya. *Head* θ, di FULL-P0, menambah sedikit 
 
 ## Slide 12: Hasil utama di CrowdAI *test*
 
-*±1 menit*
+*±1,5 menit*
 
 Tabel ini merangkum hasil di data *test*, rata-rata tiga *seed*. Sebelum membacanya, sedikit tentang metriknya. AP mengukur ketepatan deteksi tiap bangunan; makin besar makin baik. C-IoU adalah IoU yang dikenai penalti bila jumlah titik sudut poligon jauh dari *ground truth*, jadi ia mengukur kerapian. MTA adalah galat sudut dinding dalam derajat. *Merge rate* adalah persentase rumah yang tergabung dengan tetangganya. Untuk MTA dan *merge rate*, makin kecil makin baik.
 
@@ -167,7 +167,7 @@ Kedua, jalur biner unggul di AP: B3m 64,89, sedangkan FULL-P0 61,94.
 
 Ketiga, jalur tiga kelas lebih baik memisahkan rumah: *merge rate* FULL-P0 1,96%, B3m 2,81%. Dengan bantuan detektor, FULL+Y turun lagi ke 1,52%.
 
-Jadi tidak ada satu model yang menang di semua kolom. Itu saya uraikan satu per satu.
+Jadi tidak ada satu model yang menang di semua kolom. Itu saya uraikan satu per satu. Baris B3+θ adalah percobaan eksploratif yang saya jelaskan di slide tersendiri.
 
 ## Slide 13: N1 didukung: *head* θ merapikan poligon
 

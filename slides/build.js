@@ -304,7 +304,7 @@ function writeScript(target, slides) {
     `Ada tiga hal yang bisa dibaca. Pertama, regularisasi sangat menaikkan kerapian: dari B4 ke B5, C-IoU naik dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}, dan MTA turun dari ${n("NMtaBfour")} ke ${n("NMtaBfive")} derajat.`,
     `Kedua, jalur biner unggul di AP: B3m ${n("NApBthreem")}, sedangkan FULL-P0 ${n("NApFull")}.`,
     `Ketiga, jalur tiga kelas lebih baik memisahkan rumah: *merge rate* FULL-P0 ${n("NMergeFull")}%, B3m ${n("NMergeBthreem")}%. Dengan bantuan detektor, FULL+Y turun lagi ke ${n("NMergeFullY")}%.`,
-    "Jadi tidak ada satu model yang menang di semua kolom. Itu saya uraikan satu per satu.");
+    "Jadi tidak ada satu model yang menang di semua kolom. Itu saya uraikan satu per satu. Baris B3+θ adalah percobaan eksploratif yang saya jelaskan di slide tersendiri.");
 
   s = d.slide("N1 didukung: *head* θ merapikan poligon", `B5 → FULL-P0 di ${n("NTilesDense")} *tile* padat, selisih berpasangan dengan selang 95%.`);
   d.cards(s, [
