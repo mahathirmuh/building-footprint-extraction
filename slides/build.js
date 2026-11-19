@@ -64,7 +64,7 @@ function flowLanes(d, s, lanes, links = []) {
       s.addShape(P.line, { x: xa, y: a.bottom, w: 0, h: mid - a.bottom, line });
       s.addShape(P.line, { x: Math.min(xa, xb), y: mid, w: Math.abs(xa - xb), h: 0, line });
       s.addShape(P.downArrow, { x: xb - 0.11, y: mid - 0.01, w: 0.22, h: b.top - mid - 0.01, fill: { color: grey }, line: { color: grey, width: 0 } });
-      if (link.label) d.text(s, link.label, { x: xa + 0.14, y: mid + 0.01, w: 2.8, h: 0.24 }, { size: 10.5, color: grey, valign: "middle", italic: true });
+      if (link.label) d.text(s, link.label, { x: Math.min(xa, xb) + 0.3, y: mid - 0.19, w: Math.abs(xa - xb) - 0.6, h: 0.17 }, { size: 10.5, color: grey, align: "center", valign: "middle", italic: true });
     }
   }
 }
