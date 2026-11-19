@@ -161,18 +161,20 @@ function writeScript(target, slides) {
     "Ada dua catatan penting. Pertama, metode berbasis titik sudut itu dilatih dengan anotasi poligon, sedangkan penelitian ini hanya memakai *mask*. Kedua, semua angka paper tadi diukur di data validasi CrowdAI yang bocor.",
     `Baris terakhir adalah model saya di data *test* yang bersih: AP ${n("NApFull")} dan C-IoU ${n("NCiouFull")}. Karena datanya berbeda, baris itu tidak bisa dibandingkan langsung dengan baris di atasnya. Perbandingan yang adil saya tunjukkan nanti, di slide HiSup.`);
 
-  s = d.slide("Tiga gagasan yang diuji, dengan aturan yang dibekukan", "Cara menilai tiap gagasan ditulis sebelum ada model yang dilatih.");
-  d.numbered(s, [
-    { head: "N1: *head* orientasi", body: "Sudut bangunan θ dipelajari dari *mask*, lalu memandu perapian poligon." },
-    { head: "N2: evaluasi per kepadatan", body: "CrowdAI bebas duplikat, dibagi menurut jumlah bangunan per *tile*." },
-    { head: "N3: prior morfologi", body: "MBI dan peta celah ditambahkan sebagai kanal input." },
-    { head: "Aturan keputusan", body: "Tiga *seed*, selang kepercayaan *bootstrap*, hasil negatif tetap dilaporkan." },
-  ], { labelW: 3.6 });
-  say("Tiga gagasan yang diuji, dengan aturan yang dibekukan",
-    "Saya menguji tiga gagasan. N1 adalah gagasan metode: jaringan diberi satu keluaran tambahan, disebut *head* orientasi, yang menebak arah hadap bangunan, yaitu sudut θ. Label sudutnya dihitung otomatis dari *mask*, lalu sudut itu dipakai untuk merapikan poligon.",
-    "N2 bukan metode, melainkan cara evaluasi: dataset CrowdAI dibersihkan dari duplikat, lalu hasil dilaporkan per tingkat kepadatan bangunan.",
-    "N3 adalah gagasan *preprocessing*: dua peta dari morfologi klasik, yaitu MBI dan peta celah, ditambahkan sebagai kanal input, dengan harapan celah antar-rumah lebih mudah terlihat oleh jaringan.",
-    "Yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap gagasan saya tulis dan saya bekukan sebelum ada model yang dilatih. Setiap perbandingan memakai tiga *seed* dan selang kepercayaan *bootstrap*. Akibatnya hasil negatif pun tetap dilaporkan, dan itu akan terlihat di slide-slide berikutnya.");
+  s = d.slide("Kebaruan penelitian: tiga gagasan yang diuji", "Cara menilai tiap gagasan ditulis dan dibekukan sebelum ada model yang dilatih.");
+  d.table(s, ["Kebaruan", "Apa yang baru", "Hasil uji"], [
+    ["N1: metode", "*Head* orientasi θ yang labelnya diturunkan dari *mask*, lalu memandu perapian poligon", "Didukung; efeknya kecil"],
+    ["N2: evaluasi", "Metrik per tingkat kepadatan di CrowdAI yang sudah bebas duplikat", "Terlaksana; angka *benchmark* yang bocor terbukti terlalu tinggi"],
+    ["N3: *preprocessing*", "Prior morfologi (MBI dan peta celah) sebagai kanal input tambahan", "Tidak didukung; dilaporkan sebagai hasil negatif"],
+  ], { colW: [2.5, 5.6, 3.794], align: ["left", "left", "left"], rowH: 0.75,
+    callout: "Diadopsi, bukan kebaruan: kelas kontak + *watershed*, bobot tepi, U-Net++, MBI, dan deduplikasi *p-hash*." });
+  say("Kebaruan penelitian: tiga gagasan yang diuji",
+    "Ini kebaruan penelitian saya: tiga gagasan, dan ketiganya saya uji.",
+    "N1 adalah kebaruan di sisi metode: jaringan diberi satu keluaran tambahan, disebut *head* orientasi, yang menebak arah hadap bangunan, yaitu sudut θ. Yang baru, label sudutnya dihitung otomatis dari *mask*, lalu sudut itu dipakai untuk merapikan poligon. Hasil ujinya: didukung, tetapi efeknya kecil.",
+    "N2 adalah kebaruan di sisi evaluasi: dataset CrowdAI dibersihkan dari duplikat, lalu hasil dilaporkan per tingkat kepadatan bangunan. Dari sini muncul temuan terkuat penelitian ini, yaitu bahwa angka *benchmark* yang bocor terlalu tinggi.",
+    "N3 adalah kebaruan di sisi *preprocessing*: dua peta dari morfologi klasik, yaitu MBI dan peta celah, ditambahkan sebagai kanal input, dengan harapan celah antar-rumah lebih mudah terlihat oleh jaringan. Hasil ujinya: tidak didukung, dan saya laporkan sebagai hasil negatif.",
+    "Supaya jelas batasnya, ada komponen yang saya adopsi dari penelitian lain dan tidak saya klaim sebagai kebaruan: kelas kontak dengan *watershed*, bobot tepi pada *loss*, arsitektur U-Net++, indeks MBI itu sendiri, dan deduplikasi dengan *perceptual hash*.",
+    "Satu hal lagi yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap gagasan saya tulis dan saya bekukan sebelum ada model yang dilatih. Setiap perbandingan memakai tiga *seed* dan selang kepercayaan *bootstrap*. Karena itulah hasil negatif pun tetap dilaporkan.");
 
   s = d.slide("Dataset: apa dan dari mana", "Dua dataset publik; keduanya diunduh dari halaman resminya.");
   d.table(s, ["", "CrowdAI Mapping Challenge", "WHU Building (aerial)"], [

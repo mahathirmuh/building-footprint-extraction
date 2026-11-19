@@ -59,17 +59,21 @@ Ada dua catatan penting. Pertama, metode berbasis titik sudut itu dilatih dengan
 
 Baris terakhir adalah model saya di data *test* yang bersih: AP 61,94 dan C-IoU 74,55. Karena datanya berbeda, baris itu tidak bisa dibandingkan langsung dengan baris di atasnya. Perbandingan yang adil saya tunjukkan nanti, di slide HiSup.
 
-## Slide 5: Tiga gagasan yang diuji, dengan aturan yang dibekukan
+## Slide 5: Kebaruan penelitian: tiga gagasan yang diuji
 
-*±1 menit*
+*±1,5 menit*
 
-Saya menguji tiga gagasan. N1 adalah gagasan metode: jaringan diberi satu keluaran tambahan, disebut *head* orientasi, yang menebak arah hadap bangunan, yaitu sudut θ. Label sudutnya dihitung otomatis dari *mask*, lalu sudut itu dipakai untuk merapikan poligon.
+Ini kebaruan penelitian saya: tiga gagasan, dan ketiganya saya uji.
 
-N2 bukan metode, melainkan cara evaluasi: dataset CrowdAI dibersihkan dari duplikat, lalu hasil dilaporkan per tingkat kepadatan bangunan.
+N1 adalah kebaruan di sisi metode: jaringan diberi satu keluaran tambahan, disebut *head* orientasi, yang menebak arah hadap bangunan, yaitu sudut θ. Yang baru, label sudutnya dihitung otomatis dari *mask*, lalu sudut itu dipakai untuk merapikan poligon. Hasil ujinya: didukung, tetapi efeknya kecil.
 
-N3 adalah gagasan *preprocessing*: dua peta dari morfologi klasik, yaitu MBI dan peta celah, ditambahkan sebagai kanal input, dengan harapan celah antar-rumah lebih mudah terlihat oleh jaringan.
+N2 adalah kebaruan di sisi evaluasi: dataset CrowdAI dibersihkan dari duplikat, lalu hasil dilaporkan per tingkat kepadatan bangunan. Dari sini muncul temuan terkuat penelitian ini, yaitu bahwa angka *benchmark* yang bocor terlalu tinggi.
 
-Yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap gagasan saya tulis dan saya bekukan sebelum ada model yang dilatih. Setiap perbandingan memakai tiga *seed* dan selang kepercayaan *bootstrap*. Akibatnya hasil negatif pun tetap dilaporkan, dan itu akan terlihat di slide-slide berikutnya.
+N3 adalah kebaruan di sisi *preprocessing*: dua peta dari morfologi klasik, yaitu MBI dan peta celah, ditambahkan sebagai kanal input, dengan harapan celah antar-rumah lebih mudah terlihat oleh jaringan. Hasil ujinya: tidak didukung, dan saya laporkan sebagai hasil negatif.
+
+Supaya jelas batasnya, ada komponen yang saya adopsi dari penelitian lain dan tidak saya klaim sebagai kebaruan: kelas kontak dengan *watershed*, bobot tepi pada *loss*, arsitektur U-Net++, indeks MBI itu sendiri, dan deduplikasi dengan *perceptual hash*.
+
+Satu hal lagi yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap gagasan saya tulis dan saya bekukan sebelum ada model yang dilatih. Setiap perbandingan memakai tiga *seed* dan selang kepercayaan *bootstrap*. Karena itulah hasil negatif pun tetap dilaporkan.
 
 ## Slide 6: Dataset: apa dan dari mana
 
