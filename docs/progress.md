@@ -2397,3 +2397,14 @@ Pemilik proyek meminta pemakaian GPU **paling banyak 65%** ("usahakan 65% dari g
 
 Tes: 779 lolos.
 
+**Perubahan deck atas permintaan pemilik proyek (19 Nov 2026).**
+
+- `slides/naskah.md`: naskah ucapan per slide untuk dosen dan rekan mahasiswa. Ditulis `slides/build.js` dari `say(...)` di
+  samping tiap slide, dengan angka dari `slides/numbers.json`; build berhenti bila ada slide tanpa naskah. Sudah dicocokkan
+  dengan `densepoly.pptx` (urutan, judul, dan angka per slide).
+- Slide penutup memakai foto latar template. Foto itu tidak ada di paket gambar, jadi dipulihkan dari tangkapan layar kiriman
+  pemilik proyek (`densepoly-work/make_closing_bg.py`); hasilnya sedikit lebih lunak dari foto asli.
+- Slide baru nomor 2, "Inti presentasi dalam tiga pertanyaan" (masalahnya apa, ketemunya apa, kenapa itu penting). Deck
+  menjadi 20 slide; `slides/densepoly.pdf` dibangun ulang (20 halaman). Yang diperiksa di PDF baru: halaman 2, 3, dan
+  halaman penutup; halaman lain tidak dibaca ulang.
+
