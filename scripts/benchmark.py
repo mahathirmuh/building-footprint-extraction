@@ -34,6 +34,7 @@ from densepoly.models.factory import input_channels  # noqa: E402
 from densepoly.postproc.polygonize import PolygonParams  # noqa: E402
 from densepoly.utils.io import write_json  # noqa: E402
 from densepoly.utils.provenance import git_revision, timestamp  # noqa: E402
+from densepoly.utils.throttle import refuse_throttled  # noqa: E402
 
 
 def gpu_load() -> dict | None:
@@ -59,6 +60,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--loader-workers", type=int, default=2, help="processes reading the tiles")
     parser.add_argument("overrides", nargs="*", help="config overrides key=value (not of the post-processing)")
     args = parser.parse_args(argv)
+    refuse_throttled("scripts/benchmark.py")
 
     if not postproc_file(args.data, args.exp, args.configs_dir).exists():
         parser.error("the post-processing of this experiment is not frozen yet (scripts/tune_postproc.py)")

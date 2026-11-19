@@ -37,6 +37,7 @@ from densepoly.losses import SegmentationLoss
 from densepoly.models.factory import build_model, model_head, split_output
 from densepoly.utils.io import read_json, write_json
 from densepoly.utils.provenance import git_revision, timestamp
+from densepoly.utils.throttle import GpuPause, gpu_duty, refuse_throttled
 
 TERMS = ("loss", "ce", "dice", "theta")
 TRAIN_COLUMNS = ("step", "epoch", "lr", *TERMS, "data_fraction", "seconds")
@@ -175,6 +176,7 @@ def load_frozen_network(model: nn.Module, cfg) -> None:
 
 def optimizer_step(parts: Parts, iterator, lr: float) -> tuple[dict[str, torch.Tensor], float]:
     """One step over `accumulate` micro-batches; returns the mean loss terms and the seconds spent waiting for data."""
+    started = time.perf_counter()
     parts.optimizer.zero_grad(set_to_none=True)
     terms, waited = {}, 0.0
     for _ in range(parts.accumulate):
@@ -192,6 +194,7 @@ def optimizer_step(parts: Parts, iterator, lr: float) -> tuple[dict[str, torch.T
         group["lr"] = lr
     parts.scaler.step(parts.optimizer)
     parts.scaler.update()
+    GpuPause(parts.device).rest(started)  # DENSEPOLY_GPU_DUTY: the card works at most that share of the time
     return terms, waited
 
 
@@ -202,7 +205,9 @@ def validate(model: nn.Module, loader, device: torch.device, amp: bool, ignore: 
     model.eval()
     counts = dict.fromkeys(("inter", "union", "tp", "fp", "fn"), 0)
     binary = False
+    pause = GpuPause(device)
     for batch in loader:
+        started = time.perf_counter()
         classes = batch["classes"].to(device, non_blocking=True)
         with torch.autocast(device.type, dtype=torch.float16, enabled=amp):
             output = model(batch["image"].to(device, non_blocking=True))
@@ -219,6 +224,7 @@ def validate(model: nn.Module, loader, device: torch.device, amp: bool, ignore: 
             counts["fn"] += int((~predicted & actual).sum())
         counts["inter"] += int((fg & truth).sum())
         counts["union"] += int(((fg & keep) | truth).sum())
+        pause.rest(started)
     model.train()
     scores = {"fg_iou": counts["inter"] / max(counts["union"], 1)}
     if binary:
@@ -343,6 +349,8 @@ def fit(
     select_loader = make_loader(select, micro, cfg, shuffle=False)
     select_metric = str(train_cfg.select_metric)
     log_every = int(train_cfg.log_every_steps)
+    if gpu_duty() is not None:  # the "seconds" of the logs then hold the sleeps too
+        print(json.dumps({"gpu_duty": gpu_duty()}), flush=True)
     started = saved = time.monotonic()
     earlier = position.seconds
 
@@ -421,6 +429,7 @@ def endless_batches(parts: Parts):
 def benchmark(cfg, iterations: int, splits_dir: Path | None = None) -> dict:
     """Iterations per second, share of the time waiting for data, peak GPU memory and the mean loss terms, on the first
     iterations of a run; the terms are the material of the λ decision (PLAN.md Phase 6). Nothing is saved."""
+    refuse_throttled("the training benchmark")
     parts = prepare(cfg, splits_dir)
     iterator = endless_batches(parts)
     lr = float(cfg.train.lr)

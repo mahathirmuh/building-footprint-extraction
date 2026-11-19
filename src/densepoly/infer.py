@@ -35,6 +35,7 @@ from densepoly.postproc.yolo_seeds import seed_centres
 from densepoly.priors.cache import load_stats, quantize, read_prior, read_rgb
 from densepoly.priors.mbi import brightness, mbi
 from densepoly.utils.io import read_json
+from densepoly.utils.throttle import GpuPause
 
 
 def cached_mbi(dataset: str, split: str, image_id: int) -> np.ndarray:
@@ -138,6 +139,7 @@ def network_channels(
     model: nn.Module, batches: Iterable[dict], device: torch.device, tile_size: int, amp: bool = False
 ) -> Iterator[tuple[int, np.ndarray, float]]:
     """(image id, float16 (C, H, W) channels cropped to the tile, seconds of the network per image) of every tile."""
+    pause = GpuPause(device)
     for batch in batches:
         tic = time.perf_counter()
         with torch.autocast(device.type, dtype=torch.float16, enabled=amp):
@@ -147,6 +149,7 @@ def network_channels(
         channels = probabilities if orientation is None else torch.cat([probabilities, orientation], dim=1)
         cropped = channels[:, :, :tile_size, :tile_size].cpu().numpy().astype(np.float16)
         seconds = (time.perf_counter() - tic) / len(cropped)
+        pause.rest(tic)  # after the timing: the sleep is not time of the network
         for image_id, tile in zip(batch["image_id"].tolist(), cropped, strict=True):
             yield image_id, tile, seconds
 
