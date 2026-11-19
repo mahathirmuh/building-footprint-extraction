@@ -79,7 +79,7 @@ function writeScript(target, slides) {
   let s = d.slide("Inti presentasi dalam tiga pertanyaan", "Masalah, temuan, dan artinya; slide berikutnya menguraikan satu per satu.");
   d.cards(s, [
     { head: "Masalahnya apa?", body: "Peta butuh satu poligon rapi per rumah. Di permukiman padat, atap berdempetan terbaca sebagai satu gumpalan. Metode terbaik butuh anotasi poligon, dan data uji CrowdAI bocor ke data latih." },
-    { head: "Ketemunya apa?", body: `Dari *mask* saja, regularisasi menaikkan kerapian poligon (C-IoU) dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}. *Head* θ menambah sedikit kerapian. Prior morfologi dan kelas kontak tidak membantu. Di data bersih, AP HiSup ternyata ${n("NCleanApHisup")}, bukan ${n("NLeakyApHisup")} seperti di data bocor.` },
+    { head: "Ketemunya apa?", body: `Dari *mask* saja, regularisasi menaikkan C-IoU (kerapian poligon) dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}. *Head* θ menambah sedikit kerapian. Prior morfologi dan kelas kontak tidak membantu. Di data bersih, AP HiSup ternyata ${n("NCleanApHisup")}, bukan ${n("NLeakyApHisup")} seperti di data bocor.` },
     { head: "Kenapa itu penting?", body: "Banyak daerah hanya punya *mask*: poligon rapi tetap bisa dibuat tanpa anotasi poligon. Angka *benchmark* yang bocor terlalu optimistis, jadi metode harus dibandingkan di data bersih." },
   ]);
   say("Inti presentasi dalam tiga pertanyaan",
