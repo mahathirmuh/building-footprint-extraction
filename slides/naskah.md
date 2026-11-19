@@ -153,9 +153,9 @@ Keduanya saya laporkan apa adanya, karena hasil negatif yang diukur dengan benar
 
 ## Slide 12: Banding dengan HiSup di data tanpa kebocoran
 
-*±1 menit*
+*±1,5 menit*
 
-Bagaimana posisi hasil ini dibanding metode terbaik? HiSup merilis file prediksinya, jadi bisa saya nilai ulang dengan kode evaluasi yang sama, tanpa menjalankan modelnya.
+Bagaimana posisi hasil ini dibanding metode terbaik? Pembandingnya HiSup, metode ekstraksi poligon bangunan dari Xu dan rekan-rekannya tahun 2023, yang dilatih dengan anotasi poligon dan termasuk yang terbaik di CrowdAI. HiSup merilis file prediksinya, jadi bisa saya nilai ulang dengan kode evaluasi yang sama, tanpa menjalankan modelnya.
 
 Di data validasi penuh, yang bocor, HiSup mendapat AP 79,43. Angka itu cocok dengan yang dilaporkan di papernya, dan itu sekaligus memeriksa bahwa kode evaluasi saya benar.
 

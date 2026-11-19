@@ -219,7 +219,7 @@ function writeScript(target, slides) {
   ], { colW: [4.6, 2.1, 1.2, 1.2, 1.6, 1.194], align: "center",
     callout: `HiSup turun dari ${n("NLeakyApHisup")} ke ${n("NCleanApHisup")} AP di data bersih; kita tertinggal ${n("NCleanDeltaApAbs")} poin.` });
   say("Banding dengan HiSup di data tanpa kebocoran",
-    "Bagaimana posisi hasil ini dibanding metode terbaik? HiSup merilis file prediksinya, jadi bisa saya nilai ulang dengan kode evaluasi yang sama, tanpa menjalankan modelnya.",
+    "Bagaimana posisi hasil ini dibanding metode terbaik? Pembandingnya HiSup, metode ekstraksi poligon bangunan dari Xu dan rekan-rekannya tahun 2023, yang dilatih dengan anotasi poligon dan termasuk yang terbaik di CrowdAI. HiSup merilis file prediksinya, jadi bisa saya nilai ulang dengan kode evaluasi yang sama, tanpa menjalankan modelnya.",
     `Di data validasi penuh, yang bocor, HiSup mendapat AP ${n("NLeakyApHisup")}. Angka itu cocok dengan yang dilaporkan di papernya, dan itu sekaligus memeriksa bahwa kode evaluasi saya benar.`,
     `Tetapi di ${n("NTilesClean")} *tile* validasi yang benar-benar tidak punya kembaran di train, AP HiSup turun menjadi ${n("NCleanApHisup")}. Di *tile* yang sama, FULL-P0 mendapat ${n("NCleanApFull")}, tertinggal ${n("NCleanDeltaApAbs")} poin. Perlu diingat, HiSup dilatih dengan anotasi poligon, sedangkan model saya tidak.`,
     "Ambang \"mendekati metode terbaik\" yang saya bekukan sejak awal adalah tiga poin AP. Selisihnya lebih besar dari itu, jadi klaim tersebut tidak saya pakai.",
