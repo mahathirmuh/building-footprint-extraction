@@ -421,6 +421,78 @@ def qualitative(dataset: str, lang: str = "en", splits_dir: Path | None = None) 
     return save_result(fig, dataset, "qualitative" if lang == "en" else f"qualitative_{lang}")
 
 
+# --- before and after: the raw contours of a network and the regularized polygons of the same instances
+
+BEFORE_AFTER = {"crowdai": ("b4", "b5")}  # B5 is the network of B4 with the regularization: nothing else differs
+BEFORE_AFTER_TILES = 2
+BEFORE_AFTER_WORDS = {
+    "en": {"image": "image", "before": "before: raw contours", "after": "after: regularized", "gt": "ground truth",
+           "vertices": "vertices"},
+    "id": {"image": "citra", "before": "sebelum: kontur mentah", "after": "sesudah: dirapikan", "gt": "ground truth",
+           "vertices": "titik sudut"},
+}  # fmt: skip
+
+
+def before_after(dataset: str, lang: str = "en", splits_dir: Path | None = None) -> Path:
+    """Dense test tiles (the first of the qualitative figure): the image, the contours before and the polygons after the
+    regularization, and the ground truth, each with its number of vertices."""
+    from densepoly.data.dataset import TileDataset, tile_refs
+
+    split, run = "test", paths.run_name(0)
+    before, after = BEFORE_AFTER[dataset]
+    density = read_json(paths.density_file(dataset, split, splits_dir))
+    picked = [image_id for image_id, _ in pick_qualitative(density["main"]["strata"]["padat"], [], {}, QUALITATIVE_DENSE)]
+    picked = picked[:BEFORE_AFTER_TILES]
+    image_ids = set(picked)
+    refs = {int(ref.key): ref for ref in tile_refs(dataset, split, splits_dir) if int(ref.key) in image_ids}
+    tiles = TileDataset(load_config(dataset, after), split, "predict", splits_dir=splits_dir)
+    images = {i: tiles.cut(cache.read_rgb(refs[i].image), refs[i]) for i in image_ids}
+    words = BEFORE_AFTER_WORDS[lang]
+    columns = [
+        (words["image"], None, None),
+        (f"{words['before']} ({LABELS[before]})", polygons_by_image(read_json(paths.pred_file(dataset, before, run, split)), image_ids), PREDICTION_COLOUR),
+        (f"{words['after']} ({LABELS[after]})", polygons_by_image(read_json(paths.pred_file(dataset, after, run, split)), image_ids), PREDICTION_COLOUR),
+        (words["gt"], polygons_by_image(read_json(paths.gt_file(dataset, split))["annotations"], image_ids), GT_COLOUR),
+    ]  # fmt: skip
+    fig, axes = plt.subplots(len(picked), len(columns), figsize=(3.0 * len(columns), 3.1 * len(picked)), squeeze=False)
+    for row, image_id in enumerate(picked):
+        for col, (title, rings, colour) in enumerate(columns):
+            ax = axes[row][col]
+            draw_rings(ax, images[image_id], rings[image_id] if rings else [], colour or PREDICTION_COLOUR)
+            if row == 0:
+                ax.set_title(title, color=INK, fontsize=10)
+            if col == 0:
+                ax.set_ylabel(f"#{image_id}", color=MUTED, fontsize=8)
+            if rings:
+                count = sum(len(ring) for ring in rings[image_id])
+                ax.text(0.03, 0.04, f"{count} {words['vertices']}", transform=ax.transAxes, fontsize=8, color="white",
+                        bbox={"facecolor": "black", "alpha": 0.6, "pad": 1.5, "edgecolor": "none"})  # fmt: skip
+    fig.tight_layout(pad=0.4)
+    return save_result(fig, dataset, "before_after" if lang == "en" else f"before_after_{lang}")
+
+
+LABELS_EXCERPT_ROWS = (7, 10)  # rows of the QA figure of the labels shown on a slide: a dense tile and a touching one
+
+
+def labels_excerpt(dataset: str) -> Path:
+    """Header and two rows cut from $DENSEPOLY_OUT/figures/qa/<dataset>_labels.png (--qa-labels), for a slide: RGB, classes,
+    θ, edge weight, MBI and gap map of the same tiles. Rows are found as the bands between the white gaps of the figure."""
+    import cv2
+
+    source = paths.out_root() / "figures" / "qa" / f"{dataset}_labels.png"
+    image = cv2.imread(str(source))
+    if image is None:
+        raise SystemExit(f"{source} does not exist: run --qa-labels first")
+    white = (image.min(axis=2) > 245).mean(axis=1) > 0.985
+    edges = np.flatnonzero(np.diff(white.astype(np.int8)))
+    bands = [(a + 1, b + 1) for a, b in zip(edges[:-1], edges[1:], strict=True) if not white[a + 1] and b - a > 60]
+    parts = [image[: bands[0][0]]] + [image[bands[row][0] - 9 : bands[row][1] + 9] for row in LABELS_EXCERPT_ROWS]
+    target = paths.out_root() / "figures" / "results" / f"{dataset}_labels_excerpt.png"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(target), np.vstack(parts))
+    return target
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data", choices=paths.DATASETS, required=True)
@@ -428,11 +500,17 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--qa-gap-mode", action="store_true")
     parser.add_argument("--results", action="store_true", help="the density figures, from the written tables")
     parser.add_argument("--qualitative", action="store_true", help="test tiles with the polygons of each model")
+    parser.add_argument("--before-after", action="store_true", help="test tiles before and after the regularization")
+    parser.add_argument("--labels-excerpt", action="store_true", help="two rows of the QA figure of the labels, for a slide")
     parser.add_argument("--lang", choices=sorted(WORDS), default="en", help="language of the labels of the result figures")
     parser.add_argument("--splits-dir", type=Path, help="folder of the density strata (default: repo splits/)")
     args = parser.parse_args(argv)
-    if not (args.qa_labels or args.qa_gap_mode or args.results or args.qualitative):
-        parser.error("nothing to do: give --qa-labels, --qa-gap-mode, --results and/or --qualitative")
+    if not (args.qa_labels or args.qa_gap_mode or args.results or args.qualitative or args.before_after or args.labels_excerpt):
+        parser.error("nothing to do: give --qa-labels, --qa-gap-mode, --results, --qualitative, --before-after or --labels-excerpt")
+    if args.before_after:
+        print("saved", before_after(args.data, args.lang, args.splits_dir))
+    if args.labels_excerpt:
+        print("saved", labels_excerpt(args.data))
     if args.qualitative:
         print("saved", qualitative(args.data, args.lang, args.splits_dir))
     if args.results:

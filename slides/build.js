@@ -162,6 +162,28 @@ function writeScript(target, slides) {
     "Ada dua catatan penting. Pertama, metode berbasis titik sudut itu dilatih dengan anotasi poligon, sedangkan penelitian ini hanya memakai *mask*. Kedua, semua angka paper tadi diukur di data validasi CrowdAI yang bocor.",
     `Baris terakhir adalah model saya di data *test* yang bersih: AP ${n("NApFull")} dan C-IoU ${n("NCiouFull")}. Karena datanya berbeda, baris itu tidak bisa dibandingkan langsung dengan baris di atasnya. Perbandingan yang adil saya tunjukkan nanti, di slide HiSup.`);
 
+  s = d.slide("Posisi penelitian ini di antara metode lain", "Ya = punya ciri itu; – = tidak. Dinilai dari paper masing-masing, untuk hasil CrowdAI-nya.");
+  const Y = "Ya", N = "–";
+  d.table(s, ["Karya", "Dilatih dari *mask* saja", "Orientasi bangunan dipelajari", "Dinilai di data bebas duplikat", "Hasil per tingkat kepadatan", "Tanpa *post-processing*"], [
+    ["FFL, 2021", N, Y, N, N, N],
+    ["PolyWorld, 2022", N, N, N, N, N],
+    ["HiSup, 2023", N, N, N, N, N],
+    ["PolyR-CNN, 2024", N, N, N, N, Y],
+    ["Pix2Poly, 2025", N, N, N, N, Y],
+    ["RoIPoly, 2025", N, N, N, N, Y],
+    ["PolyBuild, 2026", N, N, N, N, Y],
+    ["Penelitian ini", Y, Y, Y, Y, N],
+  ], { colW: [2.9, 1.8, 1.8, 1.8, 1.8, 1.794], size: 12.5, rowH: 0.38, highlightRow: 7,
+    align: ["left", "center", "center", "center", "center", "center"],
+    callout: "Belum ada yang menggabungkan empat ciri pertama. Harganya: metode ini masih butuh *post-processing*, dan AP-nya lebih rendah." });
+  say("Posisi penelitian ini di antara metode lain",
+    "Tabel ini menempatkan penelitian saya di antara metode lain. Tiap kolom adalah satu ciri; Ya berarti karya itu memilikinya.",
+    "Kolom pertama: dilatih hanya dari *mask*. Semua metode pembanding membutuhkan anotasi poligon; penelitian ini tidak.",
+    "Kolom kedua: orientasi bangunan dipelajari jaringan. Hanya *frame field learning* tahun 2021 yang punya gagasan serupa, lewat medan arah; di penelitian ini orientasi dipelajari dari label yang diturunkan dari *mask*.",
+    "Kolom ketiga dan keempat menyangkut evaluasi. Angka CrowdAI di paper-paper itu diukur di data validasi yang bocor, dan tidak dipecah menurut kepadatan bangunan. Penelitian ini menilai di data bebas duplikat dan melaporkan hasil per tingkat kepadatan.",
+    "Kolom terakhir sengaja saya masukkan supaya adil, karena di situ penelitian ini yang kurang. Metode terbaru bersifat *end-to-end*: poligon keluar langsung dari jaringan. Metode saya masih membutuhkan *post-processing*, dan AP-nya lebih rendah.",
+    "Jadi posisinya begini: belum ada karya yang menggabungkan empat ciri pertama, dan itulah celah yang diisi penelitian ini. Yang ditawarkan bukan akurasi tertinggi, melainkan jalur yang hanya butuh *mask*, dengan evaluasi yang lebih jujur.");
+
   s = d.slide("Kebaruan penelitian: tiga gagasan yang diuji", "Cara menilai tiap gagasan ditulis dan dibekukan sebelum ada model yang dilatih.");
   d.table(s, ["Kebaruan", "Apa yang baru", "Hasil uji"], [
     ["N1: metode", "*Head* orientasi θ yang labelnya diturunkan dari *mask*, lalu memandu perapian poligon", "Didukung; efeknya kecil"],
@@ -278,6 +300,15 @@ function writeScript(target, slides) {
     "Yang ketiga adalah bobot tepi: piksel di dekat batas bangunan diberi bobot *loss* lebih besar, supaya jaringan tidak mengabaikan celah sempit di antara rumah.",
     "Kelas kontak dan bobot tepi saya adopsi dari penelitian sebelumnya. Yang baru di sini adalah label orientasi yang diturunkan dari *mask*.");
 
+  s = d.slide("Contoh label dan prior pada citra asli", "Dari kiri: citra, kelas, orientasi θ, bobot tepi, MBI, dan peta celah.");
+  d.mediaStack(s, { image: figure("crowdai_labels_excerpt.png"), alt: "Label dan prior morfologi dua tile",
+    callout: "Tiga kolom tengah adalah label yang diturunkan dari *mask*; dua kolom kanan adalah prior morfologi klasik (N3)." });
+  say("Contoh label dan prior pada citra asli",
+    "Supaya label tadi tidak abstrak, ini contohnya pada dua *tile* asli: satu *tile* padat dan satu *tile* yang bangunannya bersentuhan.",
+    "Kolom pertama adalah citranya. Kolom kedua adalah kelas: abu-abu untuk bangunan, dan garis merah tipis untuk kontak, yaitu tempat dua bangunan bertemu. Di baris bawah garis merah itu terlihat di sisi kanan. Dari sini kelihatan betapa sedikitnya piksel kontak.",
+    "Kolom ketiga adalah orientasi θ, dengan warna sebagai sudut: bangunan yang searah berwarna sama. Kolom keempat adalah bobot tepi, yang menyala di sekitar batas bangunan.",
+    "Dua kolom terakhir adalah hasil pengolahan citra klasik. MBI menonjolkan struktur terang seukuran rumah, dan peta celah menonjolkan garis gelap tipis di antara atap. Keduanya dipakai sebagai input tambahan di gagasan N3.");
+
   s = d.slide("Evaluasi tanpa kebocoran data", "Val CrowdAI tumpang-tindih dengan train, jadi *split* dibuat ulang.");
   d.numbered(s, [
     { head: "Deduplikasi", body: `${n("NTrainImages")} *tile* train menjadi ${n("NTrainClusters")} klaster; satu wakil per klaster.` },
@@ -358,6 +389,15 @@ function writeScript(target, slides) {
     `Ketiga, jalur tiga kelas lebih baik memisahkan rumah: *merge rate* FULL-P0 ${n("NMergeFull")}%, B3m ${n("NMergeBthreem")}%. Dengan bantuan detektor, FULL+Y turun lagi ke ${n("NMergeFullY")}%.`,
     "Jadi tidak ada satu model yang menang di semua kolom. Itu saya uraikan satu per satu. Baris B3+θ adalah percobaan eksploratif yang saya jelaskan di slide tersendiri.");
 
+  s = d.slide("Perbandingan model per tingkat kepadatan", "B3, B4, dan FULL-P0 di *tile* jarang, sedang, dan padat; garis tegak adalah simpangan antar-*seed*.");
+  d.mediaStack(s, { image: figure("crowdai_strata_id.png"), alt: "AP, merge rate dan PoLiS per strata kepadatan",
+    callout: "B3 unggul di AP dan PoLiS di semua kepadatan; jalur tiga kelas lebih sedikit menggabungkan rumah, terutama di *tile* padat." });
+  say("Perbandingan model per tingkat kepadatan",
+    "Gambar ini membandingkan tiga model, yaitu B3, B4, dan FULL-P0, menurut kepadatan *tile*: jarang, sedang, dan padat.",
+    "Panel kiri adalah AP. B3, garis biru, berada di atas di semua kepadatan. Panel kanan adalah PoLiS, yang makin kecil makin baik; di sana B3 juga yang terbaik, dan FULL-P0 berada di bawah B4, artinya *head* θ memang mendekatkan batas poligon ke *ground truth*.",
+    "Panel tengah adalah *merge rate*, dan di sinilah urutannya terbalik: B3 paling banyak menggabungkan rumah, terutama di *tile* padat. Jalur tiga kelas, B4 dan FULL-P0, lebih baik memisahkan rumah.",
+    "Jadi kepadatan tidak mengubah siapa yang unggul di tiap metrik, tetapi memperlebar jarak di *merge rate*: makin padat, makin terasa perlunya mekanisme pemisah rumah.");
+
   s = d.slide("N1 didukung: *head* θ merapikan poligon", `B5 → FULL-P0 di ${n("NTilesDense")} *tile* padat, selisih berpasangan dengan selang 95%.`);
   d.cards(s, [
     { head: "PoLiS", body: `Turun ${n("NNoneTotalPolisAbs")} piksel; selisih dan selang 95%: ${n("NNoneTotalPolis")} ${n("NNoneTotalPolisCi")}. Batas poligon lebih dekat ke *ground truth*.` },
@@ -429,6 +469,18 @@ function writeScript(target, slides) {
     `Dari kegagalan itu muncul cara kedua, B3+θ: jaringan B3 dibekukan, lalu hanya sebuah cabang kecil untuk θ yang dilatih di atasnya. Dengan begitu *mask* tidak berubah sama sekali. Hasilnya positif: dibanding B3m, PoLiS ${n("NFrozThetaTotalPolis")} piksel dan MTA ${n("NFrozThetaTotalMta")} derajat, keduanya dengan selang kepercayaan di bawah nol dan searah di ketiga *seed*. AP berubah ${n("NFrozThetaTotalAp")} poin, masih di dalam batas yang dibekukan.`,
     `Jadi pemanduan θ juga memperbaiki *baseline* terkuat, asalkan *mask*-nya dilindungi. Tetapi saya tidak ingin melebih-lebihkan: efeknya kecil, dan kalau dihitung di semua *tile*, AP turun ${n("NThetaFrozenApAbs")} poin. Karena ditambahkan setelah hasil utama ada, temuan ini saya laporkan sebagai eksploratif dan tidak mengubah keputusan N1 sampai N3.`);
 
+  s = d.slide("Sebelum dan sesudah regularisasi", "Dua *tile* padat dari data *test*; jaringan yang sama, dengan dan tanpa perapian poligon.");
+  d.mediaStack(s, { image: figure("crowdai_before_after_id.png"), alt: "Citra, kontur mentah, poligon dirapikan, ground truth", split: 0.68, items: [
+    { head: "Sebelum (B4)", body: "Kontur langsung dari hasil segmentasi: tepinya bergelombang." },
+    { head: "Sesudah (B5)", body: "Jaringan dan *instance* yang sama, ditambah perapian: sisi lurus dan sudut siku." },
+    { head: "Angka di pojok", body: "Jumlah titik sudut di *tile* itu; yang baik mendekati *ground truth*." },
+  ] });
+  say("Sebelum dan sesudah regularisasi",
+    "Ini gambar sebelum dan sesudahnya, pada dua *tile* padat dari data *test*. Dari kiri: citra aslinya, kontur sebelum dirapikan, poligon sesudah dirapikan, dan *ground truth*.",
+    "Kolom kedua dan ketiga berasal dari jaringan yang sama dan *instance* yang sama, yaitu B4 dan B5. Satu-satunya perbedaan adalah langkah regularisasi. Jadi apa pun yang berubah di antara kedua kolom itu murni akibat perapian poligon.",
+    "Sebelum dirapikan, tepi bangunan bergelombang mengikuti piksel. Sesudahnya, sisi-sisinya lurus dan sudutnya siku, lebih mirip *ground truth* di kolom kanan.",
+    "Angka di pojok kiri bawah adalah jumlah titik sudut di *tile* itu. Jumlahnya turun mendekati *ground truth*, walaupun belum sama. Inilah yang ditangkap metrik C-IoU.");
+
   s = d.slide("Contoh hasil di *tile* asli", "*Ground truth* dan poligon tiap model pada *tile* *test* yang sama.");
   d.mediaStack(s, { image: figure("crowdai_qualitative_id.png"), alt: "Poligon tiap model pada tile test", split: 0.6, items: [
     { head: "B4", body: "Kontur mentah: bergelombang dan boros verteks." },
@@ -487,6 +539,22 @@ function writeScript(target, slides) {
     "Ketiga, efek N1 kecil. Di jalur biner, perbaikannya baru terlihat setelah *mask* dibekukan, dan percobaan itu sifatnya eksploratif.",
     "Keempat, detektor YOLO hanya dilatih sekali dan dipakai untuk ketiga *seed*, jadi ragamnya antar-*seed* tidak terukur.",
     "Kelima, poligon yang dihasilkan hanya cincin luar bangunan. Bangunan yang punya halaman dalam, atau lubang, tidak terwakili.");
+
+  s = d.slide("Langkah ke depan", "Yang diperlukan agar hasil ini lebih kuat dan lebih berguna.");
+  d.numbered(s, [
+    { head: "Gabungkan dua jalur", body: "*Mask* biner yang akurat + pemisah rumah yang baik, misalnya B3+θ dengan *seed* detektor." },
+    { head: "Hidupkan kelas kontak", body: "*Loss* atau pembobotan khusus, karena piksel kontak terlalu langka untuk dipelajari." },
+    { head: "Cabang θ yang lebih teliti", body: "Lebih dari satu konfigurasi, dan ukur kecepatannya." },
+    { head: "Evaluasi bersih lebih besar", body: "CrowdAI v2.0, WHU dengan tiga *seed*, dan uji lintas-dataset." },
+    { head: "Data dan bentuk lain", body: "Citra permukiman padat Indonesia; bangunan berlubang dan tidak siku." },
+  ], { labelW: 3.6 });
+  say("Langkah ke depan",
+    "Dari hasil dan keterbatasan tadi, ada lima langkah lanjutan yang menurut saya paling diperlukan.",
+    "Pertama, menggabungkan dua jalur. Jalur biner paling akurat, jalur tiga kelas paling baik memisahkan rumah. Kombinasi yang belum saya coba adalah B3+θ dengan benih dari detektor, yang berpotensi mengambil kelebihan keduanya.",
+    "Kedua, menghidupkan kelas kontak. Kelas ini hampir tidak pernah dipilih jaringan karena pikselnya terlalu langka, jadi perlu *loss* atau pembobotan yang dirancang khusus untuk itu.",
+    "Ketiga, memperbaiki cabang θ. Saya baru mencoba satu konfigurasi, dan kecepatannya belum diukur.",
+    "Keempat, evaluasi bersih yang lebih besar. Perbandingan dengan metode terbaik saat ini hanya memakai 212 *tile*. CrowdAI versi 2.0, yang kebocorannya sudah diperbaiki panitia, WHU dengan tiga *seed*, dan uji lintas-dataset akan membuat kesimpulannya lebih kokoh.",
+    "Kelima, data dan bentuk lain: menguji metode ini di citra permukiman padat Indonesia, yang menjadi motivasi awalnya, serta menangani bangunan yang berlubang dan yang tidak siku.");
 
   s = d.slide("Kesimpulan", "Empat hal yang bisa dibawa pulang.");
   d.numbered(s, [

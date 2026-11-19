@@ -1,7 +1,7 @@
 # Slides (gaya template ITS Teknik Informatika)
 
-- `densepoly.pptx`: deck presentasi (27 slide, 16:9). Font yang dipakai: Raleway dan Raleway Black (Google Fonts, gratis).
-- `densepoly.pdf`: deck yang sama sebagai PDF (27 halaman), untuk dilihat tanpa PowerPoint. Dikonversi dengan LibreOffice
+- `densepoly.pptx`: deck presentasi (32 slide, 16:9). Font yang dipakai: Raleway dan Raleway Black (Google Fonts, gratis).
+- `densepoly.pdf`: deck yang sama sebagai PDF (32 halaman), untuk dilihat tanpa PowerPoint. Dikonversi dengan LibreOffice
   di GitHub Actions (`.github/workflows/slides.yml`), dengan font Raleway terpasang. Ini hasil render LibreOffice, jadi
   detail kecil bisa berbeda dari PowerPoint (misalnya huruf θ, yang tidak ada di Raleway dan memakai font pengganti).
 - `build.js`: isi deck. Tidak ada angka hasil yang diketik: semua dibaca dari `numbers.json`.
@@ -13,6 +13,7 @@
 Bangun ulang:
 
     python scripts/figures.py --data crowdai --results --qualitative --lang id
+    python scripts/figures.py --data crowdai --before-after --labels-excerpt --lang id
     python scripts/paper_tables.py
     NODE_PATH=<folder node_modules yang berisi pptxgenjs> node slides/build.js
 

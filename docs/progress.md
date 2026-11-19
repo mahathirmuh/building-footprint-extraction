@@ -2482,3 +2482,11 @@ Menyusul di hari yang sama: slide "Protokol uji yang adil" (setelan yang sama un
 CrowdAI: 20 run identik, B3+θ hanya berbeda di `select_metric`; tiga hal yang berbeda di panel kanan) dan slide "Metode yang
 diusulkan" (diagram dua baris: jaringan dan pembentukan poligon). Deck 27 slide. Atas permintaan pemilik proyek, konversi PDF tidak
 ditunggu untuk dua slide ini, jadi tata letaknya belum diperiksa di PDF saat ditulis.
+
+**Lima slide lagi (19 Nov 2026, permintaan pemilik proyek).** "Posisi penelitian ini di antara metode lain" (tabel ciri Ya/–; kolom
+"tanpa post-processing" sengaja dimasukkan karena di situ metode ini yang kurang), "Contoh label dan prior pada citra asli" (dua
+baris dari gambar QA label), "Perbandingan model per tingkat kepadatan" (gambar `crowdai_strata_id`), "Sebelum dan sesudah
+regularisasi" (gambar baru `crowdai_before_after_id`: citra, kontur B4, poligon B5, ground truth, dengan jumlah titik sudut), dan
+"Langkah ke depan". `scripts/figures.py` mendapat `--before-after` dan `--labels-excerpt`. Tabel hasil utama mencetak tebal nilai
+terbaik tiap kolom. Deck 32 slide. Isi tabel posisi untuk karya lain bersumber dari paper masing-masing sejauh yang sudah dibaca
+(tabel hasil CrowdAI); kolom "hasil per tingkat kepadatan" untuk karya lain belum diperiksa paper demi paper.
