@@ -1,7 +1,7 @@
 # Naskah presentasi: Ekstraksi Poligon Bangunan pada Permukiman Padat
 
-Naskah ucapan untuk tiap slide `densepoly.pptx` (22 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
-22 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
+Naskah ucapan untuk tiap slide `densepoly.pptx` (23 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
+24 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
 
 - Naskah ini dibuat `slides/build.js` bersama deck, jadi angkanya sama dengan yang tampil di slide. Untuk mengubahnya,
   ubah `say(...)` di `build.js` lalu bangun ulang; jangan menyunting file ini langsung.
@@ -71,7 +71,21 @@ N3 adalah gagasan *preprocessing*: dua peta dari morfologi klasik, yaitu MBI dan
 
 Yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap gagasan saya tulis dan saya bekukan sebelum ada model yang dilatih. Setiap perbandingan memakai tiga *seed* dan selang kepercayaan *bootstrap*. Akibatnya hasil negatif pun tetap dilaporkan, dan itu akan terlihat di slide-slide berikutnya.
 
-## Slide 6: Arsitektur: alur pengerjaan dari awal sampai akhir
+## Slide 6: Dataset: apa dan dari mana
+
+*±1,5 menit*
+
+Penelitian ini memakai dua dataset publik, dan keduanya saya unduh dari halaman resminya.
+
+Yang utama adalah CrowdAI Mapping Challenge, dari platform AIcrowd, versi 1.0. Isinya citra satelit RGB berupa *tile* 300 × 300 piksel: 280.741 *tile* train dan 60.317 *tile* validasi, dengan anotasi poligon per bangunan dalam format COCO. Versi 1.0 saya pilih karena metode pembanding juga memakai versi itu.
+
+Seperti sudah saya singgung, dataset ini banyak duplikatnya. Setelah deduplikasi, yang dipakai adalah 23.427 *tile* train, 1.000 dan 1.928 *tile* untuk tuning, serta 2.928 *tile* *test*. Semua klaim dan perbandingan dengan HiSup memakai dataset ini.
+
+Dataset kedua adalah WHU Building, dari grup GPCV Universitas Wuhan, yang diperkenalkan Ji dan rekan-rekannya tahun 2019. Ini foto udara dengan resolusi 0,2 meter per piksel, dalam *tile* 1.024 × 1.024 piksel: 2.943 train, 627 validasi, dan 2.220 *test*. Mengikuti protokol Pix2Poly, *tile* itu dipotong menjadi *patch* 224 × 224. WHU saya pakai sebagai dataset kedua, dengan satu *seed*, untuk melihat apakah hasilnya terbawa ke data lain.
+
+Satu hal yang perlu jelas: kedua dataset sebenarnya menyediakan anotasi per bangunan, dan di CrowdAI bentuknya poligon. Tetapi untuk *training* saya hanya memakainya sebagai *mask*. Poligon aslinya hanya dipakai sebagai *ground truth* saat evaluasi. Itulah arti kalimat tanpa anotasi poligon di penelitian ini.
+
+## Slide 7: Arsitektur: alur pengerjaan dari awal sampai akhir
 
 *±1,5 menit*
 
@@ -85,7 +99,7 @@ Baris ketiga mengubah keluaran jaringan menjadi poligon. Dari peta kelas dibuat 
 
 Kotak terakhir adalah evaluasi: poligon dinilai dengan AP, C-IoU, PoLiS, dan MTA, dan hasilnya dilaporkan per tingkat kepadatan. Jadi dari awal sampai akhir, tidak ada anotasi poligon yang dipakai.
 
-## Slide 7: Pengolahan citra klasik di dalam alur
+## Slide 8: Pengolahan citra klasik di dalam alur
 
 *±1,5 menit*
 
@@ -99,7 +113,7 @@ Baris keenam adalah *baseline* B0, yang seluruhnya klasik tanpa jaringan: indeks
 
 Baris terakhir adalah gagasan N3: peta dari *top-hat* multi-arah dijadikan input tambahan bagi jaringan. Hasilnya tidak membantu, dan itu saya bahas di slide hasil negatif.
 
-## Slide 8: Label diturunkan otomatis dari *mask*
+## Slide 9: Label diturunkan otomatis dari *mask*
 
 *±1 menit*
 
@@ -113,7 +127,7 @@ Yang ketiga adalah bobot tepi: piksel di dekat batas bangunan diberi bobot *loss
 
 Kelas kontak dan bobot tepi saya adopsi dari penelitian sebelumnya. Yang baru di sini adalah label orientasi yang diturunkan dari *mask*.
 
-## Slide 9: Evaluasi tanpa kebocoran data
+## Slide 10: Evaluasi tanpa kebocoran data
 
 *±1 menit*
 
@@ -127,7 +141,7 @@ Klaster itu lalu dibagi: 23.427 *tile* untuk train, 1.000 untuk menyetel *post-p
 
 Setiap selisih antarmodel dihitung berpasangan pada *tile* yang sama, dengan tiga *seed* dan *bootstrap* seribu replikasi. Dan semua parameter disetel di data tuning; data *test* tidak pernah dipakai untuk menyetel apa pun.
 
-## Slide 10: Hasil utama di CrowdAI *test*
+## Slide 11: Hasil utama di CrowdAI *test*
 
 *±1 menit*
 
@@ -141,7 +155,7 @@ Ketiga, jalur tiga kelas lebih baik memisahkan rumah: *merge rate* FULL-P0 1,96%
 
 Jadi tidak ada satu model yang menang di semua kolom. Itu saya uraikan satu per satu.
 
-## Slide 11: N1 didukung: *head* θ merapikan poligon
+## Slide 12: N1 didukung: *head* θ merapikan poligon
 
 *±1 menit*
 
@@ -153,7 +167,7 @@ AP berubah +0,35 poin, jadi kerapian itu tidak dibayar dengan akurasi deteksi.
 
 Menurut aturan yang sudah dibekukan, N1 dinyatakan didukung. Tetapi saya harus jujur soal besarnya: efeknya kecil, jauh di bawah satu piksel. Jadi kesimpulannya, *head* θ membantu secara konsisten, bukan membantu secara besar.
 
-## Slide 12: Efek N1 membesar di *tile* padat
+## Slide 13: Efek N1 membesar di *tile* padat
 
 *±1 menit*
 
@@ -167,7 +181,7 @@ Kembali ke kepadatan: kecenderungan belum tentu bukti. Ketika selisih padat diku
 
 Panel kanan adalah prior morfologi, gagasan N3. Di sana titik-titiknya berada di atas nol, artinya rumah yang tergabung tidak berkurang. Itu saya bahas di slide berikutnya.
 
-## Slide 13: Dua hasil negatif, dilaporkan apa adanya
+## Slide 14: Dua hasil negatif, dilaporkan apa adanya
 
 *±1 menit*
 
@@ -179,7 +193,7 @@ Yang kedua kelas kontak. Di 6 dari 9 *run* FULL, jaringan tidak pernah memilih k
 
 Keduanya saya laporkan apa adanya, karena hasil negatif yang diukur dengan benar tetap berguna bagi yang ingin mencoba gagasan serupa.
 
-## Slide 14: Banding dengan HiSup di data tanpa kebocoran
+## Slide 15: Banding dengan HiSup di data tanpa kebocoran
 
 *±1,5 menit*
 
@@ -193,7 +207,7 @@ Ambang "mendekati metode terbaik" yang saya bekukan sejak awal adalah tiga poin 
 
 Temuan yang menurut saya lebih penting di slide ini adalah baris pertama dan kedua: angka HiSup sendiri turun jauh begitu duplikat disingkirkan. Artinya angka di *benchmark* CrowdAI perlu dibaca dengan hati-hati.
 
-## Slide 15: Eksploratif: *baseline* sederhana dan *seed* detektor
+## Slide 16: Eksploratif: *baseline* sederhana dan *seed* detektor
 
 *±1 menit*
 
@@ -205,7 +219,7 @@ Yang kedua, sebuah detektor kecil, YOLOv8n-OBB, yang juga dilatih dari *mask*, d
 
 Jadi gambaran besarnya: jalur biner paling akurat dan paling rapi, jalur tiga kelas paling baik memisahkan rumah berdempetan, dan benih dari detektor membantu keduanya.
 
-## Slide 16: Eksploratif: *head* θ di jalur biner tidak membantu
+## Slide 17: Eksploratif: *head* θ di jalur biner tidak membantu
 
 *±1 menit*
 
@@ -217,7 +231,7 @@ Tetapi melatih *head* θ bersama *mask* menurunkan mutu *mask* itu sendiri. IoU 
 
 Kerugian itu lebih besar dari keuntungannya. Totalnya, dibanding B3m: PoLiS +0,084 piksel, MTA +0,30 derajat, dan AP −2,26 poin, searah di ketiga *seed*. Jadi aturannya tidak terpenuhi, dan B3m tetap yang terbaik.
 
-## Slide 17: Contoh hasil di *tile* asli
+## Slide 18: Contoh hasil di *tile* asli
 
 *±1 menit*
 
@@ -227,7 +241,7 @@ Di kolom B4, kontur masih mentah: garisnya bergelombang dan titik sudutnya banya
 
 Tiga baris pertama adalah *tile* padat yang hasilnya cukup baik. Baris terbawah sengaja saya pilih sebagai contoh kegagalan: di sisi kanan bawah, beberapa rumah yang berdempetan masih tergabung menjadi satu poligon besar, di semua model. Inilah kasus yang belum terselesaikan.
 
-## Slide 18: WHU dan biaya komputasi
+## Slide 19: WHU dan biaya komputasi
 
 *±1 menit*
 
@@ -239,7 +253,7 @@ Titik lemahnya sama dengan di CrowdAI: di *patch* yang berisi bangunan bersentuh
 
 Dari sisi biaya, modelnya 20,81 juta parameter. Alur penuh, dari citra sampai poligon, berjalan 42,3 *tile* per detik di RTX 5090, dan 36,4 bila detektor ikut dipakai.
 
-## Slide 19: Keterbatasan
+## Slide 20: Keterbatasan
 
 *±1 menit*
 
@@ -255,7 +269,7 @@ Keempat, detektor YOLO hanya dilatih sekali dan dipakai untuk ketiga *seed*, jad
 
 Kelima, poligon yang dihasilkan hanya cincin luar bangunan. Bangunan yang punya halaman dalam, atau lubang, tidak terwakili.
 
-## Slide 20: Kesimpulan
+## Slide 21: Kesimpulan
 
 *±1 menit*
 
@@ -271,13 +285,13 @@ Keempat, *baseline* yang sederhana ternyata paling kuat. Hal ini baru terlihat k
 
 Kalau dirangkum dalam satu kalimat: sumbangan utama proyek ini bukan model yang mengalahkan metode terbaik, melainkan evaluasi yang jujur tentang seberapa jauh pendekatan berbasis *mask* bisa melangkah.
 
-## Slide 21: Referensi
+## Slide 22: Referensi
 
 *±0,5 menit*
 
 Ini rujukan utama yang saya pakai. Daftar lengkapnya ada di naskah paper.
 
-## Slide 22: Penutup
+## Slide 23: Penutup
 
 *±0,5 menit*
 

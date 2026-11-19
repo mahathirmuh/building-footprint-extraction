@@ -173,6 +173,23 @@ function writeScript(target, slides) {
     "N3 adalah gagasan *preprocessing*: dua peta dari morfologi klasik, yaitu MBI dan peta celah, ditambahkan sebagai kanal input, dengan harapan celah antar-rumah lebih mudah terlihat oleh jaringan.",
     "Yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap gagasan saya tulis dan saya bekukan sebelum ada model yang dilatih. Setiap perbandingan memakai tiga *seed* dan selang kepercayaan *bootstrap*. Akibatnya hasil negatif pun tetap dilaporkan, dan itu akan terlihat di slide-slide berikutnya.");
 
+  s = d.slide("Dataset: apa dan dari mana", "Dua dataset publik; keduanya diunduh dari halaman resminya.");
+  d.table(s, ["", "CrowdAI Mapping Challenge", "WHU Building (aerial)"], [
+    ["Sumber", "AIcrowd, *Mapping Challenge* (aicrowd.com), versi 1.0", "Universitas Wuhan, grup GPCV (gpcv.whu.edu.cn); Ji dkk., 2019"],
+    ["Citra", "Satelit RGB, *tile* 300 × 300 piksel", "Foto udara RGB 0,2 m, *tile* 1.024 × 1.024 piksel"],
+    ["Jumlah asli", `Train ${n("NTrainImages")}, val ${n("NValImages")} *tile*`, "Train 2.943, val 627, *test* 2.220 *tile*"],
+    ["Anotasi", "Poligon per bangunan (COCO)", "*Mask* raster dan COCO per bangunan"],
+    ["Setelah disiapkan", `Bebas duplikat: train ${n("NTrainDedup")}, tuning ${n("NTuneTiles")} + ${n("NSelectTiles")}, *test* ${n("NTestTiles")}`, "Dipotong menjadi *patch* 224 × 224 (protokol Pix2Poly)"],
+    ["Peran", "Dataset utama: semua klaim dan banding HiSup", "Dataset kedua, satu *seed*"],
+  ], { colW: [2.2, 5.0, 4.694], align: ["left", "left", "left"],
+    callout: "Untuk *training*, anotasi hanya dipakai sebagai *mask*; poligon aslinya hanya menjadi *ground truth* saat evaluasi." });
+  say("Dataset: apa dan dari mana",
+    "Penelitian ini memakai dua dataset publik, dan keduanya saya unduh dari halaman resminya.",
+    `Yang utama adalah CrowdAI Mapping Challenge, dari platform AIcrowd, versi 1.0. Isinya citra satelit RGB berupa *tile* 300 × 300 piksel: ${n("NTrainImages")} *tile* train dan ${n("NValImages")} *tile* validasi, dengan anotasi poligon per bangunan dalam format COCO. Versi 1.0 saya pilih karena metode pembanding juga memakai versi itu.`,
+    `Seperti sudah saya singgung, dataset ini banyak duplikatnya. Setelah deduplikasi, yang dipakai adalah ${n("NTrainDedup")} *tile* train, ${n("NTuneTiles")} dan ${n("NSelectTiles")} *tile* untuk tuning, serta ${n("NTestTiles")} *tile* *test*. Semua klaim dan perbandingan dengan HiSup memakai dataset ini.`,
+    "Dataset kedua adalah WHU Building, dari grup GPCV Universitas Wuhan, yang diperkenalkan Ji dan rekan-rekannya tahun 2019. Ini foto udara dengan resolusi 0,2 meter per piksel, dalam *tile* 1.024 × 1.024 piksel: 2.943 train, 627 validasi, dan 2.220 *test*. Mengikuti protokol Pix2Poly, *tile* itu dipotong menjadi *patch* 224 × 224. WHU saya pakai sebagai dataset kedua, dengan satu *seed*, untuk melihat apakah hasilnya terbawa ke data lain.",
+    "Satu hal yang perlu jelas: kedua dataset sebenarnya menyediakan anotasi per bangunan, dan di CrowdAI bentuknya poligon. Tetapi untuk *training* saya hanya memakainya sebagai *mask*. Poligon aslinya hanya dipakai sebagai *ground truth* saat evaluasi. Itulah arti kalimat tanpa anotasi poligon di penelitian ini.");
+
   s = d.slide("Arsitektur: alur pengerjaan dari awal sampai akhir", "Tiga tahap: menyiapkan data, melatih jaringan, lalu membuat poligon dan menilainya.");
   flowLanes(d, s, [
     { name: "1. Data dan label", steps: [

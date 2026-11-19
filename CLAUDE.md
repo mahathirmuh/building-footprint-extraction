@@ -74,7 +74,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   Fase 10 berjalan sejak 12 Nov 2026 dan tinggal menunggu pemilik proyek: `notebooks/full_pipeline.ipynb` (dieksekusi; run dari awal
   FULL-P0 seed 0 AP 62,72, run beku 62,73), `notebooks/demo_hasil.ipynb`, `paper/` (naskah IEEEtran; `paper/main.pdf`, 8 halaman,
   dikompilasi 17 Nov 2026 lewat GitHub Actions `.github/workflows/paper.yml` karena server tidak punya LaTeX),
-  `slides/densepoly.pptx` dan `slides/densepoly.pdf` (22 slide sejak 19 Nov 2026, dengan naskah ucapan `slides/naskah.md`; PDF dikonversi LibreOffice lewat `.github/workflows/slides.yml` dan
+  `slides/densepoly.pptx` dan `slides/densepoly.pdf` (23 slide sejak 19 Nov 2026, dengan naskah ucapan `slides/naskah.md`; PDF dikonversi LibreOffice lewat `.github/workflows/slides.yml` dan
   sudah diperiksa slide demi slide pada 17 Nov 2026, belum dibuka di PowerPoint), dan ringkasan keterbatasan sudah ada. Fase 10
   tinggal menunggu persetujuan pemilik proyek; rinciannya di akhir `docs/progress.md`.
   Fase 11 (eksploratif; mulai 14 Nov 2026) selesai dan disetujui (17 Nov 2026), tanpa eksperimen lanjutan: B3θ = B3 + head θ, 3 seed,
