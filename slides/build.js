@@ -13,7 +13,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { ITSDeck } = require("./its_kit");
+const { ITSDeck, C, ACCENTS, X0, X1 } = require("./its_kit");
 
 const HERE = __dirname;
 const numbers = JSON.parse(fs.readFileSync(path.join(HERE, "numbers.json"), "utf8"));
@@ -28,6 +28,45 @@ const figure = (name) => {
 function n(name) {
   if (!(name in numbers)) throw new Error(`number ${name} is not in slides/numbers.json: run scripts/paper_tables.py`);
   return numbers[name].replace(/, /g, "; ").replace(/[.,]/g, (c) => (c === "." ? "," : ".")).replace(/-/g, "−");
+}
+
+/**
+ * A flow diagram in lanes: every lane is a tinted band with its name on the left and its boxes joined by arrows; `links`
+ * are the arrows between lanes, {from: [lane, box], to: [lane, box], label}, drawn straight down when the two boxes
+ * overlap and as an elbow through the gap otherwise.
+ */
+function flowLanes(d, s, lanes, links = []) {
+  const P = d.pres.ShapeType;
+  const top = 2.24, bottom = 6.62, gapY = 0.33, labelW = 1.72, arrowW = 0.3, pad = 0.12;
+  const laneH = (bottom - top - gapY * (lanes.length - 1)) / lanes.length;
+  const boxes = lanes.map((lane, i) => {
+    const y = top + i * (laneH + gapY), color = ACCENTS[i % ACCENTS.length];
+    s.addShape(P.roundRect, { x: X0, y, w: X1 - X0, h: laneH, rectRadius: 0.08, fill: { color: C.paper }, line: { color: C.line, width: 0.75 } });
+    d.text(s, lane.name, { x: X0 + 0.16, y, w: labelW - 0.2, h: laneH }, { size: 13.5, bold: true, color, valign: "middle" });
+    const x0 = X0 + labelW, n = lane.steps.length, w = (X1 - pad - x0 - arrowW * (n - 1)) / n;
+    return lane.steps.map((step, k) => {
+      const x = x0 + k * (w + arrowW);
+      d.card(s, x, y + pad, w, laneH - 2 * pad, color, step.head, step.body, { headSize: 12.5, bodySize: 10.5, padX: 0.15, padY: 0.1, gap: 3 });
+      if (k < n - 1) s.addShape(P.rightArrow, { x: x + w + 0.045, y: y + laneH / 2 - 0.11, w: arrowW - 0.09, h: 0.22, fill: { color }, line: { color, width: 0 } });
+      return { x, w, top: y + pad, bottom: y + laneH - pad };
+    });
+  });
+  const grey = C.muted, line = { color: grey, width: 1.5 };
+  for (const link of links) {
+    const a = boxes[link.from[0]][link.from[1]], b = boxes[link.to[0]][link.to[1]];
+    const left = Math.max(a.x, b.x), right = Math.min(a.x + a.w, b.x + b.w), mid = (a.bottom + b.top) / 2;
+    if (right - left > 0.4) { // one arrow straight down
+      const x = (left + right) / 2;
+      s.addShape(P.downArrow, { x: x - 0.11, y: a.bottom + 0.02, w: 0.22, h: b.top - a.bottom - 0.04, fill: { color: grey }, line: { color: grey, width: 0 } });
+      if (link.label) d.text(s, link.label, { x: x - 2.85, y: mid - 0.13, w: 2.65, h: 0.26 }, { size: 10.5, color: grey, align: "right", valign: "middle", italic: true });
+    } else { // down, across the gap, down
+      const xa = a.x + a.w / 2, xb = b.x + b.w / 2;
+      s.addShape(P.line, { x: xa, y: a.bottom, w: 0, h: mid - a.bottom, line });
+      s.addShape(P.line, { x: Math.min(xa, xb), y: mid, w: Math.abs(xa - xb), h: 0, line });
+      s.addShape(P.downArrow, { x: xb - 0.11, y: mid - 0.01, w: 0.22, h: b.top - mid - 0.01, fill: { color: grey }, line: { color: grey, width: 0 } });
+      if (link.label) d.text(s, link.label, { x: xa + 0.14, y: mid + 0.01, w: 2.8, h: 0.24 }, { size: 10.5, color: grey, valign: "middle", italic: true });
+    }
+  }
 }
 
 /** The words spoken at each slide, in the order of the deck: one say() per slide, one paragraph per argument. */
@@ -115,21 +154,36 @@ function writeScript(target, slides) {
     "N3 adalah gagasan *preprocessing*: dua peta dari morfologi klasik, yaitu MBI dan peta celah, ditambahkan sebagai kanal input, dengan harapan celah antar-rumah lebih mudah terlihat oleh jaringan.",
     "Yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap gagasan saya tulis dan saya bekukan sebelum ada model yang dilatih. Setiap perbandingan memakai tiga *seed* dan selang kepercayaan *bootstrap*. Akibatnya hasil negatif pun tetap dilaporkan, dan itu akan terlihat di slide-slide berikutnya.");
 
-  s = d.slide("Alur metode: dari citra ke poligon", "Jaringan segmentasi, pemisahan *instance*, lalu perapian geometris.");
-  d.pipeline(s, [
-    { head: "Citra RGB", body: "*Tile* 300 × 300 piksel, tanpa diubah ukurannya." },
-    { head: "U-Net++", body: "*Encoder* EfficientNet-B4, satu *head* dengan lima keluaran." },
-    { head: "Tiga kelas + θ", body: "Latar, bangunan, kontak, dan orientasi (sin 4θ, cos 4θ)." },
-    { head: "Marker + *watershed*", body: "Memisahkan gumpalan menjadi satu *instance* per rumah." },
-    { head: "Regularisasi", body: "Kontur dirapikan searah θ menjadi kotak atau poligon siku." },
-    { head: "Poligon", body: "Satu poligon per rumah, format COCO JSON dan GeoJSON." },
-  ], { highlight: 5, callout: "Semua label, termasuk θ, diturunkan dari *mask*. Tidak ada anotasi poligon saat *training*." });
-  say("Alur metode: dari citra ke poligon",
-    "Ini alur lengkapnya, dibaca dari kiri ke kanan. Inputnya citra RGB, satu *tile* berukuran 300 × 300 piksel, tanpa diubah ukurannya.",
-    "Jaringannya U-Net++ dengan *encoder* EfficientNet-B4. Keluarannya lima kanal. Tiga kanal pertama adalah kelas: latar, bangunan, dan kontak, yaitu tempat dua bangunan bersentuhan. Dua kanal terakhir adalah orientasi bangunan.",
-    "Dari peta kelas dibuat *marker*, yaitu inti tiap rumah. Algoritma *watershed* lalu memekarkan *marker* itu, sehingga satu gumpalan terpecah menjadi satu *instance* per rumah.",
-    "Kontur tiap rumah kemudian dirapikan searah sudut θ. Bangunan yang hampir persegi diganti dengan kotak. Bangunan lain disederhanakan, lalu dindingnya diluruskan mengikuti θ.",
-    "Hasil akhirnya satu poligon per rumah dalam format COCO JSON dan GeoJSON. Semua label untuk melatih jaringan ini, termasuk θ, diturunkan dari *mask*.");
+  s = d.slide("Arsitektur: alur pengerjaan dari awal sampai akhir", "Tiga tahap: menyiapkan data, melatih jaringan, lalu membuat poligon dan menilainya.");
+  flowLanes(d, s, [
+    { name: "1. Data dan label", steps: [
+      { head: "CrowdAI dan WHU", body: "Citra RGB dan *mask* per bangunan; tanpa anotasi poligon." },
+      { head: "Deduplikasi dan *split*", body: "*p-hash* membuang duplikat; train, tuning, dan *test* dipisah per klaster." },
+      { head: "Label dari *mask*", body: "Kelas kontak, orientasi θ, dan bobot tepi, dibuat otomatis." },
+    ] },
+    { name: "2. Jaringan", steps: [
+      { head: "Citra RGB", body: "*Tile* 300 × 300 piksel, di-*pad* ke 320." },
+      { head: "U-Net++", body: "*Encoder* EfficientNet-B4 (ImageNet)." },
+      { head: "Lima kanal keluaran", body: "Latar, bangunan, kontak, dan (sin 4θ, cos 4θ)." },
+      { head: "*Loss* saat *training*", body: "CE berbobot tepi + Dice + λ × *loss* θ." },
+    ] },
+    { name: "3. Poligon dan evaluasi", steps: [
+      { head: "Marker + *watershed*", body: "Satu *instance* per rumah." },
+      { head: "Kontur", body: "*Marching squares* per rumah." },
+      { head: "Regularisasi", body: "Kotak atau poligon siku searah θ." },
+      { head: "Poligon", body: "COCO JSON dan GeoJSON." },
+      { head: "Evaluasi", body: "AP, C-IoU, PoLiS, MTA; per kepadatan." },
+    ] },
+  ], [
+    { from: [0, 2], to: [1, 3], label: "label, hanya untuk *training*" },
+    { from: [1, 2], to: [2, 0], label: "keluaran jaringan" },
+  ]);
+  say("Arsitektur: alur pengerjaan dari awal sampai akhir",
+    "Ini arsitektur keseluruhannya, dalam tiga tahap. Tiap baris dibaca dari kiri ke kanan.",
+    "Baris pertama adalah data dan label. Datanya CrowdAI dan WHU, berupa citra RGB dan *mask* per bangunan, tanpa anotasi poligon. Data itu dideduplikasi dengan *perceptual hash*, lalu dibagi menjadi train, tuning, dan *test* per klaster, supaya tidak ada citra kembar di dua bagian. Dari *mask* kemudian dibuat tiga label secara otomatis: kelas kontak, orientasi θ, dan bobot tepi.",
+    "Baris kedua adalah jaringannya. Inputnya satu *tile* 300 × 300 piksel, yang hanya di-*pad* ke 320 dan tidak diubah ukurannya. Jaringannya U-Net++ dengan *encoder* EfficientNet-B4. Keluarannya lima kanal: tiga kelas, yaitu latar, bangunan, dan kontak, ditambah dua kanal orientasi. Saat *training*, keluaran itu dibandingkan dengan label dari baris pertama lewat *loss* gabungan; itulah arti panah turun di sebelah kanan.",
+    "Baris ketiga mengubah keluaran jaringan menjadi poligon. Dari peta kelas dibuat *marker*, yaitu inti tiap rumah, lalu *watershed* memekarkannya sehingga satu gumpalan terpecah menjadi satu *instance* per rumah. Kontur tiap rumah diambil, lalu dirapikan searah θ: bangunan yang hampir persegi menjadi kotak, yang lain disederhanakan dan dindingnya diluruskan. Hasilnya satu poligon per rumah, dalam format COCO JSON dan GeoJSON.",
+    "Kotak terakhir adalah evaluasi: poligon dinilai dengan AP, C-IoU, PoLiS, dan MTA, dan hasilnya dilaporkan per tingkat kepadatan. Jadi dari awal sampai akhir, tidak ada anotasi poligon yang dipakai.");
 
   s = d.slide("Label diturunkan otomatis dari *mask*", "Tiga jenis label dibuat dari peta *instance* yang sama.");
   d.cards(s, [

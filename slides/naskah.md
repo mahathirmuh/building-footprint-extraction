@@ -1,7 +1,7 @@
 # Naskah presentasi: Ekstraksi Poligon Bangunan pada Permukiman Padat
 
 Naskah ucapan untuk tiap slide `densepoly.pptx` (20 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
-18 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
+19 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
 
 - Naskah ini dibuat `slides/build.js` bersama deck, jadi angkanya sama dengan yang tampil di slide. Untuk mengubahnya,
   ubah `say(...)` di `build.js` lalu bangun ulang; jangan menyunting file ini langsung.
@@ -57,19 +57,19 @@ N3 adalah gagasan *preprocessing*: dua peta dari morfologi klasik, yaitu MBI dan
 
 Yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap gagasan saya tulis dan saya bekukan sebelum ada model yang dilatih. Setiap perbandingan memakai tiga *seed* dan selang kepercayaan *bootstrap*. Akibatnya hasil negatif pun tetap dilaporkan, dan itu akan terlihat di slide-slide berikutnya.
 
-## Slide 5: Alur metode: dari citra ke poligon
+## Slide 5: Arsitektur: alur pengerjaan dari awal sampai akhir
 
-*±1 menit*
+*±1,5 menit*
 
-Ini alur lengkapnya, dibaca dari kiri ke kanan. Inputnya citra RGB, satu *tile* berukuran 300 × 300 piksel, tanpa diubah ukurannya.
+Ini arsitektur keseluruhannya, dalam tiga tahap. Tiap baris dibaca dari kiri ke kanan.
 
-Jaringannya U-Net++ dengan *encoder* EfficientNet-B4. Keluarannya lima kanal. Tiga kanal pertama adalah kelas: latar, bangunan, dan kontak, yaitu tempat dua bangunan bersentuhan. Dua kanal terakhir adalah orientasi bangunan.
+Baris pertama adalah data dan label. Datanya CrowdAI dan WHU, berupa citra RGB dan *mask* per bangunan, tanpa anotasi poligon. Data itu dideduplikasi dengan *perceptual hash*, lalu dibagi menjadi train, tuning, dan *test* per klaster, supaya tidak ada citra kembar di dua bagian. Dari *mask* kemudian dibuat tiga label secara otomatis: kelas kontak, orientasi θ, dan bobot tepi.
 
-Dari peta kelas dibuat *marker*, yaitu inti tiap rumah. Algoritma *watershed* lalu memekarkan *marker* itu, sehingga satu gumpalan terpecah menjadi satu *instance* per rumah.
+Baris kedua adalah jaringannya. Inputnya satu *tile* 300 × 300 piksel, yang hanya di-*pad* ke 320 dan tidak diubah ukurannya. Jaringannya U-Net++ dengan *encoder* EfficientNet-B4. Keluarannya lima kanal: tiga kelas, yaitu latar, bangunan, dan kontak, ditambah dua kanal orientasi. Saat *training*, keluaran itu dibandingkan dengan label dari baris pertama lewat *loss* gabungan; itulah arti panah turun di sebelah kanan.
 
-Kontur tiap rumah kemudian dirapikan searah sudut θ. Bangunan yang hampir persegi diganti dengan kotak. Bangunan lain disederhanakan, lalu dindingnya diluruskan mengikuti θ.
+Baris ketiga mengubah keluaran jaringan menjadi poligon. Dari peta kelas dibuat *marker*, yaitu inti tiap rumah, lalu *watershed* memekarkannya sehingga satu gumpalan terpecah menjadi satu *instance* per rumah. Kontur tiap rumah diambil, lalu dirapikan searah θ: bangunan yang hampir persegi menjadi kotak, yang lain disederhanakan dan dindingnya diluruskan. Hasilnya satu poligon per rumah, dalam format COCO JSON dan GeoJSON.
 
-Hasil akhirnya satu poligon per rumah dalam format COCO JSON dan GeoJSON. Semua label untuk melatih jaringan ini, termasuk θ, diturunkan dari *mask*.
+Kotak terakhir adalah evaluasi: poligon dinilai dengan AP, C-IoU, PoLiS, dan MTA, dan hasilnya dilaporkan per tingkat kepadatan. Jadi dari awal sampai akhir, tidak ada anotasi poligon yang dipakai.
 
 ## Slide 6: Label diturunkan otomatis dari *mask*
 
