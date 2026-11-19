@@ -83,7 +83,9 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   tetapi melatih head θ menurunkan mutu mask biner (`fg_iou` `val_select` 0,888 lawan 0,897–0,899 pada B3). B3θ `test`: AP 62,51,
   C-IoU 75,52, merge rate 2,88%. Keputusan N1–N3 tidak berubah; B3m tetap terbaik kecuali di merge rate.
   Fase 12 (eksploratif, disetujui 17 Nov 2026) berjalan: B3+θ = jaringan B3 beku + cabang θ yang dilatih sendiri, supaya mask
-  tidak berubah; gerbang pilot di `val_select` dan aturan beku di `docs/EXPERIMENTS.md` §11.
+  tidak berubah; gerbang pilot di `val_select` dan aturan beku di `docs/EXPERIMENTS.md` §11. Pilot seed 0 selesai 18 Nov 2026 dan
+  **gerbang lolos** di `val_select` (B3+θ′ → B3+θ: `PoLiS_paired` −0,010 px, `MTA_inst` −0,28°, AP −0,23); mask tidak bergeser.
+  Tahap 2 (seed 1–2, `test`) menunggu persetujuan pemilik proyek; `test` belum disentuh.
 
 ## Cara bekerja di proyek ini
 

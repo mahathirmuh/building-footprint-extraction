@@ -2335,3 +2335,39 @@ sudah terlatih, tanda checkpoint beku termuat), θ 0,373.
 evaluasi keduanya di `val_select` → gerbang. Tahap 2 (seed 1–2, `test`, tabel) hanya jalan bila gerbang lolos **dan** pemilik
 proyek menyetujuinya (berkas `logs/phase12_go`).
 
+### Hasil pilot dan gerbang (18 November 2026, 00.49 WIB)
+
+Tahap 1 antrean selesai tanpa langkah yang gagal (`PHASE12_PILOT_DONE`). `test` belum disentuh. Angka dari
+`outputs/tables/crowdai/gate_b3h.json`, file metrik `val_select`, log run, dan file tuning.
+
+**Training seed 0:** 5.122 s (1,42 jam). `fg_iou` `val_select` 0,898633 di semua 60 epoch; checkpoint B3 beku 0,898636
+(selisih 2 × 10⁻⁶, dari konvolusi GPU yang tidak identik per bit antar-proses). Jadi mask tidak bergeser. Loss θ turun dari
+rata-rata 0,381 di epoch 0 ke 0,124 di tiga epoch terakhir. Pembanding: head θ yang dilatih bersama (B3θ, FULL-P0) berakhir di
+0,011–0,013, jadi cabang di atas fitur beku belajar θ jauh kurang teliti.
+
+**Tuning di `val_tune_sub`** (dibekukan di commit `a94760b`): B3+θ dan B3+θ′ sama-sama memilih A_min 5, ρ 0,93, k 0,02,
+δ 10, titik yang sama dengan B3m. B3+θ′: AP 65,00 dan `PoLiS_paired` 1,481, sama dengan B3m (65,00 dan 1,481), sesuai cek
+kewarasan "mask yang sama". B3+θ: AP 64,82 dan `PoLiS_paired` 1,467.
+
+**Gerbang §11 di `val_select`** (1.928 tile, seed 0; Δ = B3+θ − B3+θ′, CI 95% bootstrap 1.000 replikasi):
+
+| Metrik | B3+θ′ | B3+θ | Δ | CI 95% | Syarat | Lolos |
+|---|---|---|---|---|---|---|
+| `PoLiS_paired` (px) | 1,505 | 1,494 | −0,010 | [−0,014; −0,007] | Δ < 0 | ya |
+| `MTA_inst` (°) | 36,33 | 36,05 | −0,28 | [−0,42; −0,13] | Δ < 0 | ya |
+| AP (poin) | 64,42 | 64,20 | −0,23 | [−0,35; −0,01] | Δ ≥ −0,5 | ya |
+
+**Gerbang lolos.** Metrik lain di `val_select`: AP_b 41,27 → 40,61, IoU 89,23 → 89,08, C-IoU 76,75 → 76,85, MTA 36,16 → 35,76,
+merge rate 3,27% → 3,27%. Galat θ pada pasangan yang ter-match: B3+θ′ (minAreaRect) median 0,00° dan p90 3,68°; B3+θ (cabang)
+median 0,53° dan p90 5,28°.
+
+**Yang terbaca, dengan hati-hati (satu seed, `val_select`):**
+1. Pemanduan dengan θ cabang memperbaiki `PoLiS_paired` dan `MTA_inst`, dan kedua CI tidak memuat 0.
+2. Harganya ada: AP turun 0,23 poin dan AP_b 0,66 poin. Itu masih di dalam batas 0,5 poin, tetapi CI AP-nya di bawah 0.
+3. Cabang ini lebih buruk dari head yang dilatih bersama dalam membaca θ (p90 5,28° lawan 2,47° di Fase 11), jadi efek
+   `PoLiS_paired`-nya lebih kecil (−0,010 px lawan −0,016 px). Efek `MTA_inst`-nya lebih besar (−0,28° lawan −0,18°).
+4. Efeknya kecil secara praktis: sekitar 0,7% dari `PoLiS_paired` dan 0,8% dari `MTA_inst`.
+
+**Status:** tahap 2 (seed 1 dan 2, ±2,9 jam GPU, lalu `test` dan tabel `n1_frozen`) menunggu persetujuan pemilik proyek.
+Tidak ada yang berjalan sejak 18 Nov 2026 00.49 WIB.
+
