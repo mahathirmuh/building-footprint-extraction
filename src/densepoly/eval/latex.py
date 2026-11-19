@@ -145,10 +145,12 @@ def sota(record: dict) -> list[str]:
 
 
 def reported(record: dict, columns: tuple[str, ...], header: list[str]) -> list[str]:
-    """Numbers reported by other papers (the paper table), with the table they were copied from."""
+    """Numbers reported by other papers (the paper table), with the table they were copied from. An entry marked
+    ``paper_table: false`` in configs/paper_numbers.yaml is quoted elsewhere (the slides) and is not a row here."""
     rows = [
         [entry["method"].replace("eps = ", "$\\epsilon=$"), *(printed(entry["values"].get(c)) for c in columns)]
         for entry in record["rows"].values()
+        if entry.get("paper_table", True)
     ]
     return tabular("l " + "c" * len(columns), ["Method (as reported)", *header], rows)
 

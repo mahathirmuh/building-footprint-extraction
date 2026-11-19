@@ -149,13 +149,15 @@ function writeScript(target, slides) {
     sota("HiSup (Xu dkk., 2023)", "Supervisi hierarkis: titik sudut, garis batas, dan *mask*", "Hisup"),
     sota("PolyR-CNN (Jiao dkk., 2024)", "R-CNN *end-to-end* yang langsung memprediksi poligon", "Polyrcnn"),
     sota("Pix2Poly (Adimoolam dkk., 2025)", "*Transformer* yang memprediksi urutan titik sudut", "Pixtopoly"),
+    sota("RoIPoly (Jiao dkk., 2025)", "Tiap titik sudut menjadi *query* *transformer*", "Roipoly"),
+    sota("PolyBuild (Zhang dkk., 2026)", "Kontur awal dari kotak deteksi, disempurnakan *transformer*", "Polybuild"),
     ["Penelitian ini (FULL-P0), *test* bersih", "Segmentasi + θ dari *mask* + regularisasi klasik", n("NApFull"), n("NCiouFull")],
   ], { colW: [3.95, 5.55, 1.15, 1.244], align: ["left", "left", "center", "center"],
     callout: "Angka paper diukur di val CrowdAI yang bocor: tidak sebanding langsung dengan baris terakhir. Banding yang adil ada di slide HiSup." });
   say("*State of the art* 2022–2026: ekstraksi poligon bangunan",
     "Sebelum masuk ke gagasan saya, ini peta metode terkini untuk ekstraksi poligon bangunan, dalam lima tahun terakhir.",
-    "Semua metode di tabel ini langsung memprediksi titik sudut poligon. PolyWorld, tahun 2022, mendeteksi titik sudut lalu menghubungkannya dengan *graph neural network*. HiSup, tahun 2023, mengawasi titik sudut, garis batas, dan *mask* sekaligus. PolyR-CNN, tahun 2024, dan Pix2Poly, tahun 2025, memprediksi poligon secara *end-to-end*.",
-    `Tiga yang terbaru melaporkan AP sekitar ${n("NReportedApPolyrcnn")} sampai ${n("NReportedApPixtopoly")}, dan itulah yang sekarang dianggap *state of the art*. Pendekatan saya berbeda keluarga: segmentasi dulu, lalu dirapikan, seperti *frame field learning* dari tahun 2021 yang menjadi pendahulunya.`,
+    "Semua metode di tabel ini langsung memprediksi titik sudut atau kontur poligon. PolyWorld, tahun 2022, mendeteksi titik sudut lalu menghubungkannya dengan *graph neural network*. HiSup, tahun 2023, mengawasi titik sudut, garis batas, dan *mask* sekaligus. PolyR-CNN, tahun 2024, dan Pix2Poly, tahun 2025, memprediksi poligon secara *end-to-end*. RoIPoly, juga 2025, menjadikan tiap titik sudut sebuah *query* pada *transformer*. Yang terbaru, PolyBuild tahun 2026, membuat kontur awal dari kotak deteksi lalu menyempurnakannya.",
+    `Angka tertinggi dilaporkan RoIPoly, yaitu AP ${n("NReportedApRoipoly")}; HiSup, PolyR-CNN, dan Pix2Poly berada di sekitar ${n("NReportedApPolyrcnn")} sampai ${n("NReportedApPixtopoly")}. Menariknya, metode yang lebih baru tidak selalu lebih tinggi: PolyBuild melaporkan AP ${n("NReportedApPolybuild")}. Pendekatan saya berbeda keluarga: segmentasi dulu, lalu dirapikan, seperti *frame field learning* dari tahun 2021 yang menjadi pendahulunya.`,
     "Ada dua catatan penting. Pertama, metode berbasis titik sudut itu dilatih dengan anotasi poligon, sedangkan penelitian ini hanya memakai *mask*. Kedua, semua angka paper tadi diukur di data validasi CrowdAI yang bocor.",
     `Baris terakhir adalah model saya di data *test* yang bersih: AP ${n("NApFull")} dan C-IoU ${n("NCiouFull")}. Karena datanya berbeda, baris itu tidak bisa dibandingkan langsung dengan baris di atasnya. Perbandingan yang adil saya tunjukkan nanti, di slide HiSup.`);
 
@@ -439,10 +441,12 @@ function writeScript(target, slides) {
     "Adimoolam, Y. K., dkk. (2023). Data leakage detection and de-duplication in large scale geospatial image datasets. arXiv:2304.02296.",
     "Zorzi, S., dkk. (2022). PolyWorld: Polygonal building extraction with graph neural networks in satellite images. *CVPR*.",
     "Jiao, W., dkk. (2024). PolyR-CNN: R-CNN for end-to-end polygonal building outline extraction. *ISPRS JPRS*, 218, 33–43.",
+    "Jiao, W., dkk. (2025). RoIPoly: Vectorized building outline extraction using vertex and logit embeddings. *ISPRS JPRS*, 224.",
+    "Zhang, Y., dkk. (2026). PolyBuild: An end-to-end method for polygonal building contour extraction. arXiv:2606.08920.",
     "Iglovikov, V. I., dkk. (2018). TernausNetV2: Fully convolutional network for instance segmentation. *CVPRW*.",
     "Huang, X., & Zhang, L. (2011). A multidirectional and multiscale morphological index for automatic building extraction. *PE&RS*, 77(7), 721–732.",
     "Zhou, Z., dkk. (2018). UNet++: A nested U-Net architecture for medical image segmentation. *DLMIA*.",
-  ]);
+  ], { size: 12 });
   say("Referensi",
     "Ini rujukan utama yang saya pakai. Daftar lengkapnya ada di naskah paper.");
 

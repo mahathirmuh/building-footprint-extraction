@@ -133,7 +133,8 @@ def numbers() -> dict[str, str]:
         put("NLeakyApHisup", latex.number("AP", read_json(leaky)["overall"]["AP"]))
     reported = _load("crowdai", "paper")
     if reported:  # as printed in the other papers (configs/paper_numbers.yaml): the state-of-the-art slide quotes them
-        papers = {"ffl": "Ffl", "polyworld": "Polyworld", "hisup": "Hisup", "polyrcnn": "Polyrcnn", "pix2poly": "Pixtopoly"}
+        papers = {"ffl": "Ffl", "polyworld": "Polyworld", "hisup": "Hisup", "polyrcnn": "Polyrcnn", "pix2poly": "Pixtopoly",
+                  "roipoly": "Roipoly", "polybuild": "Polybuild"}  # fmt: skip
         for key, code in papers.items():
             values = reported["rows"].get(key, {}).get("values", {})
             for metric, short in (("AP", "Ap"), ("CIoU", "Ciou")):

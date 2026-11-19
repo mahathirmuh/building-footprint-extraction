@@ -90,6 +90,13 @@ def test_reported_numbers_are_printed_as_in_the_paper():
     assert "HiSup & 79.4 & 0.726 \\\\" in lines and "FFL, $\\epsilon=$1.0 & 61.3 & -- \\\\" in lines
 
 
+def test_an_entry_kept_for_the_slides_is_not_a_row_of_the_paper_table():
+    record = {"rows": {"hisup": {"method": "HiSup", "values": {"AP": 79.4}},
+                       "roipoly": {"method": "RoIPoly", "paper_table": False, "values": {"AP": 83.6}}}}  # fmt: skip
+    text = "\n".join(latex.reported(record, ("AP",), ["AP"]))
+    assert "HiSup & 79.4" in text and "RoIPoly" not in text
+
+
 def test_efficiency_counts_the_detector_in_the_pipeline_speed():
     base = {"parameters": 20_813_693, "fps": 125.0, "network_ms": 8.0, "postproc": {"total_ms": 12.0}}
     record = {"rows": {"full_p0": base, "full_y": {**base, "detector": {"seconds_per_image": 0.005}}}}

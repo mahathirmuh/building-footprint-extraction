@@ -488,8 +488,8 @@ class ITSDeck {
     const pitch = Math.min(0.72, (bottom - 0.345 - top) / Math.max(1, refs.length - 1));
     refs.forEach((r, i) => {
       const y = top + 0.055 + i * pitch;
-      this.text(s, `${(o.start || 1) + i}.`, { x: 0.82, y, w: 0.4, h: pitch - 0.05 }, { size: 14, bold: true, color: C.deepTeal });
-      this.text(s, r, { x: 1.22, y, w: X1 - 1.22, h: pitch - 0.05 }, { size: 14, color: C.text });
+      this.text(s, `${(o.start || 1) + i}.`, { x: 0.82, y, w: 0.4, h: pitch - 0.05 }, { size: o.size || 14, bold: true, color: C.deepTeal });
+      this.text(s, r, { x: 1.22, y, w: X1 - 1.22, h: pitch - 0.05 }, { size: o.size || 14, color: C.text });  // o.size: smaller for long lists
     });
     return this._done(s, { ...o, tone: o.tone || "teal" }, top + 0.055 + (refs.length - 1) * pitch + 0.25);
   }

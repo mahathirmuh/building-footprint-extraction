@@ -1,7 +1,7 @@
 # Naskah presentasi: Ekstraksi Poligon Bangunan pada Permukiman Padat
 
 Naskah ucapan untuk tiap slide `densepoly.pptx` (24 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
-25 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
+26 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
 
 - Naskah ini dibuat `slides/build.js` bersama deck, jadi angkanya sama dengan yang tampil di slide. Untuk mengubahnya,
   ubah `say(...)` di `build.js` lalu bangun ulang; jangan menyunting file ini langsung.
@@ -51,9 +51,9 @@ Jadi pertanyaan penelitian saya: seberapa baik poligon yang bisa dihasilkan kala
 
 Sebelum masuk ke gagasan saya, ini peta metode terkini untuk ekstraksi poligon bangunan, dalam lima tahun terakhir.
 
-Semua metode di tabel ini langsung memprediksi titik sudut poligon. PolyWorld, tahun 2022, mendeteksi titik sudut lalu menghubungkannya dengan *graph neural network*. HiSup, tahun 2023, mengawasi titik sudut, garis batas, dan *mask* sekaligus. PolyR-CNN, tahun 2024, dan Pix2Poly, tahun 2025, memprediksi poligon secara *end-to-end*.
+Semua metode di tabel ini langsung memprediksi titik sudut atau kontur poligon. PolyWorld, tahun 2022, mendeteksi titik sudut lalu menghubungkannya dengan *graph neural network*. HiSup, tahun 2023, mengawasi titik sudut, garis batas, dan *mask* sekaligus. PolyR-CNN, tahun 2024, dan Pix2Poly, tahun 2025, memprediksi poligon secara *end-to-end*. RoIPoly, juga 2025, menjadikan tiap titik sudut sebuah *query* pada *transformer*. Yang terbaru, PolyBuild tahun 2026, membuat kontur awal dari kotak deteksi lalu menyempurnakannya.
 
-Tiga yang terbaru melaporkan AP sekitar 79,2 sampai 79,6, dan itulah yang sekarang dianggap *state of the art*. Pendekatan saya berbeda keluarga: segmentasi dulu, lalu dirapikan, seperti *frame field learning* dari tahun 2021 yang menjadi pendahulunya.
+Angka tertinggi dilaporkan RoIPoly, yaitu AP 83,6; HiSup, PolyR-CNN, dan Pix2Poly berada di sekitar 79,2 sampai 79,6. Menariknya, metode yang lebih baru tidak selalu lebih tinggi: PolyBuild melaporkan AP 60,6. Pendekatan saya berbeda keluarga: segmentasi dulu, lalu dirapikan, seperti *frame field learning* dari tahun 2021 yang menjadi pendahulunya.
 
 Ada dua catatan penting. Pertama, metode berbasis titik sudut itu dilatih dengan anotasi poligon, sedangkan penelitian ini hanya memakai *mask*. Kedua, semua angka paper tadi diukur di data validasi CrowdAI yang bocor.
 

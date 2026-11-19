@@ -167,6 +167,59 @@ pix2poly:
       PoLiS: 1.082
       MTA: 31.64
 
+roipoly:
+  crowdai_val:
+    method: RoIPoly, Swin-Base
+    paper_table: false  # quoted on the state-of-the-art slide only (added 19 Nov 2026); not a row of the paper's table
+    source:
+      paper: >-
+        Jiao, Cheng, Persello & Vosselman, "RoIPoly: Vectorized Building Outline Extraction Using Vertex and Logit
+        Embeddings", arXiv:2407.14920v1, 20 Jul 2024 (ISPRS J. Photogramm. Remote Sens. 224, 2025; the journal version
+        was not available, so its numbers are not checked against these)
+      tables: >-
+        Table 1 (MS-COCO metrics, row "RoIPoly (ours), Swin-Base") and Table 2 (AP_boundary, IoU, C-IoU, N ratio, MTA,
+        PoLiS, same row)
+      page: tables read in the arXiv HTML of v1, not by PDF page
+      pdf_sha256: 190a06e0bd1a474e14a473fac060720f504acbc711c62865dbd4b43e53dad563
+      copied: 2026-11-19
+    split_note: >-
+      Original validation set of CrowdAI (60,317 tiles), which leaks from train (docs/DATA.md §2.2). Not comparable
+      with our crowdai/test or crowdai/val_clean.
+    values:
+      AP: 83.6
+      AP50: 96.0
+      AP75: 90.9
+      AR: 89.3
+      AR50: 97.8
+      AR75: 94.6
+      AP_boundary: 66.1
+      IoU: 92.9
+      CIoU: 87.6
+      MTA: 27.6
+      PoLiS: 0.79
+
+polybuild:
+  crowdai_val:
+    method: PolyBuild
+    paper_table: false  # quoted on the state-of-the-art slide only (added 19 Nov 2026); not a row of the paper's table
+    source:
+      paper: >-
+        Zhang, Zhang, Wang, Deng, Sheng, Muhammad & Wei, "PolyBuild: An End-to-End Method for Polygonal Building
+        Contour Extraction from High-Resolution Remote Sensing Images", arXiv:2606.08920v1, 8 Jun 2026 (the arXiv
+        listing says it is accepted by IEEE J. Sel. Top. Appl. Earth Obs. Remote Sens.)
+      tables: Table III ("Quantitative results of different methods on the Crowd AI dataset", row "PolyBuild")
+      page: table read in the arXiv HTML of v1, not by PDF page
+      pdf_sha256: e0f08ca0730ee56ca3a8871059d4d9f6236676baa07d6f2810002eff2108d7ef
+      copied: 2026-11-19
+    split_note: >-
+      The paper calls the 60,317 tiles of CrowdAI its test set, i.e. the original validation set, which leaks from
+      train (docs/DATA.md §2.2). Not comparable with our crowdai/test or crowdai/val_clean.
+    values:
+      AP: 60.6
+      AP50: 87.8
+      AP75: 69.3
+      AR: 63.9
+
 hisup_by_pix2poly:
   whu_test:
     method: HiSup (as evaluated in the Pix2Poly paper)
