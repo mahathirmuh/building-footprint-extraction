@@ -333,19 +333,24 @@ function writeScript(target, slides) {
     `Lompatan terbesar ada di B5, saat regularisasi masuk: C-IoU naik dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}, dan galat sudut MTA turun dari ${n("NMtaBfour")} ke ${n("NMtaBfive")} derajat.`,
     `Dua baris terakhir adalah gagasan saya. *Head* θ, di FULL-P0, menambah sedikit kerapian: C-IoU ${n("NCiouFull")} dan MTA ${n("NMtaFull")}. Prior morfologi, di FULL-P2, tidak membawa perbaikan. Dua hal itu saya uji lebih teliti di slide-slide berikutnya.`);
 
-  s = d.slide("Hasil utama di CrowdAI *test*", "Rata-rata tiga *seed*. MTA dan *merge rate*: makin kecil makin baik.");
-  const row = (label, code) => [label, n(`NAp${code}`), n(`NCiou${code}`), n(`NMta${code}`), n(`NMerge${code}`)];
-  d.table(s, ["Model", "AP", "C-IoU", "MTA (°)", "*Merge rate* (%)"], [
-    row("B3: segmentasi biner", "Bthree"),
-    row("B3m: B3 + regularisasi (eksploratif)", "Bthreem"),
-    row("B3+θ: B3 beku + cabang θ (eksploratif)", "Bthreeh"),
-    row("B4: tiga kelas + *watershed*", "Bfour"),
-    row("B5: B4 + regularisasi", "Bfive"),
-    row("FULL-P0: + *head* θ", "Full"),
-    row("FULL+Y: + *seed* detektor", "FullY"),
-    row("B3m+Y (eksploratif)", "BthreemY"),
-  ], { colW: [5.3, 1.5, 1.6, 1.6, 1.894], align: "center",
-    callout: "Regularisasi yang merapikan poligon. Jalur biner unggul di AP; jalur tiga kelas unggul memisahkan rumah." });
+  s = d.slide("Hasil utama di CrowdAI *test*", "Rata-rata tiga *seed*. MTA dan *merge rate*: makin kecil makin baik. Nilai terbaik tiap kolom dicetak tebal.");
+  const mains = [
+    ["B3: segmentasi biner", "Bthree"],
+    ["B3m: B3 + regularisasi (eksploratif)", "Bthreem"],
+    ["B3+θ: B3 beku + cabang θ (eksploratif)", "Bthreeh"],
+    ["B4: tiga kelas + *watershed*", "Bfour"],
+    ["B5: B4 + regularisasi", "Bfive"],
+    ["FULL-P0: + *head* θ", "Full"],
+    ["FULL+Y: + *seed* detektor", "FullY"],
+    ["B3m+Y (eksploratif)", "BthreemY"],
+  ];
+  const columns = [["NAp", Math.max], ["NCiou", Math.max], ["NMta", Math.min], ["NMerge", Math.min]];  // the best value of each is bold
+  const value = (prefix, code) => parseFloat(numbers[`${prefix}${code}`]);
+  const row = (label, code) => [label, ...columns.map(([prefix, pick]) =>
+    (value(prefix, code) === pick(...mains.map(([, c]) => value(prefix, c))) ? `**${n(prefix + code)}**` : n(prefix + code)))];
+  d.table(s, ["Model", "AP", "C-IoU", "MTA (°)", "*Merge rate* (%)"], mains.map(([label, code]) => row(label, code)),
+    { colW: [5.3, 1.5, 1.6, 1.6, 1.894], align: "center",
+      callout: "Regularisasi yang merapikan poligon. Jalur biner unggul di AP; jalur tiga kelas unggul memisahkan rumah." });
   say("Hasil utama di CrowdAI *test*",
     "Tabel ini merangkum hasil di data *test*, rata-rata tiga *seed*. Sebelum membacanya, sedikit tentang metriknya. AP mengukur ketepatan deteksi tiap bangunan; makin besar makin baik. C-IoU adalah IoU yang dikenai penalti bila jumlah titik sudut poligon jauh dari *ground truth*, jadi ia mengukur kerapian. MTA adalah galat sudut dinding dalam derajat. *Merge rate* adalah persentase rumah yang tergabung dengan tetangganya. Untuk MTA dan *merge rate*, makin kecil makin baik.",
     `Ada tiga hal yang bisa dibaca. Pertama, regularisasi sangat menaikkan kerapian: dari B4 ke B5, C-IoU naik dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}, dan MTA turun dari ${n("NMtaBfour")} ke ${n("NMtaBfive")} derajat.`,
