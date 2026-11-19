@@ -25,4 +25,6 @@ build). Salin PDF-nya ke sini:
 
 Logo resmi ITS (header, footer, logo IF di sampul, ornamen penutup) sudah ada di `densepoly.pptx`. File gambarnya dibongkar dari
 skill `ppt-its-assets` ke `slides/its_assets/` (tidak masuk git). Tanpa folder itu, `build.js` tetap berjalan dengan header dan
-footer teks. Foto latar slide penutup tidak tersedia, jadi slide penutup memakai warna biru ITS polos.
+footer teks. Foto latar slide penutup tidak ada di paket itu: `its_assets/closing_bg.jpg` dipulihkan dari tangkapan layar halaman
+penutup template kiriman pemilik proyek (19 Nov 2026; logo, ornamen, dan teks di atas foto dihapus dengan *inpainting*), jadi
+lebih lunak dari foto aslinya. Tanpa file itu slide penutup memakai warna biru ITS polos.

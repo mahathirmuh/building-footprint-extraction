@@ -279,7 +279,7 @@ class ITSDeck {
       title: "ITS_CLOSING", background: { color: C.blue },
       objects: [
         ...(bg ? [{ image: { path: bg.path, x: 0, y: 0, w: W, h: H, transparency: Math.round(100 * (1 - (bg.opacity || 0.2))) } }] : []),
-        ...(bg ? [{ image: { data: fadePng(C.blue), x: 0, y: 0, w: W * 0.6, h: H } }] : []),
+        ...(bg && bg.fade !== false ? [{ image: { data: fadePng(C.blue), x: 0, y: 0, w: W * 0.6, h: H } }] : []),  // fade: false = the picture holds it already
         ...this._img("ornament_tr"), ...this._img("ornament_bl"), ...this._header("closing_"),
         ...this._band(C.white), ...this._footer(false),
         { text: { text: "Institut Teknologi Sepuluh Nopember", options: { x: 7.0, y: 7.12, w: 5.59, h: 0.3, fontFace: FONT,
