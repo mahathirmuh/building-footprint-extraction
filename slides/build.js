@@ -210,11 +210,11 @@ function writeScript(target, slides) {
     ["Marker", "*Thresholding*, *connected component labeling*", "Inti tiap rumah"],
     ["Pemisahan rumah", "*Watershed* berbasis marker", "Satu *instance* per rumah"],
     ["Kontur", "*Marching squares*", "Batas rumah tepat di tepi piksel"],
-    ["Regularisasi", "Momen orde dua; Douglas-Peucker", "Kotak dan poligon siku searah θ"],
+    ["Regularisasi", "Momen orde dua; Douglas-Peucker (geometri komputasi)", "Kotak dan poligon siku searah θ"],
     ["*Baseline* B0", "MBI, Otsu, *opening*, *h-maxima*, *watershed*", `Pembanding tanpa jaringan: AP ${n("NApBzero")}`],
     ["Prior N3", "*Top-hat* multi-arah (MBI dan peta celah)", "Input tambahan; tidak membantu"],
   ], { colW: [2.6, 5.2, 4.094], align: ["left", "left", "left"],
-    callout: "Jaringan hanya memberi peta kelas dan θ; pembentukan poligon seluruhnya klasik. *minAreaRect* dan Douglas-Peucker termasuk geometri komputasi." });
+    callout: "Jaringan hanya memberi peta kelas dan θ; pembentukan poligon seluruhnya dikerjakan algoritma klasik." });
   say("Pengolahan citra klasik di dalam alur",
     "Karena ini mata kuliah Pengolahan Citra Digital, saya tunjukkan di mana saja algoritma klasik dipakai. Yang saya maksud klasik adalah algoritma tetap, tanpa parameter yang dilatih.",
     "Lima baris pertama ada di alur utama. Untuk membuat label: dilasi menghasilkan kelas kontak, *distance transform* menghasilkan bobot tepi, dan *minAreaRect* menghasilkan orientasi. Setelah jaringan: *thresholding* dan *connected component labeling* membuat *marker*, *watershed* memisahkan rumah, *marching squares* mengambil kontur, lalu momen orde dua dan algoritma Douglas-Peucker merapikannya menjadi kotak atau poligon siku.",

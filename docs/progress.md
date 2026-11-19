@@ -2410,4 +2410,8 @@ Tes: 779 lolos.
 - Slide 5 diganti: daftar bernomor "Alur metode" menjadi diagram "Arsitektur: alur pengerjaan dari awal sampai akhir" (tiga
   baris berkotak dan berpanah: data dan label, jaringan, poligon dan evaluasi; `flowLanes` di `slides/build.js`). Kartu
   "Ketemunya apa?" di slide 2 diperjelas (arti C-IoU; dua angka AP HiSup tanpa kata "turun"). Halaman 2 dan 5 diperiksa di PDF.
+- Dua slide baru atas permintaan pemilik proyek: slide 4 "*State of the art*" (FFL, PolyWorld, HiSup, PolyR-CNN, Pix2Poly dengan
+  AP dan C-IoU yang dilaporkan di paper, dari `configs/paper_numbers.yaml` lewat makro `NReported*`; baris terakhir FULL-P0 di
+  `test` dengan catatan tidak sebanding langsung) dan slide 7 "Pengolahan citra klasik di dalam alur" (algoritma per tahap,
+  B0, prior N3). Referensi menjadi 9 butir. Deck 22 slide; halaman 4, 7, dan 21 diperiksa di PDF.
 
