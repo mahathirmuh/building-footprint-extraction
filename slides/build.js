@@ -270,6 +270,26 @@ function writeScript(target, slides) {
     "*Tile* *test* dibagi menjadi tiga kelompok kepadatan, yaitu jarang, sedang, dan padat, menurut jumlah bangunannya. Pembagian ini dibekukan dari *ground truth* sebelum ada model yang dievaluasi.",
     "Setiap selisih antarmodel dihitung berpasangan pada *tile* yang sama, dengan tiga *seed* dan *bootstrap* seribu replikasi. Dan semua parameter disetel di data tuning; data *test* tidak pernah dipakai untuk menyetel apa pun.");
 
+  s = d.slide("Protokol uji yang adil", "Semua model jaringan dilatih dan dinilai dengan setelan yang sama.");
+  d.table(s, ["Aspek", "Nilai (sama untuk semua model)"], [
+    ["Data", "*Split* bebas duplikat yang sama; *tile* 300 × 300 di-*pad* ke 320, tanpa *resize*; augmentasi yang sama"],
+    ["Optimizer", "AdamW, lr 2e-4 (*warmup* 1 *epoch*, lalu kosinus ke 1e-6), *weight decay* 1e-4, AMP fp16"],
+    ["Training", "*Batch* 16, 60 *epoch* tanpa *early stopping*, *seed* 0, 1, 2"],
+    ["Pemilihan", "*Checkpoint* terbaik di data validasi (bukan *test*); *post-processing* disetel dengan grid yang sama, lalu dibekukan"],
+    ["Evaluasi", `${n("NTestTiles")} *tile* *test* yang sama, kode metrik yang sama, selisih berpasangan per *tile*, *bootstrap* 1.000 replikasi`],
+    ["Pretrained", "*Encoder* EfficientNet-B4 ImageNet, bobot awal identik di semua model jaringan"],
+  ], { colW: [1.6, 5.75], w: 7.35, size: 12, rowH: 0.56, align: ["left", "left"],
+    callout: "Setelan identik, diperiksa dari `config.yaml` 23 *run* CrowdAI. Metrik: AP, AP *boundary*, IoU, C-IoU, PoLiS, MTA, *merge rate*." });
+  d.card(s, X0 + 7.6, 2.24, X1 - X0 - 7.6, 0.56 * 7, ACCENTS[5], "Yang berbeda (hanya ini)",
+    "1. Komponen yang diuji di tiap langkah ablasi: arsitektur, *loss*, keluaran, atau input.\n2. B0 tidak dilatih; B1 dan B2 satu *seed*, model lain tiga *seed*.\n3. B3+θ memakai jaringan B3 yang dibekukan dan *checkpoint* *epoch* terakhir, karena *mask*-nya tidak berubah.",
+    { headSize: 15, bodySize: 13, gap: 10 });
+  say("Protokol uji yang adil",
+    "Supaya perbandingan antarmodel adil, semua model jaringan dilatih dan dinilai dengan setelan yang sama. Tabel di kiri merangkumnya.",
+    "Datanya sama: *split* bebas duplikat yang sama, *tile* 300 × 300 yang hanya di-*pad* ke 320 tanpa diubah ukurannya, dan augmentasi yang sama. Optimizer-nya sama: AdamW dengan *learning rate* 2e-4, *warmup* satu *epoch* lalu turun mengikuti kosinus. Lama latihannya sama: *batch* 16 dan 60 *epoch* tanpa *early stopping*, dengan *seed* 0, 1, dan 2.",
+    `Pemilihannya juga sama: *checkpoint* terbaik dipilih di data validasi, bukan di data *test*, dan *post-processing* tiap model disetel dengan grid yang sama lalu dibekukan. Evaluasinya memakai ${n("NTestTiles")} *tile* *test* yang sama, kode metrik yang sama, dan selisih berpasangan per *tile*. Semua jaringan berangkat dari bobot ImageNet yang sama.`,
+    "Yang berbeda hanya tiga hal, di panel kanan. Pertama, komponen yang memang sedang diuji di tiap langkah ablasi. Kedua, B0 tidak dilatih karena murni klasik, dan B1 serta B2 hanya satu *seed*. Ketiga, B3+θ memakai jaringan B3 yang dibekukan dan *checkpoint* *epoch* terakhir, karena *mask*-nya tidak berubah sehingga tidak ada yang bisa dipilih.",
+    "Kesamaan setelan ini saya periksa dari berkas konfigurasi yang tersimpan di tiap *run*, bukan dari ingatan.");
+
   s = d.slide("Ablasi: satu perubahan per langkah", "CrowdAI *test*. B0–B2 satu *run*; lainnya rata-rata tiga *seed*. MTA dan *merge rate*: makin kecil makin baik.");
   const step = (label, added, code) => [label, added, n(`NAp${code}`), n(`NCiou${code}`), n(`NMta${code}`), n(`NMerge${code}`)];
   d.table(s, ["Model", "Yang ditambahkan", "AP", "C-IoU", "MTA (°)", "*Merge* (%)"], [

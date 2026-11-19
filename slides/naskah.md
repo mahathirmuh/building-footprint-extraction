@@ -1,7 +1,7 @@
 # Naskah presentasi: Ekstraksi Poligon Bangunan pada Permukiman Padat
 
-Naskah ucapan untuk tiap slide `densepoly.pptx` (25 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
-28 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
+Naskah ucapan untuk tiap slide `densepoly.pptx` (26 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
+29 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
 
 - Naskah ini dibuat `slides/build.js` bersama deck, jadi angkanya sama dengan yang tampil di slide. Untuk mengubahnya,
   ubah `say(...)` di `build.js` lalu bangun ulang; jangan menyunting file ini langsung.
@@ -145,7 +145,21 @@ Klaster itu lalu dibagi: 23.427 *tile* untuk train, 1.000 untuk menyetel *post-p
 
 Setiap selisih antarmodel dihitung berpasangan pada *tile* yang sama, dengan tiga *seed* dan *bootstrap* seribu replikasi. Dan semua parameter disetel di data tuning; data *test* tidak pernah dipakai untuk menyetel apa pun.
 
-## Slide 11: Ablasi: satu perubahan per langkah
+## Slide 11: Protokol uji yang adil
+
+*±1,5 menit*
+
+Supaya perbandingan antarmodel adil, semua model jaringan dilatih dan dinilai dengan setelan yang sama. Tabel di kiri merangkumnya.
+
+Datanya sama: *split* bebas duplikat yang sama, *tile* 300 × 300 yang hanya di-*pad* ke 320 tanpa diubah ukurannya, dan augmentasi yang sama. Optimizer-nya sama: AdamW dengan *learning rate* 2e-4, *warmup* satu *epoch* lalu turun mengikuti kosinus. Lama latihannya sama: *batch* 16 dan 60 *epoch* tanpa *early stopping*, dengan *seed* 0, 1, dan 2.
+
+Pemilihannya juga sama: *checkpoint* terbaik dipilih di data validasi, bukan di data *test*, dan *post-processing* tiap model disetel dengan grid yang sama lalu dibekukan. Evaluasinya memakai 2.928 *tile* *test* yang sama, kode metrik yang sama, dan selisih berpasangan per *tile*. Semua jaringan berangkat dari bobot ImageNet yang sama.
+
+Yang berbeda hanya tiga hal, di panel kanan. Pertama, komponen yang memang sedang diuji di tiap langkah ablasi. Kedua, B0 tidak dilatih karena murni klasik, dan B1 serta B2 hanya satu *seed*. Ketiga, B3+θ memakai jaringan B3 yang dibekukan dan *checkpoint* *epoch* terakhir, karena *mask*-nya tidak berubah sehingga tidak ada yang bisa dipilih.
+
+Kesamaan setelan ini saya periksa dari berkas konfigurasi yang tersimpan di tiap *run*, bukan dari ingatan.
+
+## Slide 12: Ablasi: satu perubahan per langkah
 
 *±1 menit*
 
@@ -159,7 +173,7 @@ Lompatan terbesar ada di B5, saat regularisasi masuk: C-IoU naik dari 62,69 ke 7
 
 Dua baris terakhir adalah gagasan saya. *Head* θ, di FULL-P0, menambah sedikit kerapian: C-IoU 74,55 dan MTA 36,34. Prior morfologi, di FULL-P2, tidak membawa perbaikan. Dua hal itu saya uji lebih teliti di slide-slide berikutnya.
 
-## Slide 12: Hasil utama di CrowdAI *test*
+## Slide 13: Hasil utama di CrowdAI *test*
 
 *±1,5 menit*
 
@@ -173,7 +187,7 @@ Ketiga, jalur tiga kelas lebih baik memisahkan rumah: *merge rate* FULL-P0 1,96%
 
 Jadi tidak ada satu model yang menang di semua kolom. Itu saya uraikan satu per satu. Baris B3+θ adalah percobaan eksploratif yang saya jelaskan di slide tersendiri.
 
-## Slide 13: N1 didukung: *head* θ merapikan poligon
+## Slide 14: N1 didukung: *head* θ merapikan poligon
 
 *±1 menit*
 
@@ -185,7 +199,7 @@ AP berubah +0,35 poin, jadi kerapian itu tidak dibayar dengan akurasi deteksi.
 
 Menurut aturan yang sudah dibekukan, N1 dinyatakan didukung. Tetapi saya harus jujur soal besarnya: efeknya kecil, jauh di bawah satu piksel. Jadi kesimpulannya, *head* θ membantu secara konsisten, bukan membantu secara besar.
 
-## Slide 14: Efek N1 membesar di *tile* padat
+## Slide 15: Efek N1 membesar di *tile* padat
 
 *±1 menit*
 
@@ -199,7 +213,7 @@ Kembali ke kepadatan: kecenderungan belum tentu bukti. Ketika selisih padat diku
 
 Panel kanan adalah prior morfologi, gagasan N3. Di sana titik-titiknya berada di atas nol, artinya rumah yang tergabung tidak berkurang. Itu saya bahas di slide berikutnya.
 
-## Slide 15: Dua hasil negatif, dilaporkan apa adanya
+## Slide 16: Dua hasil negatif, dilaporkan apa adanya
 
 *±1 menit*
 
@@ -211,7 +225,7 @@ Yang kedua kelas kontak. Di 6 dari 9 *run* FULL, jaringan tidak pernah memilih k
 
 Keduanya saya laporkan apa adanya, karena hasil negatif yang diukur dengan benar tetap berguna bagi yang ingin mencoba gagasan serupa.
 
-## Slide 16: Banding dengan HiSup di data tanpa kebocoran
+## Slide 17: Banding dengan HiSup di data tanpa kebocoran
 
 *±1,5 menit*
 
@@ -225,7 +239,7 @@ Ambang "mendekati metode terbaik" yang saya bekukan sejak awal adalah tiga poin 
 
 Temuan yang menurut saya lebih penting di slide ini adalah baris pertama dan kedua: angka HiSup sendiri turun jauh begitu duplikat disingkirkan. Artinya angka di *benchmark* CrowdAI perlu dibaca dengan hati-hati.
 
-## Slide 17: Eksploratif: *baseline* sederhana dan *seed* detektor
+## Slide 18: Eksploratif: *baseline* sederhana dan *seed* detektor
 
 *±1 menit*
 
@@ -237,7 +251,7 @@ Yang kedua, sebuah detektor kecil, YOLOv8n-OBB, yang juga dilatih dari *mask*, d
 
 Jadi gambaran besarnya: jalur biner paling akurat dan paling rapi, jalur tiga kelas paling baik memisahkan rumah berdempetan, dan benih dari detektor membantu keduanya.
 
-## Slide 18: Eksploratif: *head* θ di jalur biner
+## Slide 19: Eksploratif: *head* θ di jalur biner
 
 *±1,5 menit*
 
@@ -249,7 +263,7 @@ Dari kegagalan itu muncul cara kedua, B3+θ: jaringan B3 dibekukan, lalu hanya s
 
 Jadi pemanduan θ juga memperbaiki *baseline* terkuat, asalkan *mask*-nya dilindungi. Tetapi saya tidak ingin melebih-lebihkan: efeknya kecil, dan kalau dihitung di semua *tile*, AP turun 0,34 poin. Karena ditambahkan setelah hasil utama ada, temuan ini saya laporkan sebagai eksploratif dan tidak mengubah keputusan N1 sampai N3.
 
-## Slide 19: Contoh hasil di *tile* asli
+## Slide 20: Contoh hasil di *tile* asli
 
 *±1 menit*
 
@@ -259,7 +273,7 @@ Di kolom B4, kontur masih mentah: garisnya bergelombang dan titik sudutnya banya
 
 Tiga baris pertama adalah *tile* padat yang hasilnya cukup baik. Baris terbawah sengaja saya pilih sebagai contoh kegagalan: di sisi kanan bawah, beberapa rumah yang berdempetan masih tergabung menjadi satu poligon besar, di semua model. Inilah kasus yang belum terselesaikan.
 
-## Slide 20: WHU dan biaya komputasi
+## Slide 21: WHU dan biaya komputasi
 
 *±1 menit*
 
@@ -271,7 +285,7 @@ Titik lemahnya sama dengan di CrowdAI: di *patch* yang berisi bangunan bersentuh
 
 Dari sisi biaya, modelnya 20,81 juta parameter. Alur penuh, dari citra sampai poligon, berjalan 42,3 *tile* per detik di RTX 5090, dan 36,4 bila detektor ikut dipakai.
 
-## Slide 21: Ringkasan hasil
+## Slide 22: Ringkasan hasil
 
 *±1 menit*
 
@@ -287,7 +301,7 @@ Keempat, dibanding metode terbaik di data yang bersih, model saya masih di bawah
 
 Jadi yang berhasil adalah regularisasi dan pemanduan θ. Yang tidak berhasil adalah prior morfologi, kelas kontak, dan upaya mengejar metode terbaik.
 
-## Slide 22: Keterbatasan
+## Slide 23: Keterbatasan
 
 *±1 menit*
 
@@ -303,7 +317,7 @@ Keempat, detektor YOLO hanya dilatih sekali dan dipakai untuk ketiga *seed*, jad
 
 Kelima, poligon yang dihasilkan hanya cincin luar bangunan. Bangunan yang punya halaman dalam, atau lubang, tidak terwakili.
 
-## Slide 23: Kesimpulan
+## Slide 24: Kesimpulan
 
 *±1 menit*
 
@@ -319,13 +333,13 @@ Keempat, *baseline* yang sederhana ternyata paling kuat. Hal ini baru terlihat k
 
 Kalau dirangkum dalam satu kalimat: sumbangan utama proyek ini bukan model yang mengalahkan metode terbaik, melainkan evaluasi yang jujur tentang seberapa jauh pendekatan berbasis *mask* bisa melangkah.
 
-## Slide 24: Referensi
+## Slide 25: Referensi
 
 *±0,5 menit*
 
 Ini rujukan utama yang saya pakai. Daftar lengkapnya ada di naskah paper.
 
-## Slide 25: Penutup
+## Slide 26: Penutup
 
 *±0,5 menit*
 

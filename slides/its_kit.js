@@ -504,7 +504,7 @@ class ITSDeck {
         margin: [4, 8, 4, 8] } });
     const data = [header.map((h, i) => cell(h, i, true, 0)), ...rows.map((r, ri) => r.map((v, i) => cell(v, i, false, ri)))];
     const rowH = o.rowH || 0.42;
-    s.addTable(data, { x: X0, y: top, w: CW, colW: o.colW, rowH, fontFace: FONT, autoPage: false });
+    s.addTable(data, { x: o.x || X0, y: top, w: o.w || CW, colW: o.colW, rowH, fontFace: FONT, autoPage: false });  // o.x, o.w: a table beside a panel
     return this._done(s, o, top + data.length * rowH);
   }
 
