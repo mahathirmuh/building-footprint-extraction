@@ -79,13 +79,14 @@ function writeScript(target, slides) {
   let s = d.slide("Inti presentasi dalam tiga pertanyaan", "Masalah, temuan, dan artinya; slide berikutnya menguraikan satu per satu.");
   d.cards(s, [
     { head: "Masalahnya apa?", body: "Peta butuh satu poligon rapi per rumah. Di permukiman padat, atap berdempetan terbaca sebagai satu gumpalan. Metode terbaik butuh anotasi poligon, dan data uji CrowdAI bocor ke data latih." },
-    { head: "Ketemunya apa?", body: `Dari *mask* saja, regularisasi menaikkan C-IoU dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}. *Head* θ menambah sedikit kerapian. Prior morfologi dan kelas kontak tidak membantu. Di data bersih, HiSup turun dari ${n("NLeakyApHisup")} ke ${n("NCleanApHisup")} AP.` },
+    { head: "Ketemunya apa?", body: `Dari *mask* saja, regularisasi menaikkan kerapian poligon (C-IoU) dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}. *Head* θ menambah sedikit kerapian. Prior morfologi dan kelas kontak tidak membantu. Di data bersih, AP HiSup ternyata ${n("NCleanApHisup")}, bukan ${n("NLeakyApHisup")} seperti di data bocor.` },
     { head: "Kenapa itu penting?", body: "Banyak daerah hanya punya *mask*: poligon rapi tetap bisa dibuat tanpa anotasi poligon. Angka *benchmark* yang bocor terlalu optimistis, jadi metode harus dibandingkan di data bersih." },
   ]);
   say("Inti presentasi dalam tiga pertanyaan",
     "Sebelum masuk ke rincian, saya rangkum dulu seluruh presentasi ini dalam tiga pertanyaan.",
     "Pertama, masalahnya apa? Peta membutuhkan satu poligon yang rapi untuk tiap rumah. Di permukiman padat itu sulit, karena atap yang berdempetan terbaca sebagai satu gumpalan. Selain itu, metode terbaik saat ini membutuhkan anotasi poligon, dan data uji CrowdAI yang biasa dipakai ternyata bocor ke data latih.",
-    `Kedua, ketemunya apa? Dari *mask* saja, langkah regularisasi sudah membuat poligon jauh lebih rapi: C-IoU naik dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}. *Head* orientasi menambah kerapian sedikit lagi. Dua gagasan lain, yaitu prior morfologi dan kelas kontak, tidak membantu. Dan di data yang bersih, AP HiSup sendiri turun dari ${n("NLeakyApHisup")} ke ${n("NCleanApHisup")}.`,
+    `Kedua, ketemunya apa? Dari *mask* saja, langkah regularisasi sudah membuat poligon jauh lebih rapi: C-IoU, ukuran kerapian poligon yang makin tinggi makin baik, naik dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}. *Head* orientasi menambah kerapian sedikit lagi. Dua gagasan lain, yaitu prior morfologi dan kelas kontak, tidak membantu.`,
+    `Lalu soal metode terbaik, HiSup. AP-nya, yang juga makin tinggi makin baik, tercatat ${n("NLeakyApHisup")} di data uji yang bocor. Di data yang bersih ternyata hanya ${n("NCleanApHisup")}. Modelnya tidak berubah; yang berubah hanya soal ujiannya, yang kali ini belum pernah dilihat model. Jadi angka yang tinggi tadi sebagian berasal dari kebocoran.`,
     "Ketiga, kenapa itu penting? Banyak daerah hanya punya data *mask*, jadi poligon yang rapi tetap bisa dibuat tanpa anotasi poligon. Dan angka *benchmark* yang bocor ternyata terlalu optimistis, sehingga metode seharusnya dibandingkan di data yang bersih.",
     "Slide-slide berikutnya menguraikan ketiga jawaban itu satu per satu.");
 
