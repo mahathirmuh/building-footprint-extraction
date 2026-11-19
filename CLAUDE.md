@@ -85,7 +85,10 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   Fase 12 (eksploratif, disetujui 17 Nov 2026) berjalan: B3+θ = jaringan B3 beku + cabang θ yang dilatih sendiri, supaya mask
   tidak berubah; gerbang pilot di `val_select` dan aturan beku di `docs/EXPERIMENTS.md` §11. Pilot seed 0 selesai 18 Nov 2026 dan
   **gerbang lolos** di `val_select` (B3+θ′ → B3+θ: `PoLiS_paired` −0,010 px, `MTA_inst` −0,28°, AP −0,23); mask tidak bergeser.
-  Tahap 2 (seed 1–2, `test`) menunggu persetujuan pemilik proyek; `test` belum disentuh.
+  Tahap 2 (seed 1–2, `test`) disetujui dan selesai 19 Nov 2026: aturan beku §11 **terpenuhi**. Di strata padat `test`,
+  B3m → B3+θ `PoLiS_paired` −0,011 px [−0,013; −0,008], `MTA_inst` −0,24° [−0,33; −0,16], AP −0,12 (semua tile: AP −0,34).
+  B3+θ `test`: AP 64,55 ± 0,24, C-IoU 76,90, merge rate 2,81%. Eksploratif: keputusan N1–N3 tidak berubah; B3m tetap tertinggi
+  di AP. Kecepatan B3+θ tidak diukur (batas GPU 65%). Fase 12 menunggu persetujuan pemilik proyek untuk ditutup.
 
 ## Cara bekerja di proyek ini
 

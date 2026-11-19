@@ -311,4 +311,26 @@ B3, B3θ, dan FULL-P0 pada semua tile `test`, strata padat, dan tile bersentuhan
 yang wajar diharapkan seukuran efek pemanduan di §10. Bila cabang di atas fitur beku tidak cukup akurat memprediksi θ,
 hasilnya bisa nol atau negatif.
 
+**Hasil (19 Nov 2026; tabel `n1_frozen`, strata padat `crowdai/test`, 857 tile, 3 seed).**
+
+- **Gerbang pilot (seed 0, `val_select`, 1.928 tile): lolos.** B3+θ′ → B3+θ: `PoLiS_paired` −0,010 px [−0,014; −0,007],
+  `MTA_inst` −0,28° [−0,42; −0,13], AP −0,23 poin [−0,35; −0,01].
+- **Cek kewarasan B3m → B3+θ′:** `PoLiS_paired` −0,000 px [−0,000; +0,000], `MTA_inst` −0,01° [−0,02; +0,00], AP +0,02 poin
+  [−0,02; +0,03]. Mask memang tidak bergeser (`fg_iou` validasi tiap seed konstan di 60 epoch dan sama dengan B3 sampai 1e-4).
+- **Efek total B3m → B3+θ:** `PoLiS_paired` −0,011 px [−0,013; −0,008] (per seed −0,010; −0,011; −0,011), `MTA_inst` −0,24°
+  [−0,33; −0,16] (per seed −0,24; −0,20; −0,29), AP −0,12 poin [−0,28; −0,05].
+- **Keputusan aturan beku: "cabang θ di atas B3 beku memperbaiki poligon B3m" didukung.** CI kedua metrik di bawah 0, arahnya sama
+  di ketiga seed, dan AP tidak turun lebih dari 0,5 poin.
+- **Galat θ:** cabang median 0,44°, p90 4,24°; `minAreaRect` pada mask yang sama median 0,00°, p90 3,20°. Cabang di atas fitur beku
+  membaca θ lebih kasar dari head yang dilatih bersama (§10: p90 2,47°), tetapi tetap cukup untuk memperbaiki poligon.
+- **Semua tile `test` (2.928), B3m → B3+θ:** AP −0,34 poin [−0,38; −0,17], C-IoU −0,07 [−0,18; +0,06], `PoLiS_paired` −0,009 px,
+  `MTA_inst` −0,22°; merge dan split rate tidak berubah. Di strata padat C-IoU +0,26 [+0,10; +0,41].
+- **B3+θ di `test` (rata-rata 3 seed):** AP 64,55 ± 0,24, C-IoU 76,90, PoLiS 1,652, MTA 35,84, merge rate 2,81%.
+- **Terhadap model lain (semua tile):** B3θ → B3+θ AP +2,04, C-IoU +1,38; FULL-P0 → B3+θ AP +2,61, C-IoU +2,35, tetapi merge rate
+  +0,85 poin (jalur tiga kelas tetap lebih baik memisahkan rumah).
+
+**Bacaan.** Kerugian di §10 memang datang dari pelatihan bersama: begitu mask dijaga, pemanduan θ memberi perbaikan bersih pada
+baseline terkuat. Efeknya kecil (sekitar 0,8% dari `PoLiS_paired` dan 0,7% dari `MTA_inst` B3m di strata padat) dan dibayar dengan
+AP yang sedikit lebih rendah, jadi B3m tetap unggul di AP dan B3+θ unggul di kerapian sudut.
+
 **Status.** Eksploratif (§8 poin 7). Hasilnya tidak mengubah keputusan N1–N3, kriteria §8, maupun FULL final (FULL-P0).

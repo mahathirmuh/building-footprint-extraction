@@ -2415,3 +2415,42 @@ Tes: 779 lolos.
   `test` dengan catatan tidak sebanding langsung) dan slide 7 "Pengolahan citra klasik di dalam alur" (algoritma per tahap,
   B0, prior N3). Referensi menjadi 9 butir. Deck 22 slide; halaman 4, 7, dan 21 diperiksa di PDF.
 
+### Fase 12, tahap 2: hasil (19 Nov 2026)
+
+**Jalannya.** Seed 1 dilatih 08.44–10.03 WIB. Seed 2 terputus 10.22 (GPU lepas dari bus, lihat di atas), dilanjutkan 12.52 dengan
+batas GPU dan selesai 14.29. `fg_iou` validasi tiap seed konstan di 60 epoch dan sama dengan checkpoint B3-nya (seed 1: 0,896567
+lawan 0,896569; seed 2: 0,897336–0,897338 lawan 0,897339). Prediksi dan evaluasi `test` ketiga seed 14.30–14.40; tabel
+`n1_frozen`, `ablation`, dan `strata` selesai 14.56. `PHASE12_DONE` 14.56 WIB. Selama tahap 2 dengan batas, utilisasi GPU dari proses
+kita paling tinggi 61%; pukul 14.22–14.24 ada proses lain di GPU (±8 GB) yang membuat total kartu 72–98%.
+
+**Hasil di strata padat `test` (857 tile, 3 seed, CI 95% bootstrap):**
+
+| Langkah | Δ `PoLiS_paired` (px) | Δ `MTA_inst` (°) | Δ AP (poin) |
+|---|---|---|---|
+| B3m → B3+θ′ (mask sama, cek kewarasan) | −0,000 [−0,000; +0,000] | −0,01 [−0,02; +0,00] | +0,02 [−0,02; +0,03] |
+| B3+θ′ → B3+θ (pemanduan θ) | −0,011 [−0,013; −0,008] | −0,24 [−0,33; −0,15] | −0,14 [−0,29; −0,06] |
+| B3m → B3+θ (total) | −0,011 [−0,013; −0,008] | −0,24 [−0,33; −0,16] | −0,12 [−0,28; −0,05] |
+
+**Keputusan aturan beku (§11): didukung.** Kedua metrik membaik dengan CI di bawah 0, searah di ketiga seed, dan AP turun kurang
+dari 0,5 poin. Ini eksploratif (§8 poin 7): keputusan N1–N3, kriteria §8, dan FULL final tidak berubah.
+
+**Angka lain.** B3+θ di `test`: AP 64,55 ± 0,24, C-IoU 76,90, PoLiS 1,652, MTA 35,84, merge rate 2,81% (B3m: 64,89; 76,97; 1,657;
+36,16; 2,81%). Semua tile, B3m → B3+θ: AP −0,34 [−0,38; −0,17], C-IoU −0,07 [−0,18; +0,06]. Galat θ cabang: median 0,44°, p90 4,24°
+(`minAreaRect`: 0,00° dan 3,20°). B3θ → B3+θ: AP +2,04; FULL-P0 → B3+θ: AP +2,61, C-IoU +2,35, merge rate +0,85 poin.
+
+**Kelemahan.**
+1. Efeknya kecil: sekitar 0,8% dari `PoLiS_paired` dan 0,7% dari `MTA_inst`.
+2. AP sedikit turun (−0,12 di strata padat, −0,34 di semua tile), walau di dalam batas 0,5 poin.
+3. Cabang membaca θ lebih kasar dari `minAreaRect` di p90 (4,24° lawan 3,20°); perbaikannya datang dari bangunan yang kotaknya
+   menyesatkan, bukan dari ketelitian rata-rata.
+4. Kecepatan B3+θ tidak diukur (benchmark butuh GPU penuh, sedangkan GPU dibatasi 65%).
+5. Satu konfigurasi cabang saja; ditambahkan setelah hasil Fase 6–9 ada.
+
+**Yang ikut diperbarui.** `scripts/paper_tables.py` (tabel `frozen_theta`, makro `NFrozTheta*`, `NThetaFrozen*`, angka B1, B2, B5′,
+FULL-P1, B3+θ); deck (slide ablasi baru, slide eksploratif θ memuat kedua varian, baris B3+θ di tabel hasil utama, SOTA dibatasi
+2022–2026 atas permintaan pemilik proyek sehingga FFL 2021 keluar dari tabel; 24 slide) dan `slides/naskah.md`. Penulisan ini
+dikerjakan sesi interaktif, bukan sesi latar (`logs/phase12_writeup.lock` dibuat lebih dulu), karena pemilik proyek sedang
+menyunting deck di sesi yang sama.
+
+**Status.** Fase 12 selesai dikerjakan dan **menunggu persetujuan pemilik proyek** untuk ditutup; Fase 10 juga.
+
