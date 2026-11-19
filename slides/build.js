@@ -182,7 +182,8 @@ function writeScript(target, slides) {
   say("Efek N1 membesar di *tile* padat",
     "Gambar ini memecah efek tadi menurut kepadatan. Tiap titik adalah selisih antara dua model, dan garis tegaknya selang kepercayaan 95%. Titik di bawah garis putus-putus berarti ada perbaikan.",
     `Di dua panel kiri, untuk *head* θ, perbaikannya membesar dari *tile* jarang ke padat. PoLiS: ${n("NDensePolisSparse")}, ${n("NDensePolisMedium")}, lalu ${n("NDensePolisDense")} piksel. MTA: ${n("NDenseMtaSparse")}, ${n("NDenseMtaMedium")}, lalu ${n("NDenseMtaDense")} derajat.`,
-    `Tetapi kecenderungan belum tentu bukti. Ketika selisih padat dikurangi jarang diuji, hanya MTA yang signifikan: ${n("NDenseMta")} derajat, selang ${n("NDenseMtaCi")}. Untuk PoLiS selangnya memuat nol: ${n("NDensePolisCi")}. Karena itu klaim bahwa efek N1 paling besar di area padat tidak saya pakai.`,
+    `Dua titik di sebelah kanan tiap panel membagi *tile* dengan cara lain: yang berisi bangunan bersentuhan dan yang tidak. Selang kelompok bersentuhan lebar karena *tile*-nya hanya ${n("NTilesTouching")} dari ${n("NTestTiles")}.`,
+    `Kembali ke kepadatan: kecenderungan belum tentu bukti. Ketika selisih padat dikurangi jarang diuji, hanya MTA yang signifikan, yaitu ${n("NDenseMta")} derajat. Untuk PoLiS selang kepercayaannya memuat nol. Karena itu klaim bahwa efek N1 paling besar di area padat tidak saya pakai.`,
     "Panel kanan adalah prior morfologi, gagasan N3. Di sana titik-titiknya berada di atas nol, artinya rumah yang tergabung tidak berkurang. Itu saya bahas di slide berikutnya.");
 
   s = d.slide("Dua hasil negatif, dilaporkan apa adanya", "Keduanya dirancang untuk memisahkan rumah berdempetan.");

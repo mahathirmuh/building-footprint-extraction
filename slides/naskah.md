@@ -1,7 +1,7 @@
 # Naskah presentasi: Ekstraksi Poligon Bangunan pada Permukiman Padat
 
 Naskah ucapan untuk tiap slide `densepoly.pptx` (19 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
-16 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
+17 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
 
 - Naskah ini dibuat `slides/build.js` bersama deck, jadi angkanya sama dengan yang tampil di slide. Untuk mengubahnya,
   ubah `say(...)` di `build.js` lalu bangun ulang; jangan menyunting file ini langsung.
@@ -117,7 +117,9 @@ Gambar ini memecah efek tadi menurut kepadatan. Tiap titik adalah selisih antara
 
 Di dua panel kiri, untuk *head* θ, perbaikannya membesar dari *tile* jarang ke padat. PoLiS: −0,012, −0,021, lalu −0,037 piksel. MTA: −0,42, −0,73, lalu −0,94 derajat.
 
-Tetapi kecenderungan belum tentu bukti. Ketika selisih padat dikurangi jarang diuji, hanya MTA yang signifikan: −0,51 derajat, selang [−0,85; −0,19]. Untuk PoLiS selangnya memuat nol: [−0,054; +0,006]. Karena itu klaim bahwa efek N1 paling besar di area padat tidak saya pakai.
+Dua titik di sebelah kanan tiap panel membagi *tile* dengan cara lain: yang berisi bangunan bersentuhan dan yang tidak. Selang kelompok bersentuhan lebar karena *tile*-nya hanya 146 dari 2.928.
+
+Kembali ke kepadatan: kecenderungan belum tentu bukti. Ketika selisih padat dikurangi jarang diuji, hanya MTA yang signifikan, yaitu −0,51 derajat. Untuk PoLiS selang kepercayaannya memuat nol. Karena itu klaim bahwa efek N1 paling besar di area padat tidak saya pakai.
 
 Panel kanan adalah prior morfologi, gagasan N3. Di sana titik-titiknya berada di atas nol, artinya rumah yang tergabung tidak berkurang. Itu saya bahas di slide berikutnya.
 
