@@ -141,6 +141,25 @@ function writeScript(target, slides) {
     "Ketiga, metode terbaru seperti HiSup dan Pix2Poly dilatih dengan anotasi poligon. Padahal banyak dataset, terutama data daerah, hanya punya *mask* per bangunan.",
     "Jadi pertanyaan penelitian saya: seberapa baik poligon yang bisa dihasilkan kalau model hanya belajar dari *mask*, dan kalau hasilnya dinilai di data yang bebas kebocoran?");
 
+  s = d.slide("*State of the art*: ekstraksi poligon bangunan", "AP dan C-IoU di val CrowdAI, seperti dilaporkan di paper masing-masing.");
+  const reported = (metric, code) => (`NReported${metric}${code}` in numbers ? n(`NReported${metric}${code}`) : "–");
+  const sota = (label, idea, code) => [label, idea, reported("Ap", code), reported("Ciou", code)];
+  d.table(s, ["Metode", "Gagasan utama", "AP", "C-IoU"], [
+    sota("FFL (Girard dkk., 2021)", "Segmentasi + *frame field* yang meluruskan kontur", "Ffl"),
+    sota("PolyWorld (Zorzi dkk., 2022)", "Deteksi titik sudut, dihubungkan *graph neural network*", "Polyworld"),
+    sota("HiSup (Xu dkk., 2023)", "Supervisi hierarkis: titik sudut, garis batas, dan *mask*", "Hisup"),
+    sota("PolyR-CNN (Jiao dkk., 2024)", "R-CNN *end-to-end* yang langsung memprediksi poligon", "Polyrcnn"),
+    sota("Pix2Poly (Adimoolam dkk., 2025)", "*Transformer* yang memprediksi urutan titik sudut", "Pixtopoly"),
+    ["Penelitian ini (FULL-P0), *test* bersih", "Segmentasi + θ dari *mask* + regularisasi klasik", n("NApFull"), n("NCiouFull")],
+  ], { colW: [3.95, 5.55, 1.15, 1.244], align: ["left", "left", "center", "center"],
+    callout: "Angka paper diukur di val CrowdAI yang bocor: tidak sebanding langsung dengan baris terakhir. Banding yang adil ada di slide HiSup." });
+  say("*State of the art*: ekstraksi poligon bangunan",
+    "Sebelum masuk ke gagasan saya, ini peta metode terkini untuk ekstraksi poligon bangunan. Secara garis besar ada dua keluarga.",
+    `Keluarga pertama melakukan segmentasi dulu, lalu merapikan hasilnya. Contohnya FFL, *frame field learning*, yang menambah satu keluaran berupa medan arah untuk meluruskan kontur. AP yang dilaporkan ${n("NReportedApFfl")}. Pendekatan saya paling dekat dengan keluarga ini.`,
+    `Keluarga kedua langsung memprediksi titik sudut poligon. PolyWorld mendeteksi titik sudut lalu menghubungkannya dengan *graph neural network*. HiSup mengawasi titik sudut, garis batas, dan *mask* sekaligus. PolyR-CNN dan Pix2Poly memprediksi poligon secara *end-to-end*. Tiga yang terbaru melaporkan AP sekitar ${n("NReportedApPolyrcnn")} sampai ${n("NReportedApPixtopoly")}, dan itulah yang sekarang dianggap *state of the art*.`,
+    "Ada dua catatan penting. Pertama, metode berbasis titik sudut itu dilatih dengan anotasi poligon, sedangkan penelitian ini hanya memakai *mask*. Kedua, semua angka paper tadi diukur di data validasi CrowdAI yang bocor.",
+    `Baris terakhir adalah model saya di data *test* yang bersih: AP ${n("NApFull")} dan C-IoU ${n("NCiouFull")}. Karena datanya berbeda, baris itu tidak bisa dibandingkan langsung dengan baris di atasnya. Perbandingan yang adil saya tunjukkan nanti, di slide HiSup.`);
+
   s = d.slide("Tiga gagasan yang diuji, dengan aturan yang dibekukan", "Cara menilai tiap gagasan ditulis sebelum ada model yang dilatih.");
   d.numbered(s, [
     { head: "N1: *head* orientasi", body: "Sudut bangunan θ dipelajari dari *mask*, lalu memandu perapian poligon." },
@@ -184,6 +203,24 @@ function writeScript(target, slides) {
     "Baris kedua adalah jaringannya. Inputnya satu *tile* 300 × 300 piksel, yang hanya di-*pad* ke 320 dan tidak diubah ukurannya. Jaringannya U-Net++ dengan *encoder* EfficientNet-B4. Keluarannya lima kanal: tiga kelas, yaitu latar, bangunan, dan kontak, ditambah dua kanal orientasi. Saat *training*, keluaran itu dibandingkan dengan label dari baris pertama lewat *loss* gabungan; itulah arti panah turun di sebelah kanan.",
     "Baris ketiga mengubah keluaran jaringan menjadi poligon. Dari peta kelas dibuat *marker*, yaitu inti tiap rumah, lalu *watershed* memekarkannya sehingga satu gumpalan terpecah menjadi satu *instance* per rumah. Kontur tiap rumah diambil, lalu dirapikan searah θ: bangunan yang hampir persegi menjadi kotak, yang lain disederhanakan dan dindingnya diluruskan. Hasilnya satu poligon per rumah, dalam format COCO JSON dan GeoJSON.",
     "Kotak terakhir adalah evaluasi: poligon dinilai dengan AP, C-IoU, PoLiS, dan MTA, dan hasilnya dilaporkan per tingkat kepadatan. Jadi dari awal sampai akhir, tidak ada anotasi poligon yang dipakai.");
+
+  s = d.slide("Pengolahan citra klasik di dalam alur", "Algoritma tanpa pembelajaran yang dipakai sebelum dan sesudah jaringan.");
+  d.table(s, ["Tahap", "Algoritma", "Perannya di sini"], [
+    ["Label dari *mask*", "Dilasi; *distance transform*; *minAreaRect*", "Kelas kontak; bobot tepi; orientasi θ"],
+    ["Marker", "*Thresholding*, *connected component labeling*", "Inti tiap rumah"],
+    ["Pemisahan rumah", "*Watershed* berbasis marker", "Satu *instance* per rumah"],
+    ["Kontur", "*Marching squares*", "Batas rumah tepat di tepi piksel"],
+    ["Regularisasi", "Momen orde dua; Douglas-Peucker", "Kotak dan poligon siku searah θ"],
+    ["*Baseline* B0", "MBI, Otsu, *opening*, *h-maxima*, *watershed*", `Pembanding tanpa jaringan: AP ${n("NApBzero")}`],
+    ["Prior N3", "*Top-hat* multi-arah (MBI dan peta celah)", "Input tambahan; tidak membantu"],
+  ], { colW: [2.6, 5.2, 4.094], align: ["left", "left", "left"],
+    callout: "Jaringan hanya memberi peta kelas dan θ; pembentukan poligon seluruhnya klasik. *minAreaRect* dan Douglas-Peucker termasuk geometri komputasi." });
+  say("Pengolahan citra klasik di dalam alur",
+    "Karena ini mata kuliah Pengolahan Citra Digital, saya tunjukkan di mana saja algoritma klasik dipakai. Yang saya maksud klasik adalah algoritma tetap, tanpa parameter yang dilatih.",
+    "Lima baris pertama ada di alur utama. Untuk membuat label: dilasi menghasilkan kelas kontak, *distance transform* menghasilkan bobot tepi, dan *minAreaRect* menghasilkan orientasi. Setelah jaringan: *thresholding* dan *connected component labeling* membuat *marker*, *watershed* memisahkan rumah, *marching squares* mengambil kontur, lalu momen orde dua dan algoritma Douglas-Peucker merapikannya menjadi kotak atau poligon siku.",
+    "Jadi jaringan hanya mengerjakan bagian tengah, yaitu dari citra ke peta kelas dan orientasi. Yang mengubah peta itu menjadi satu poligon per rumah seluruhnya algoritma klasik. Untuk tepatnya, *minAreaRect* dan Douglas-Peucker bekerja pada titik dan garis, jadi lebih pas disebut geometri komputasi.",
+    `Baris keenam adalah *baseline* B0, yang seluruhnya klasik tanpa jaringan: indeks bangunan MBI, ambang Otsu, *opening*, lalu *watershed*. AP-nya hanya ${n("NApBzero")}, jadi cara klasik saja tidak cukup untuk data ini.`,
+    "Baris terakhir adalah gagasan N3: peta dari *top-hat* multi-arah dijadikan input tambahan bagi jaringan. Hasilnya tidak membantu, dan itu saya bahas di slide hasil negatif.");
 
   s = d.slide("Label diturunkan otomatis dari *mask*", "Tiga jenis label dibuat dari peta *instance* yang sama.");
   d.cards(s, [
@@ -363,6 +400,8 @@ function writeScript(target, slides) {
     "Xu, B., dkk. (2023). HiSup: Accurate polygonal mapping of buildings in satellite imagery. *ISPRS JPRS*, 198, 284–296.",
     "Adimoolam, Y. K., dkk. (2025). Pix2Poly: A sequence prediction method for polygonal building footprint extraction. *WACV*.",
     "Adimoolam, Y. K., dkk. (2023). Data leakage detection and de-duplication in large scale geospatial image datasets. arXiv:2304.02296.",
+    "Zorzi, S., dkk. (2022). PolyWorld: Polygonal building extraction with graph neural networks in satellite images. *CVPR*.",
+    "Jiao, W., dkk. (2024). PolyR-CNN: R-CNN for end-to-end polygonal building outline extraction. *ISPRS JPRS*, 218, 33–43.",
     "Iglovikov, V. I., dkk. (2018). TernausNetV2: Fully convolutional network for instance segmentation. *CVPRW*.",
     "Huang, X., & Zhang, L. (2011). A multidirectional and multiscale morphological index for automatic building extraction. *PE&RS*, 77(7), 721–732.",
     "Zhou, Z., dkk. (2018). UNet++: A nested U-Net architecture for medical image segmentation. *DLMIA*.",

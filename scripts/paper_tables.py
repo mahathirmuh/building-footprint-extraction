@@ -126,6 +126,14 @@ def numbers() -> dict[str, str]:
     leaky = paths.metrics_file("crowdai", "hisup_release", "ref", "val_full")
     if leaky.exists():
         put("NLeakyApHisup", latex.number("AP", read_json(leaky)["overall"]["AP"]))
+    reported = _load("crowdai", "paper")
+    if reported:  # as printed in the other papers (configs/paper_numbers.yaml): the state-of-the-art slide quotes them
+        codes = {"ffl": "Ffl", "polyworld": "Polyworld", "hisup": "Hisup", "polyrcnn": "Polyrcnn", "pix2poly": "Pixtopoly"}
+        for key, code in codes.items():
+            values = reported["rows"].get(key, {}).get("values", {})
+            for metric, short in (("AP", "Ap"), ("CIoU", "Ciou")):
+                if metric in values:
+                    put(f"NReported{short}{code}", str(values[metric]))
     exploratory = _load("crowdai", "exploratory")
     if exploratory:
         names = {"b3->b3m": "RegBinary", "b3m->full_p0": "BinaryToFull", "full_p0->full_y": "SeedFull",
