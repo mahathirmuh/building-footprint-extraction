@@ -2407,4 +2407,7 @@ Tes: 779 lolos.
 - Slide baru nomor 2, "Inti presentasi dalam tiga pertanyaan" (masalahnya apa, ketemunya apa, kenapa itu penting). Deck
   menjadi 20 slide; `slides/densepoly.pdf` dibangun ulang (20 halaman). Yang diperiksa di PDF baru: halaman 2, 3, dan
   halaman penutup; halaman lain tidak dibaca ulang.
+- Slide 5 diganti: daftar bernomor "Alur metode" menjadi diagram "Arsitektur: alur pengerjaan dari awal sampai akhir" (tiga
+  baris berkotak dan berpanah: data dan label, jaringan, poligon dan evaluasi; `flowLanes` di `slides/build.js`). Kartu
+  "Ketemunya apa?" di slide 2 diperjelas (arti C-IoU; dua angka AP HiSup tanpa kata "turun"). Halaman 2 dan 5 diperiksa di PDF.
 
