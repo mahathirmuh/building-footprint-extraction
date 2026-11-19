@@ -2371,3 +2371,7 @@ median 0,53° dan p90 5,28°.
 **Status:** tahap 2 (seed 1 dan 2, ±2,9 jam GPU, lalu `test` dan tabel `n1_frozen`) menunggu persetujuan pemilik proyek.
 Tidak ada yang berjalan sejak 18 Nov 2026 00.49 WIB.
 
+**Persetujuan tahap 2 (19 Nov 2026, 08.45 WIB).** Pemilik proyek menyetujui lanjutan ("lanjut"): seed 1 dan 2 (±2,9 jam GPU),
+lalu evaluasi `test` untuk ketiga seed dan tabel `n1_frozen` dengan aturan beku §11. Antrean `phase12.sh` dijalankan lagi
+dengan penanda `logs/phase12_go`; langkah tahap 1 dilewati lewat penandanya.
+
