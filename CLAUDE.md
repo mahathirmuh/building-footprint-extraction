@@ -71,12 +71,12 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   Eksploratif (12 Nov 2026): B3m (mask B3 + `mar`) AP 64,89, C-IoU 76,97, mengungguli FULL-P0 di semua metrik kecuali merge rate (2,81% lawan 1,96%).
   Fase 9 selesai dan disetujui (12 Nov 2026; FULL+Y masuk laporan): seed YOLOv8n-OBB menurunkan merge rate FULL-P0 1,96% → 1,52% (Δ −0,45 [−0,56; −0,35]) dan B3m
   2,81% → 2,14%, dengan AP setara dan split rate naik (+0,24 dan +0,37 poin). B3m+Y tetap di atas FULL+Y di AP (64,79 lawan 61,87).
-  Fase 10 berjalan sejak 12 Nov 2026 dan tinggal menunggu pemilik proyek: `notebooks/full_pipeline.ipynb` (dieksekusi; run dari awal
+  Fase 10 selesai dan disetujui (19 Nov 2026): `notebooks/full_pipeline.ipynb` (dieksekusi; run dari awal
   FULL-P0 seed 0 AP 62,72, run beku 62,73), `notebooks/demo_hasil.ipynb`, `paper/` (naskah IEEEtran; `paper/main.pdf`, 8 halaman,
   dikompilasi 17 Nov 2026 lewat GitHub Actions `.github/workflows/paper.yml` karena server tidak punya LaTeX),
   `slides/densepoly.pptx` dan `slides/densepoly.pdf` (24 slide sejak 19 Nov 2026, dengan naskah ucapan `slides/naskah.md`; PDF dikonversi LibreOffice lewat `.github/workflows/slides.yml` dan
-  sudah diperiksa slide demi slide pada 17 Nov 2026, belum dibuka di PowerPoint), dan ringkasan keterbatasan sudah ada. Fase 10
-  tinggal menunggu persetujuan pemilik proyek; rinciannya di akhir `docs/progress.md`.
+  halaman yang baru atau berubah diperiksa pada 19 Nov 2026, belum dibuka di PowerPoint), dan ringkasan keterbatasan sudah ada;
+  rinciannya di `docs/progress.md`.
   Fase 11 (eksploratif; mulai 14 Nov 2026) selesai dan disetujui (17 Nov 2026), tanpa eksperimen lanjutan: B3θ = B3 + head θ, 3 seed,
   aturan beku `docs/EXPERIMENTS.md` §10. "Head θ membantu di jalur biner" **tidak didukung**: di strata padat `test`,
   B3m → B3θ `PoLiS_paired` +0,084 px, `MTA_inst` +0,30°, AP −2,26. Pemanduan θ tetap membantu (B3θ′ → B3θ: −0,016 px, −0,18°),
@@ -88,7 +88,7 @@ Rencana kerja per fase ada di `PLAN.md`. Detail ada di `docs/`:
   Tahap 2 (seed 1–2, `test`) disetujui dan selesai 19 Nov 2026: aturan beku §11 **terpenuhi**. Di strata padat `test`,
   B3m → B3+θ `PoLiS_paired` −0,011 px [−0,013; −0,008], `MTA_inst` −0,24° [−0,33; −0,16], AP −0,12 (semua tile: AP −0,34).
   B3+θ `test`: AP 64,55 ± 0,24, C-IoU 76,90, merge rate 2,81%. Eksploratif: keputusan N1–N3 tidak berubah; B3m tetap tertinggi
-  di AP. Kecepatan B3+θ tidak diukur (batas GPU 65%). Fase 12 menunggu persetujuan pemilik proyek untuk ditutup.
+  di AP. Kecepatan B3+θ tidak diukur (batas GPU). Fase 12 selesai dan disetujui (19 Nov 2026).
 
 ## Cara bekerja di proyek ini
 
@@ -181,8 +181,10 @@ Path data selalu dari variabel lingkungan `DENSEPOLY_DATA` (default `./data`), o
   `docs/COLAB.md` tetap berlaku bila kembali ke Colab). Pekerjaan CPU berat (hash ±0,6 jam-inti, prior ±14 jam-inti,
   evaluasi val penuh, tuning post-processing) juga di server itu. Selalu ukur dulu di sampel kecil dan minta konfirmasi.
   GPU dan CPU server dipakai bersama proyek lain: cek `nvidia-smi` sebelum benchmark.
-  **Batas GPU 65%** (pemilik proyek, 19 Nov 2026, setelah GPU lepas dari bus saat training): semua pekerjaan GPU
-  dijalankan dengan `DENSEPOLY_GPU_DUTY=0.5` (utilisasi terukur ≤ 60%); benchmark kecepatan tidak dijalankan.
+  **Batas GPU 75%** (pemilik proyek, 19 Nov 2026: mula-mula 65% setelah GPU lepas dari bus saat training, lalu diubah menjadi
+  75%): semua pekerjaan GPU dijalankan dengan `DENSEPOLY_GPU_DUTY`. Terukur: 0.5 memberi utilisasi rata-rata ±50%, puncak 61%.
+  Nilai lebih tinggi (mis. 0.6) harus diukur dulu 1 menit dengan `nvidia-smi` dan puncaknya harus di bawah 75%. Benchmark
+  kecepatan tetap tidak dijalankan.
 - Bobot pretrained smp diunduh dari Hugging Face Hub (`smp-hub/efficientnet-b4.imagenet`). Tes selalu memakai
   `encoder_weights=None`.
 

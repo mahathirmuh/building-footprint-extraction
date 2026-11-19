@@ -2459,3 +2459,7 @@ subbab eksploratif (tabel baru `frozen_theta`), diskusi, dan kesimpulan menyebut
 B3+θ. `notebooks/demo_hasil.ipynb` (40 sel): subbab baru 7.8 membaca tabel `n1_frozen`; dijalankan dari atas ke bawah tanpa galat,
 ekspornya di `outputs/report/` diperbarui. `pytest -q`: 779 lolos.
 
+**Penutupan Fase 10 dan Fase 12 (19 Nov 2026).** Pemilik proyek menyetujui penutupan keduanya ("1. oke"). Permintaan lain di pesan
+yang sama: mencari metode SOTA 2026 untuk slide 4 ("2. boleh"), dan batas GPU diubah dari 65% menjadi **75%** ("3. ubah jadi 75%").
+Batas itu tetap diterapkan pada proses kita lewat `DENSEPOLY_GPU_DUTY`; nilai di atas 0.5 belum diukur.
+

@@ -255,6 +255,8 @@ B5 (seed 0) di `crowdai/test` tersedia, total dan per strata.
 Run all" di runtime baru dan ekspor HTML-nya ada; `notebooks/full_pipeline.ipynb` selesai dieksekusi sesuai cakupan yang disepakati dan
 ekspornya ada; PDF paper berhasil dikompilasi dari sumber LaTeX-nya; PPT presentasi ada; `docs/progress.md` lengkap.
 
+**Status:** selesai dan disetujui 19 Nov 2026.
+
 ---
 
 ## Fase 11 — (Eksploratif) Head θ di jalur biner: B3θ
@@ -285,6 +287,8 @@ Disetujui 17 Nov 2026, setelah hasil Fase 11. Rancangan, gerbang pilot, dan atur
 
 **Selesai jika:** hasil gerbang tercatat; bila lolos, tabel `n1_frozen` ada beserta keputusan aturan §11; hasilnya (positif
 atau negatif) tercatat di `docs/progress.md` dan di bahan laporan.
+
+**Status:** selesai dan disetujui 19 Nov 2026. Gerbang lolos; aturan §11 terpenuhi (eksploratif).
 
 ---
 
