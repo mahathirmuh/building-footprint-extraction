@@ -6,12 +6,12 @@ Naskah ucapan untuk tiap slide `densepoly.pptx` (32 slide), untuk dosen dan reka
 - Naskah ini dibuat `slides/build.js` bersama deck, jadi angkanya sama dengan yang tampil di slide. Untuk mengubahnya,
   ubah `say(...)` di `build.js` lalu bangun ulang; jangan menyunting file ini langsung.
 - Istilah Inggris dicetak miring. Angka di dalam kurung siku adalah selang kepercayaan 95%.
-- Bila waktu hanya ±10 menit: lewati slide "Eksploratif" dan "WHU dan biaya komputasi", dan sebut isinya dalam satu
-  kalimat di slide Kesimpulan.
+- **Versi singkat, sekitar 14 menit:** hanya slide bertanda (inti), yaitu slide 1, 2, 6, 7, 13, 16, 18, 20, 21, 24, 27, 30, 32.
+  Slide lain adalah rincian dan cadangan untuk tanya jawab.
 
 ## Slide 1: Sampul
 
-*±0,5 menit*
+*±0,5 menit · inti*
 
 Selamat pagi, Bapak/Ibu dosen dan teman-teman. Saya Mahathir Muhammad, NRP 6025252008. Saya akan mempresentasikan *final project* mata kuliah Pengolahan Citra Digital, berjudul Ekstraksi Poligon Bangunan pada Permukiman Padat.
 
@@ -19,7 +19,7 @@ Singkatnya: dari foto udara, saya ingin komputer menggambar denah atap setiap ru
 
 ## Slide 2: Inti presentasi dalam tiga pertanyaan
 
-*±1,5 menit*
+*±1,5 menit · inti*
 
 Sebelum masuk ke rincian, saya rangkum dulu seluruh presentasi ini dalam tiga pertanyaan.
 
@@ -77,7 +77,7 @@ Jadi posisinya begini: belum ada karya yang menggabungkan empat ciri pertama, da
 
 ## Slide 6: Kebaruan penelitian: tiga gagasan yang diuji
 
-*±1,5 menit*
+*±1,5 menit · inti*
 
 Ini kebaruan penelitian saya: tiga gagasan, dan ketiganya saya uji.
 
@@ -93,7 +93,7 @@ Satu hal lagi yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap 
 
 ## Slide 7: Metode yang diusulkan
 
-*±1,5 menit*
+*±1,5 menit · inti*
 
 Inilah metode yang saya usulkan, dalam dua baris: jaringannya di atas, pembentukan poligonnya di bawah.
 
@@ -175,7 +175,7 @@ Dua kolom terakhir adalah hasil pengolahan citra klasik. MBI menonjolkan struktu
 
 ## Slide 13: Evaluasi tanpa kebocoran data
 
-*±1 menit*
+*±1 menit · inti*
 
 Bagian ini menurut saya yang paling penting. Dataset CrowdAI punya masalah yang sudah dilaporkan peneliti lain: banyak citra validasi yang sama persis dengan citra train, atau hanya diputar dan dicerminkan. Model seolah diuji dengan soal yang sudah pernah dilihatnya, sehingga angkanya terlalu optimistis.
 
@@ -217,7 +217,7 @@ Dua baris terakhir adalah gagasan saya. *Head* θ, di FULL-P0, menambah sedikit 
 
 ## Slide 16: Hasil utama di CrowdAI *test*
 
-*±1,5 menit*
+*±1,5 menit · inti*
 
 Tabel ini merangkum hasil di data *test*, rata-rata tiga *seed*. Sebelum membacanya, sedikit tentang metriknya. AP mengukur ketepatan deteksi tiap bangunan; makin besar makin baik. C-IoU adalah IoU yang dikenai penalti bila jumlah titik sudut poligon jauh dari *ground truth*, jadi ia mengukur kerapian. MTA adalah galat sudut dinding dalam derajat. *Merge rate* adalah persentase rumah yang tergabung dengan tetangganya. Untuk MTA dan *merge rate*, makin kecil makin baik.
 
@@ -243,7 +243,7 @@ Jadi kepadatan tidak mengubah siapa yang unggul di tiap metrik, tetapi memperleb
 
 ## Slide 18: N1 didukung: *head* θ merapikan poligon
 
-*±1 menit*
+*±1 menit · inti*
 
 Sekarang gagasan pertama. Yang dibandingkan adalah B5 dan FULL-P0, di 857 *tile* terpadat. Di B5, sudut perapian diambil dari kotak terkecil kontur hasil prediksi. Di FULL-P0, jaringan dilatih dengan *head* θ dan sudutnya dibaca dari *head* itu.
 
@@ -269,7 +269,7 @@ Panel kanan adalah prior morfologi, gagasan N3. Di sana titik-titiknya berada di
 
 ## Slide 20: Dua hasil negatif, dilaporkan apa adanya
 
-*±1 menit*
+*±1 menit · inti*
 
 Dua bagian yang dirancang untuk memisahkan rumah berdempetan ternyata tidak bekerja seperti yang saya harapkan.
 
@@ -281,7 +281,7 @@ Keduanya saya laporkan apa adanya, karena hasil negatif yang diukur dengan benar
 
 ## Slide 21: Banding dengan HiSup di data tanpa kebocoran
 
-*±1,5 menit*
+*±1,5 menit · inti*
 
 Bagaimana posisi hasil ini dibanding metode terbaik? Pembandingnya HiSup, metode ekstraksi poligon bangunan dari Xu dan rekan-rekannya tahun 2023, yang dilatih dengan anotasi poligon dan termasuk yang terbaik di CrowdAI. HiSup merilis file prediksinya, jadi bisa saya nilai ulang dengan kode evaluasi yang sama, tanpa menjalankan modelnya.
 
@@ -319,7 +319,7 @@ Jadi pemanduan θ juga memperbaiki *baseline* terkuat, asalkan *mask*-nya dilind
 
 ## Slide 24: Sebelum dan sesudah regularisasi
 
-*±1 menit*
+*±1 menit · inti*
 
 Ini gambar sebelum dan sesudahnya, pada dua *tile* padat dari data *test*. Dari kiri: citra aslinya, kontur sebelum dirapikan, poligon sesudah dirapikan, dan *ground truth*.
 
@@ -353,7 +353,7 @@ Dari sisi biaya, modelnya 20,81 juta parameter. Alur penuh, dari citra sampai po
 
 ## Slide 27: Ringkasan hasil
 
-*±1 menit*
+*±1 menit · inti*
 
 Sebelum ke keterbatasan, ini seluruh hasil dalam satu tabel.
 
@@ -401,7 +401,7 @@ Kelima, data dan bentuk lain: menguji metode ini di citra permukiman padat Indon
 
 ## Slide 30: Kesimpulan
 
-*±1 menit*
+*±1 menit · inti*
 
 Ada empat hal yang bisa dibawa pulang.
 
@@ -423,6 +423,6 @@ Ini rujukan utama yang saya pakai. Daftar lengkapnya ada di naskah paper.
 
 ## Slide 32: Penutup
 
-*±0,5 menit*
+*±0,5 menit · inti*
 
 Demikian presentasi saya. Kode, konfigurasi, dan semua angka di slide ini bisa direproduksi dari repositori proyek. Terima kasih atas perhatiannya. Saya persilakan bila ada pertanyaan atau masukan.

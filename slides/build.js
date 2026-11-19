@@ -74,12 +74,24 @@ function flowLanes(d, s, lanes, links = [], o = {}) {
 const script = [];
 const say = (title, ...paragraphs) => script.push({ title, paragraphs });
 const WORDS_PER_MINUTE = 125; // a calm pace for a talk in Bahasa Indonesia; only used for the time estimates
+/** The slides of a short talk; the others are detail or backup for questions. Titles as given to say(). */
+const CORE = [
+  "Sampul", "Inti presentasi dalam tiga pertanyaan", "Kebaruan penelitian: tiga gagasan yang diuji", "Metode yang diusulkan",
+  "Evaluasi tanpa kebocoran data", "Hasil utama di CrowdAI *test*", "N1 didukung: *head* θ merapikan poligon",
+  "Dua hasil negatif, dilaporkan apa adanya", "Banding dengan HiSup di data tanpa kebocoran", "Sebelum dan sesudah regularisasi",
+  "Ringkasan hasil", "Kesimpulan", "Penutup",
+];
 
 function writeScript(target, slides) {
   if (script.length !== slides) throw new Error(`${script.length} say() for ${slides} slides: every slide needs its words`);
   const words = (item) => item.paragraphs.join(" ").replace(/\*/g, "").split(/\s+/).filter(Boolean).length;
   const minutes = (count) => Math.max(0.5, Math.round((count / WORDS_PER_MINUTE) * 2) / 2).toString().replace(".", ",");
   const total = script.reduce((sum, item) => sum + words(item), 0);
+  const unknown = CORE.filter((title) => !script.some((item) => item.title === title));
+  if (unknown.length) throw new Error(`CORE names slides without a say(): ${unknown.join("; ")}`);
+  const isCore = (item) => CORE.includes(item.title);
+  const coreWords = script.filter(isCore).reduce((sum, item) => sum + words(item), 0);
+  const coreNumbers = script.map((item, i) => (isCore(item) ? i + 1 : 0)).filter(Boolean).join(", ");
   const lines = [
     "# Naskah presentasi: Ekstraksi Poligon Bangunan pada Permukiman Padat",
     "",
@@ -89,12 +101,12 @@ function writeScript(target, slides) {
     "- Naskah ini dibuat `slides/build.js` bersama deck, jadi angkanya sama dengan yang tampil di slide. Untuk mengubahnya,",
     "  ubah `say(...)` di `build.js` lalu bangun ulang; jangan menyunting file ini langsung.",
     "- Istilah Inggris dicetak miring. Angka di dalam kurung siku adalah selang kepercayaan 95%.",
-    "- Bila waktu hanya ±10 menit: lewati slide \"Eksploratif\" dan \"WHU dan biaya komputasi\", dan sebut isinya dalam satu",
-    "  kalimat di slide Kesimpulan.",
+    `- **Versi singkat, sekitar ${Math.round(coreWords / WORDS_PER_MINUTE)} menit:** hanya slide bertanda (inti), yaitu slide ${coreNumbers}.`,
+    "  Slide lain adalah rincian dan cadangan untuk tanya jawab.",
     "",
   ];
   script.forEach((item, i) => {
-    lines.push(`## Slide ${i + 1}: ${item.title}`, "", `*±${minutes(words(item))} menit*`, "");
+    lines.push(`## Slide ${i + 1}: ${item.title}`, "", `*±${minutes(words(item))} menit${isCore(item) ? " · inti" : ""}*`, "");
     for (const paragraph of item.paragraphs) lines.push(paragraph, "");
   });
   fs.writeFileSync(target, lines.join("\n").replace(/\n+$/, "\n"));
