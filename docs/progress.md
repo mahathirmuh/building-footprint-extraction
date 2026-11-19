@@ -2441,8 +2441,8 @@ dari 0,5 poin. Ini eksploratif (§8 poin 7): keputusan N1–N3, kriteria §8, da
 **Kelemahan.**
 1. Efeknya kecil: sekitar 0,8% dari `PoLiS_paired` dan 0,7% dari `MTA_inst`.
 2. AP sedikit turun (−0,12 di strata padat, −0,34 di semua tile), walau di dalam batas 0,5 poin.
-3. Cabang membaca θ lebih kasar dari `minAreaRect` di p90 (4,24° lawan 3,20°); perbaikannya datang dari bangunan yang kotaknya
-   menyesatkan, bukan dari ketelitian rata-rata.
+3. Cabang membaca θ lebih kasar dari `minAreaRect` di p90 (4,24° lawan 3,20°). Dugaan (belum diuji): perbaikannya datang dari
+   bangunan yang kotak terkecilnya menyesatkan, bukan dari ketelitian rata-rata.
 4. Kecepatan B3+θ tidak diukur (benchmark butuh GPU penuh, sedangkan GPU dibatasi 65%).
 5. Satu konfigurasi cabang saja; ditambahkan setelah hasil Fase 6–9 ada.
 
@@ -2453,4 +2453,9 @@ dikerjakan sesi interaktif, bukan sesi latar (`logs/phase12_writeup.lock` dibuat
 menyunting deck di sesi yang sama.
 
 **Status.** Fase 12 selesai dikerjakan dan **menunggu persetujuan pemilik proyek** untuk ditutup; Fase 10 juga.
+
+**Paper, notebook, dan tes (19 Nov 2026, setelah hasil Fase 12).** `paper/main.tex`: abstrak, kontribusi, varian, aturan keputusan,
+subbab eksploratif (tabel baru `frozen_theta`), diskusi, dan kesimpulan menyebut B3+θ; tabel skenario bertambah baris B3+θ′ dan
+B3+θ. `notebooks/demo_hasil.ipynb` (40 sel): subbab baru 7.8 membaca tabel `n1_frozen`; dijalankan dari atas ke bawah tanpa galat,
+ekspornya di `outputs/report/` diperbarui. `pytest -q`: 779 lolos.
 
