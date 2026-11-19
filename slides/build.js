@@ -76,14 +76,27 @@ function writeScript(target, slides) {
     "Selamat pagi, Bapak/Ibu dosen dan teman-teman. Saya Mahathir Muhammad, NRP 6025252008. Saya akan mempresentasikan *final project* mata kuliah Pengolahan Citra Digital, berjudul Ekstraksi Poligon Bangunan pada Permukiman Padat.",
     "Singkatnya: dari foto udara, saya ingin komputer menggambar denah atap setiap rumah sebagai poligon yang rapi, termasuk di kawasan yang rumahnya saling berdempetan.");
 
-  let s = d.slide("Mengapa poligon, dan mengapa permukiman padat?", "Peta butuh satu poligon rapi per rumah, bukan *mask* piksel.");
+  let s = d.slide("Inti presentasi dalam tiga pertanyaan", "Masalah, temuan, dan artinya; slide berikutnya menguraikan satu per satu.");
+  d.cards(s, [
+    { head: "Masalahnya apa?", body: "Peta butuh satu poligon rapi per rumah. Di permukiman padat, atap berdempetan terbaca sebagai satu gumpalan. Metode terbaik butuh anotasi poligon, dan data uji CrowdAI bocor ke data latih." },
+    { head: "Ketemunya apa?", body: `Dari *mask* saja, regularisasi menaikkan C-IoU dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}. *Head* θ menambah sedikit kerapian. Prior morfologi dan kelas kontak tidak membantu. Di data bersih, HiSup turun dari ${n("NLeakyApHisup")} ke ${n("NCleanApHisup")} AP.` },
+    { head: "Kenapa itu penting?", body: "Banyak daerah hanya punya *mask*: poligon rapi tetap bisa dibuat tanpa anotasi poligon. Angka *benchmark* yang bocor terlalu optimistis, jadi metode harus dibandingkan di data bersih." },
+  ]);
+  say("Inti presentasi dalam tiga pertanyaan",
+    "Sebelum masuk ke rincian, saya rangkum dulu seluruh presentasi ini dalam tiga pertanyaan.",
+    "Pertama, masalahnya apa? Peta membutuhkan satu poligon yang rapi untuk tiap rumah. Di permukiman padat itu sulit, karena atap yang berdempetan terbaca sebagai satu gumpalan. Selain itu, metode terbaik saat ini membutuhkan anotasi poligon, dan data uji CrowdAI yang biasa dipakai ternyata bocor ke data latih.",
+    `Kedua, ketemunya apa? Dari *mask* saja, langkah regularisasi sudah membuat poligon jauh lebih rapi: C-IoU naik dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}. *Head* orientasi menambah kerapian sedikit lagi. Dua gagasan lain, yaitu prior morfologi dan kelas kontak, tidak membantu. Dan di data yang bersih, AP HiSup sendiri turun dari ${n("NLeakyApHisup")} ke ${n("NCleanApHisup")}.`,
+    "Ketiga, kenapa itu penting? Banyak daerah hanya punya data *mask*, jadi poligon yang rapi tetap bisa dibuat tanpa anotasi poligon. Dan angka *benchmark* yang bocor ternyata terlalu optimistis, sehingga metode seharusnya dibandingkan di data yang bersih.",
+    "Slide-slide berikutnya menguraikan ketiga jawaban itu satu per satu.");
+
+  s = d.slide("Mengapa poligon, dan mengapa permukiman padat?", "Peta butuh satu poligon rapi per rumah, bukan *mask* piksel.");
   d.cards(s, [
     { head: "Poligon, bukan *mask*", body: "Peta dan SIG memakai poligon dengan sedikit verteks dan dinding lurus. *Mask* hasil segmentasi bergerigi dan boros verteks." },
     { head: "Atap berdempetan", body: "Di permukiman padat, beberapa rumah mudah terbaca sebagai satu gumpalan. Satu poligon gabungan menyembunyikan banyak rumah." },
     { head: "Tanpa anotasi poligon", body: "Metode terbaru dilatih dengan anotasi poligon. Banyak dataset daerah hanya punya *mask* per bangunan." },
   ], { callout: "Seberapa baik poligon yang dihasilkan hanya dari *mask*, bila dievaluasi tanpa kebocoran data?" });
   say("Mengapa poligon, dan mengapa permukiman padat?",
-    "Ada tiga alasan saya memilih topik ini. Pertama, peta dan sistem informasi geografis menyimpan bangunan sebagai poligon, yaitu beberapa titik sudut yang dihubungkan dinding lurus. Keluaran segmentasi citra berbeda: bentuknya *mask*, kumpulan piksel yang tepinya bergerigi. Kalau *mask* langsung dijadikan poligon, titik sudutnya bisa ratusan dan dindingnya tidak lurus.",
+    "Saya mulai dari masalahnya, yang punya tiga sisi. Pertama, peta dan sistem informasi geografis menyimpan bangunan sebagai poligon, yaitu beberapa titik sudut yang dihubungkan dinding lurus. Keluaran segmentasi citra berbeda: bentuknya *mask*, kumpulan piksel yang tepinya bergerigi. Kalau *mask* langsung dijadikan poligon, titik sudutnya bisa ratusan dan dindingnya tidak lurus.",
     "Kedua, di permukiman padat atap rumah saling menempel, sehingga beberapa rumah sering terbaca sebagai satu gumpalan besar. Untuk pemetaan itu masalah, karena satu poligon gabungan menyembunyikan banyak rumah.",
     "Ketiga, metode terbaru seperti HiSup dan Pix2Poly dilatih dengan anotasi poligon. Padahal banyak dataset, terutama data daerah, hanya punya *mask* per bangunan.",
     "Jadi pertanyaan penelitian saya: seberapa baik poligon yang bisa dihasilkan kalau model hanya belajar dari *mask*, dan kalau hasilnya dinilai di data yang bebas kebocoran?");
