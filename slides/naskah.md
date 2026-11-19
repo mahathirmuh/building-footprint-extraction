@@ -1,7 +1,7 @@
 # Naskah presentasi: Ekstraksi Poligon Bangunan pada Permukiman Padat
 
-Naskah ucapan untuk tiap slide `densepoly.pptx` (23 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
-24 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
+Naskah ucapan untuk tiap slide `densepoly.pptx` (24 slide), untuk dosen dan rekan mahasiswa. Lama bicara kira-kira
+25 menit pada 125 kata per menit; perkiraan per slide ada di tiap judul.
 
 - Naskah ini dibuat `slides/build.js` bersama deck, jadi angkanya sama dengan yang tampil di slide. Untuk mengubahnya,
   ubah `say(...)` di `build.js` lalu bangun ulang; jangan menyunting file ini langsung.
@@ -45,15 +45,15 @@ Ketiga, metode terbaru seperti HiSup dan Pix2Poly dilatih dengan anotasi poligon
 
 Jadi pertanyaan penelitian saya: seberapa baik poligon yang bisa dihasilkan kalau model hanya belajar dari *mask*, dan kalau hasilnya dinilai di data yang bebas kebocoran?
 
-## Slide 4: *State of the art*: ekstraksi poligon bangunan
+## Slide 4: *State of the art* 2022–2026: ekstraksi poligon bangunan
 
 *±1,5 menit*
 
-Sebelum masuk ke gagasan saya, ini peta metode terkini untuk ekstraksi poligon bangunan. Secara garis besar ada dua keluarga.
+Sebelum masuk ke gagasan saya, ini peta metode terkini untuk ekstraksi poligon bangunan, dalam lima tahun terakhir.
 
-Keluarga pertama melakukan segmentasi dulu, lalu merapikan hasilnya. Contohnya FFL, *frame field learning*, yang menambah satu keluaran berupa medan arah untuk meluruskan kontur. AP yang dilaporkan 61,3. Pendekatan saya paling dekat dengan keluarga ini.
+Semua metode di tabel ini langsung memprediksi titik sudut poligon. PolyWorld, tahun 2022, mendeteksi titik sudut lalu menghubungkannya dengan *graph neural network*. HiSup, tahun 2023, mengawasi titik sudut, garis batas, dan *mask* sekaligus. PolyR-CNN, tahun 2024, dan Pix2Poly, tahun 2025, memprediksi poligon secara *end-to-end*.
 
-Keluarga kedua langsung memprediksi titik sudut poligon. PolyWorld mendeteksi titik sudut lalu menghubungkannya dengan *graph neural network*. HiSup mengawasi titik sudut, garis batas, dan *mask* sekaligus. PolyR-CNN dan Pix2Poly memprediksi poligon secara *end-to-end*. Tiga yang terbaru melaporkan AP sekitar 79,2 sampai 79,6, dan itulah yang sekarang dianggap *state of the art*.
+Tiga yang terbaru melaporkan AP sekitar 79,2 sampai 79,6, dan itulah yang sekarang dianggap *state of the art*. Pendekatan saya berbeda keluarga: segmentasi dulu, lalu dirapikan, seperti *frame field learning* dari tahun 2021 yang menjadi pendahulunya.
 
 Ada dua catatan penting. Pertama, metode berbasis titik sudut itu dilatih dengan anotasi poligon, sedangkan penelitian ini hanya memakai *mask*. Kedua, semua angka paper tadi diukur di data validasi CrowdAI yang bocor.
 
@@ -141,7 +141,21 @@ Klaster itu lalu dibagi: 23.427 *tile* untuk train, 1.000 untuk menyetel *post-p
 
 Setiap selisih antarmodel dihitung berpasangan pada *tile* yang sama, dengan tiga *seed* dan *bootstrap* seribu replikasi. Dan semua parameter disetel di data tuning; data *test* tidak pernah dipakai untuk menyetel apa pun.
 
-## Slide 11: Hasil utama di CrowdAI *test*
+## Slide 11: Ablasi: satu perubahan per langkah
+
+*±1 menit*
+
+Ini tabel ablasinya. Tiap baris menambah satu komponen ke baris di atasnya, jadi pengaruh tiap komponen bisa dibaca sendiri-sendiri.
+
+Baris pertama, B0, adalah cara klasik saja tanpa jaringan: AP-nya hanya 0,08. Begitu jaringan dipakai, di B1, AP langsung menjadi 63,54. Mengganti U-Net dengan U-Net++, di B2, hampir tidak mengubah apa-apa. Menambah bobot tepi pada *loss*, di B3, menaikkan AP menjadi 65,74.
+
+Di B4, kelas kontak dan *watershed* ditambahkan. *Merge rate* turun dari 2,84 menjadi 2,07 persen, artinya lebih sedikit rumah yang tergabung. Tetapi AP ikut turun menjadi 62,91. Inilah harga dari jalur tiga kelas.
+
+Lompatan terbesar ada di B5, saat regularisasi masuk: C-IoU naik dari 62,69 ke 73,87, dan galat sudut MTA turun dari 47,11 ke 37,30 derajat.
+
+Dua baris terakhir adalah gagasan saya. *Head* θ, di FULL-P0, menambah sedikit kerapian: C-IoU 74,55 dan MTA 36,34. Prior morfologi, di FULL-P2, tidak membawa perbaikan. Dua hal itu saya uji lebih teliti di slide-slide berikutnya.
+
+## Slide 12: Hasil utama di CrowdAI *test*
 
 *±1 menit*
 
@@ -155,7 +169,7 @@ Ketiga, jalur tiga kelas lebih baik memisahkan rumah: *merge rate* FULL-P0 1,96%
 
 Jadi tidak ada satu model yang menang di semua kolom. Itu saya uraikan satu per satu.
 
-## Slide 12: N1 didukung: *head* θ merapikan poligon
+## Slide 13: N1 didukung: *head* θ merapikan poligon
 
 *±1 menit*
 
@@ -167,7 +181,7 @@ AP berubah +0,35 poin, jadi kerapian itu tidak dibayar dengan akurasi deteksi.
 
 Menurut aturan yang sudah dibekukan, N1 dinyatakan didukung. Tetapi saya harus jujur soal besarnya: efeknya kecil, jauh di bawah satu piksel. Jadi kesimpulannya, *head* θ membantu secara konsisten, bukan membantu secara besar.
 
-## Slide 13: Efek N1 membesar di *tile* padat
+## Slide 14: Efek N1 membesar di *tile* padat
 
 *±1 menit*
 
@@ -181,7 +195,7 @@ Kembali ke kepadatan: kecenderungan belum tentu bukti. Ketika selisih padat diku
 
 Panel kanan adalah prior morfologi, gagasan N3. Di sana titik-titiknya berada di atas nol, artinya rumah yang tergabung tidak berkurang. Itu saya bahas di slide berikutnya.
 
-## Slide 14: Dua hasil negatif, dilaporkan apa adanya
+## Slide 15: Dua hasil negatif, dilaporkan apa adanya
 
 *±1 menit*
 
@@ -193,7 +207,7 @@ Yang kedua kelas kontak. Di 6 dari 9 *run* FULL, jaringan tidak pernah memilih k
 
 Keduanya saya laporkan apa adanya, karena hasil negatif yang diukur dengan benar tetap berguna bagi yang ingin mencoba gagasan serupa.
 
-## Slide 15: Banding dengan HiSup di data tanpa kebocoran
+## Slide 16: Banding dengan HiSup di data tanpa kebocoran
 
 *±1,5 menit*
 
@@ -207,7 +221,7 @@ Ambang "mendekati metode terbaik" yang saya bekukan sejak awal adalah tiga poin 
 
 Temuan yang menurut saya lebih penting di slide ini adalah baris pertama dan kedua: angka HiSup sendiri turun jauh begitu duplikat disingkirkan. Artinya angka di *benchmark* CrowdAI perlu dibaca dengan hati-hati.
 
-## Slide 16: Eksploratif: *baseline* sederhana dan *seed* detektor
+## Slide 17: Eksploratif: *baseline* sederhana dan *seed* detektor
 
 *±1 menit*
 
@@ -219,19 +233,19 @@ Yang kedua, sebuah detektor kecil, YOLOv8n-OBB, yang juga dilatih dari *mask*, d
 
 Jadi gambaran besarnya: jalur biner paling akurat dan paling rapi, jalur tiga kelas paling baik memisahkan rumah berdempetan, dan benih dari detektor membantu keduanya.
 
-## Slide 17: Eksploratif: *head* θ di jalur biner tidak membantu
+## Slide 18: Eksploratif: *head* θ di jalur biner
 
-*±1 menit*
+*±1,5 menit*
 
-Karena B3m paling kuat, pertanyaan yang wajar: bagaimana kalau *head* θ dipasang di jalur biner itu? Percobaan ini juga eksploratif, tetapi aturan penilaiannya tetap saya bekukan sebelum *training*.
+Karena B3m paling kuat, pertanyaan yang wajar: bagaimana kalau *head* θ dipasang di jalur biner itu? Saya mencoba dua cara. Keduanya eksploratif, tetapi aturan penilaiannya tetap saya bekukan sebelum *training*.
 
-Hasilnya negatif, dan penyebabnya bisa dipisahkan menjadi dua. Pemanduan oleh θ sendiri tetap membantu: PoLiS −0,016 piksel dan MTA −0,18 derajat, hampir sama dengan di jalur tiga kelas.
+Cara pertama, B3θ: *head* θ dilatih bersama *mask*. Hasilnya negatif. Pemanduannya sendiri membantu, tetapi melatih θ bersama *mask* menurunkan mutu *mask*: IoU validasi turun dari 89,75% menjadi 88,78%. Totalnya, dibanding B3m, PoLiS +0,084 piksel, MTA +0,30 derajat, dan AP −2,26 poin: lebih buruk.
 
-Tetapi melatih *head* θ bersama *mask* menurunkan mutu *mask* itu sendiri. IoU validasi turun dari 89,75% menjadi 88,78%, dan AP turun 2,25 poin.
+Dari kegagalan itu muncul cara kedua, B3+θ: jaringan B3 dibekukan, lalu hanya sebuah cabang kecil untuk θ yang dilatih di atasnya. Dengan begitu *mask* tidak berubah sama sekali. Hasilnya positif: dibanding B3m, PoLiS −0,011 piksel dan MTA −0,24 derajat, keduanya dengan selang kepercayaan di bawah nol dan searah di ketiga *seed*. AP berubah −0,12 poin, masih di dalam batas yang dibekukan.
 
-Kerugian itu lebih besar dari keuntungannya. Totalnya, dibanding B3m: PoLiS +0,084 piksel, MTA +0,30 derajat, dan AP −2,26 poin, searah di ketiga *seed*. Jadi aturannya tidak terpenuhi, dan B3m tetap yang terbaik.
+Jadi pemanduan θ juga memperbaiki *baseline* terkuat, asalkan *mask*-nya dilindungi. Tetapi saya tidak ingin melebih-lebihkan: efeknya kecil, dan kalau dihitung di semua *tile*, AP turun 0,34 poin. Karena ditambahkan setelah hasil utama ada, temuan ini saya laporkan sebagai eksploratif dan tidak mengubah keputusan N1 sampai N3.
 
-## Slide 18: Contoh hasil di *tile* asli
+## Slide 19: Contoh hasil di *tile* asli
 
 *±1 menit*
 
@@ -241,7 +255,7 @@ Di kolom B4, kontur masih mentah: garisnya bergelombang dan titik sudutnya banya
 
 Tiga baris pertama adalah *tile* padat yang hasilnya cukup baik. Baris terbawah sengaja saya pilih sebagai contoh kegagalan: di sisi kanan bawah, beberapa rumah yang berdempetan masih tergabung menjadi satu poligon besar, di semua model. Inilah kasus yang belum terselesaikan.
 
-## Slide 19: WHU dan biaya komputasi
+## Slide 20: WHU dan biaya komputasi
 
 *±1 menit*
 
@@ -253,7 +267,7 @@ Titik lemahnya sama dengan di CrowdAI: di *patch* yang berisi bangunan bersentuh
 
 Dari sisi biaya, modelnya 20,81 juta parameter. Alur penuh, dari citra sampai poligon, berjalan 42,3 *tile* per detik di RTX 5090, dan 36,4 bila detektor ikut dipakai.
 
-## Slide 20: Keterbatasan
+## Slide 21: Keterbatasan
 
 *±1 menit*
 
@@ -263,13 +277,13 @@ Pertama, data bersih untuk banding dengan HiSup hanya 212 *tile*, dan itu bukan 
 
 Kedua, di WHU hanya ada satu *seed*, dan daftar *tile* ujinya tidak persis sama dengan yang dipakai Pix2Poly.
 
-Ketiga, efek N1 kecil. Di jalur biner, melatih *head* θ malah menurunkan mutu *mask*, walaupun itu baru satu konfigurasi dan sifatnya eksploratif.
+Ketiga, efek N1 kecil. Di jalur biner, perbaikannya baru terlihat setelah *mask* dibekukan, dan percobaan itu sifatnya eksploratif.
 
 Keempat, detektor YOLO hanya dilatih sekali dan dipakai untuk ketiga *seed*, jadi ragamnya antar-*seed* tidak terukur.
 
 Kelima, poligon yang dihasilkan hanya cincin luar bangunan. Bangunan yang punya halaman dalam, atau lubang, tidak terwakili.
 
-## Slide 21: Kesimpulan
+## Slide 22: Kesimpulan
 
 *±1 menit*
 
@@ -277,7 +291,7 @@ Ada empat hal yang bisa dibawa pulang.
 
 Pertama, poligon yang rapi bisa dihasilkan dari *mask* saja. Regularisasi geometris bekerja tanpa anotasi poligon.
 
-Kedua, *head* orientasi membantu sedikit. Efeknya konsisten di jalur tiga kelas dan makin terasa di *tile* padat, tetapi tidak terbawa ke jalur biner.
+Kedua, *head* orientasi membantu sedikit. Efeknya konsisten di jalur tiga kelas. Di jalur biner, efek itu hanya muncul bila *mask* dibekukan, dan temuan itu masih eksploratif.
 
 Ketiga, prior morfologi dan kelas kontak tidak bekerja seperti yang diharapkan, dan keduanya dilaporkan sebagai hasil negatif.
 
@@ -285,13 +299,13 @@ Keempat, *baseline* yang sederhana ternyata paling kuat. Hal ini baru terlihat k
 
 Kalau dirangkum dalam satu kalimat: sumbangan utama proyek ini bukan model yang mengalahkan metode terbaik, melainkan evaluasi yang jujur tentang seberapa jauh pendekatan berbasis *mask* bisa melangkah.
 
-## Slide 22: Referensi
+## Slide 23: Referensi
 
 *±0,5 menit*
 
 Ini rujukan utama yang saya pakai. Daftar lengkapnya ada di naskah paper.
 
-## Slide 23: Penutup
+## Slide 24: Penutup
 
 *±0,5 menit*
 

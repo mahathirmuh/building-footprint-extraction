@@ -22,6 +22,7 @@ from densepoly.utils.io import read_json, write_json, write_lines
 
 N1_NAMES = {"b5->b5p": "training $\\theta$", "b5p->full_p0": "guiding by $\\theta$", "b5->full_p0": "total"}
 BINARY_THETA_NAMES = {"b3m->b3tp": "training $\\theta$", "b3tp->b3t": "guiding by $\\theta$", "b3m->b3t": "total"}
+FROZEN_THETA_NAMES = {"b3m->b3hp": "same masks (check)", "b3hp->b3h": "guiding by $\\theta$", "b3m->b3h": "total"}
 PRIOR_NAMES = {"full_p0->full_p1": "MBI", "full_p1->full_p2": "gap map", "full_p0->full_p2": "both priors"}
 COCO = ("AP", "AP50", "AP75", "AR", "AP_boundary", "IoU", "CIoU", "PoLiS", "MTA")
 COCO_HEADER = ["AP", "AP$_{50}$", "AP$_{75}$", "AR", "AP$_b$", "IoU", "C-IoU", "PoLiS$\\downarrow$", "MTA$\\downarrow$"]
@@ -41,6 +42,9 @@ TABLES = {
     "binary_theta": ("crowdai", "n1_binary", lambda r: latex.steps(r, ("PoLiS_paired", "MTA_inst", "AP"),
                                                                    ["$\\Delta$PoLiS (px)", "$\\Delta$MTA ($^\\circ$)", "$\\Delta$AP"],
                                                                    BINARY_THETA_NAMES)),
+    "frozen_theta": ("crowdai", "n1_frozen", lambda r: latex.steps(r, ("PoLiS_paired", "MTA_inst", "AP"),
+                                                                   ["$\\Delta$PoLiS (px)", "$\\Delta$MTA ($^\\circ$)", "$\\Delta$AP"],
+                                                                   FROZEN_THETA_NAMES)),
     "efficiency": ("crowdai", "efficiency", latex.efficiency),
     "whu": ("whu", "p2p", latex.whu),
     "whu_density": ("whu", "n2", latex.density),
@@ -71,8 +75,9 @@ def numbers() -> dict[str, str]:
         return latex.number(metric, result["delta"], signed=True), f"[{low}, {high}]"
 
     ablation = _load("crowdai", "ablation")
-    codes = {"b0": "Bzero", "b3": "Bthree", "b3m": "Bthreem", "b3my": "BthreemY", "b3t": "Bthreet", "b3tp": "Bthreetp",
-             "b4": "Bfour", "b5": "Bfive", "full_p0": "Full", "full_p2": "FullPtwo", "full_y": "FullY"}  # fmt: skip
+    codes = {"b0": "Bzero", "b1": "Bone", "b2": "Btwo", "b3": "Bthree", "b3m": "Bthreem", "b3my": "BthreemY",
+             "b3t": "Bthreet", "b3tp": "Bthreetp", "b3h": "Bthreeh", "b3hp": "Bthreehp", "b4": "Bfour", "b5": "Bfive",
+             "b5p": "Bfivep", "full_p0": "Full", "full_p1": "FullPone", "full_p2": "FullPtwo", "full_y": "FullY"}  # fmt: skip
     metrics = {"AP": "Ap", "AP_boundary": "Apb", "CIoU": "Ciou", "MTA": "Mta", "PoLiS": "Polis", "merge_rate": "Merge",
                "N_ratio": "Nratio", "IoU": "Iou"}  # fmt: skip
     if ablation:
@@ -128,8 +133,8 @@ def numbers() -> dict[str, str]:
         put("NLeakyApHisup", latex.number("AP", read_json(leaky)["overall"]["AP"]))
     reported = _load("crowdai", "paper")
     if reported:  # as printed in the other papers (configs/paper_numbers.yaml): the state-of-the-art slide quotes them
-        codes = {"ffl": "Ffl", "polyworld": "Polyworld", "hisup": "Hisup", "polyrcnn": "Polyrcnn", "pix2poly": "Pixtopoly"}
-        for key, code in codes.items():
+        papers = {"ffl": "Ffl", "polyworld": "Polyworld", "hisup": "Hisup", "polyrcnn": "Polyrcnn", "pix2poly": "Pixtopoly"}
+        for key, code in papers.items():
             values = reported["rows"].get(key, {}).get("values", {})
             for metric, short in (("AP", "Ap"), ("CIoU", "Ciou")):
                 if metric in values:
@@ -155,6 +160,18 @@ def numbers() -> dict[str, str]:
                 for metric, short in (("AP", "Ap"), ("CIoU", "Ciou"), ("merge_rate", "Merge"), ("split_rate", "Split"),
                                       ("MTA_inst", "Mta"), ("PoLiS_paired", "Polis")):  # fmt: skip
                     value, ci = plain(binary_theta["wider"][key]["groups"][group][metric], metric)
+                    put(f"N{name}{tag}{short}", value)
+                    put(f"N{name}{tag}{short}Ci", ci)
+    frozen_theta = _load("crowdai", "n1_frozen")  # exploratory: a θ branch on the frozen B3 network (EXPERIMENTS §11)
+    if frozen_theta:
+        for key, name in (("b3m->b3h", "FrozThetaTotal"), ("b3m->b3hp", "FrozThetaSanity"), ("b3hp->b3h", "FrozThetaGuide")):
+            for metric, short in (("PoLiS_paired", "Polis"), ("MTA_inst", "Mta"), ("AP", "Ap")):
+                step(frozen_theta, key, f"{name}{short}", metric)
+        for key, name in (("b3m->b3h", "ThetaFrozen"), ("b3t->b3h", "JointToFrozen"), ("full_p0->b3h", "FullToThetaFrozen")):
+            for group, tag in (("semua", ""), ("padat", "Dense"), ("bersentuhan", "Touching")):
+                for metric, short in (("AP", "Ap"), ("CIoU", "Ciou"), ("merge_rate", "Merge"), ("split_rate", "Split"),
+                                      ("MTA_inst", "Mta"), ("PoLiS_paired", "Polis")):  # fmt: skip
+                    value, ci = plain(frozen_theta["wider"][key]["groups"][group][metric], metric)
                     put(f"N{name}{tag}{short}", value)
                     put(f"N{name}{tag}{short}Ci", ci)
     for exp, code in (("b3", "Bthree"), ("b3t", "Bthreet")):  # best validation foreground IoU, mean over the seeds

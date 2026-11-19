@@ -141,11 +141,10 @@ function writeScript(target, slides) {
     "Ketiga, metode terbaru seperti HiSup dan Pix2Poly dilatih dengan anotasi poligon. Padahal banyak dataset, terutama data daerah, hanya punya *mask* per bangunan.",
     "Jadi pertanyaan penelitian saya: seberapa baik poligon yang bisa dihasilkan kalau model hanya belajar dari *mask*, dan kalau hasilnya dinilai di data yang bebas kebocoran?");
 
-  s = d.slide("*State of the art*: ekstraksi poligon bangunan", "AP dan C-IoU di val CrowdAI, seperti dilaporkan di paper masing-masing.");
+  s = d.slide("*State of the art* 2022–2026: ekstraksi poligon bangunan", "Lima tahun terakhir; AP dan C-IoU di val CrowdAI, seperti dilaporkan di paper masing-masing.");
   const reported = (metric, code) => (`NReported${metric}${code}` in numbers ? n(`NReported${metric}${code}`) : "–");
   const sota = (label, idea, code) => [label, idea, reported("Ap", code), reported("Ciou", code)];
   d.table(s, ["Metode", "Gagasan utama", "AP", "C-IoU"], [
-    sota("FFL (Girard dkk., 2021)", "Segmentasi + *frame field* yang meluruskan kontur", "Ffl"),
     sota("PolyWorld (Zorzi dkk., 2022)", "Deteksi titik sudut, dihubungkan *graph neural network*", "Polyworld"),
     sota("HiSup (Xu dkk., 2023)", "Supervisi hierarkis: titik sudut, garis batas, dan *mask*", "Hisup"),
     sota("PolyR-CNN (Jiao dkk., 2024)", "R-CNN *end-to-end* yang langsung memprediksi poligon", "Polyrcnn"),
@@ -153,10 +152,10 @@ function writeScript(target, slides) {
     ["Penelitian ini (FULL-P0), *test* bersih", "Segmentasi + θ dari *mask* + regularisasi klasik", n("NApFull"), n("NCiouFull")],
   ], { colW: [3.95, 5.55, 1.15, 1.244], align: ["left", "left", "center", "center"],
     callout: "Angka paper diukur di val CrowdAI yang bocor: tidak sebanding langsung dengan baris terakhir. Banding yang adil ada di slide HiSup." });
-  say("*State of the art*: ekstraksi poligon bangunan",
-    "Sebelum masuk ke gagasan saya, ini peta metode terkini untuk ekstraksi poligon bangunan. Secara garis besar ada dua keluarga.",
-    `Keluarga pertama melakukan segmentasi dulu, lalu merapikan hasilnya. Contohnya FFL, *frame field learning*, yang menambah satu keluaran berupa medan arah untuk meluruskan kontur. AP yang dilaporkan ${n("NReportedApFfl")}. Pendekatan saya paling dekat dengan keluarga ini.`,
-    `Keluarga kedua langsung memprediksi titik sudut poligon. PolyWorld mendeteksi titik sudut lalu menghubungkannya dengan *graph neural network*. HiSup mengawasi titik sudut, garis batas, dan *mask* sekaligus. PolyR-CNN dan Pix2Poly memprediksi poligon secara *end-to-end*. Tiga yang terbaru melaporkan AP sekitar ${n("NReportedApPolyrcnn")} sampai ${n("NReportedApPixtopoly")}, dan itulah yang sekarang dianggap *state of the art*.`,
+  say("*State of the art* 2022–2026: ekstraksi poligon bangunan",
+    "Sebelum masuk ke gagasan saya, ini peta metode terkini untuk ekstraksi poligon bangunan, dalam lima tahun terakhir.",
+    "Semua metode di tabel ini langsung memprediksi titik sudut poligon. PolyWorld, tahun 2022, mendeteksi titik sudut lalu menghubungkannya dengan *graph neural network*. HiSup, tahun 2023, mengawasi titik sudut, garis batas, dan *mask* sekaligus. PolyR-CNN, tahun 2024, dan Pix2Poly, tahun 2025, memprediksi poligon secara *end-to-end*.",
+    `Tiga yang terbaru melaporkan AP sekitar ${n("NReportedApPolyrcnn")} sampai ${n("NReportedApPixtopoly")}, dan itulah yang sekarang dianggap *state of the art*. Pendekatan saya berbeda keluarga: segmentasi dulu, lalu dirapikan, seperti *frame field learning* dari tahun 2021 yang menjadi pendahulunya.`,
     "Ada dua catatan penting. Pertama, metode berbasis titik sudut itu dilatih dengan anotasi poligon, sedangkan penelitian ini hanya memakai *mask*. Kedua, semua angka paper tadi diukur di data validasi CrowdAI yang bocor.",
     `Baris terakhir adalah model saya di data *test* yang bersih: AP ${n("NApFull")} dan C-IoU ${n("NCiouFull")}. Karena datanya berbeda, baris itu tidak bisa dibandingkan langsung dengan baris di atasnya. Perbandingan yang adil saya tunjukkan nanti, di slide HiSup.`);
 
@@ -267,11 +266,32 @@ function writeScript(target, slides) {
     "*Tile* *test* dibagi menjadi tiga kelompok kepadatan, yaitu jarang, sedang, dan padat, menurut jumlah bangunannya. Pembagian ini dibekukan dari *ground truth* sebelum ada model yang dievaluasi.",
     "Setiap selisih antarmodel dihitung berpasangan pada *tile* yang sama, dengan tiga *seed* dan *bootstrap* seribu replikasi. Dan semua parameter disetel di data tuning; data *test* tidak pernah dipakai untuk menyetel apa pun.");
 
+  s = d.slide("Ablasi: satu perubahan per langkah", "CrowdAI *test*. B0–B2 satu *run*; lainnya rata-rata tiga *seed*. MTA dan *merge rate*: makin kecil makin baik.");
+  const step = (label, added, code) => [label, added, n(`NAp${code}`), n(`NCiou${code}`), n(`NMta${code}`), n(`NMerge${code}`)];
+  d.table(s, ["Model", "Yang ditambahkan", "AP", "C-IoU", "MTA (°)", "*Merge* (%)"], [
+    step("B0", "Klasik saja, tanpa jaringan", "Bzero"),
+    step("B1", "U-Net EfficientNet-B4, segmentasi biner", "Bone"),
+    step("B2", "+ U-Net++", "Btwo"),
+    step("B3", "+ bobot tepi pada *loss*", "Bthree"),
+    step("B4", "+ kelas kontak dan *watershed*", "Bfour"),
+    step("B5", "+ regularisasi, θ dari *minAreaRect*", "Bfive"),
+    step("FULL-P0", "+ *head* θ (N1)", "Full"),
+    step("FULL-P2", "+ prior MBI dan peta celah (N3)", "FullPtwo"),
+  ], { colW: [1.7, 5.1, 1.2, 1.25, 1.3, 1.344], align: ["left", "left", "center", "center", "center", "center"], rowH: 0.4,
+    callout: "Kerapian naik paling besar saat regularisasi masuk (B4 → B5). Kelas kontak menurunkan *merge rate*, tetapi AP ikut turun." });
+  say("Ablasi: satu perubahan per langkah",
+    "Ini tabel ablasinya. Tiap baris menambah satu komponen ke baris di atasnya, jadi pengaruh tiap komponen bisa dibaca sendiri-sendiri.",
+    `Baris pertama, B0, adalah cara klasik saja tanpa jaringan: AP-nya hanya ${n("NApBzero")}. Begitu jaringan dipakai, di B1, AP langsung menjadi ${n("NApBone")}. Mengganti U-Net dengan U-Net++, di B2, hampir tidak mengubah apa-apa. Menambah bobot tepi pada *loss*, di B3, menaikkan AP menjadi ${n("NApBthree")}.`,
+    `Di B4, kelas kontak dan *watershed* ditambahkan. *Merge rate* turun dari ${n("NMergeBthree")} menjadi ${n("NMergeBfour")} persen, artinya lebih sedikit rumah yang tergabung. Tetapi AP ikut turun menjadi ${n("NApBfour")}. Inilah harga dari jalur tiga kelas.`,
+    `Lompatan terbesar ada di B5, saat regularisasi masuk: C-IoU naik dari ${n("NCiouBfour")} ke ${n("NCiouBfive")}, dan galat sudut MTA turun dari ${n("NMtaBfour")} ke ${n("NMtaBfive")} derajat.`,
+    `Dua baris terakhir adalah gagasan saya. *Head* θ, di FULL-P0, menambah sedikit kerapian: C-IoU ${n("NCiouFull")} dan MTA ${n("NMtaFull")}. Prior morfologi, di FULL-P2, tidak membawa perbaikan. Dua hal itu saya uji lebih teliti di slide-slide berikutnya.`);
+
   s = d.slide("Hasil utama di CrowdAI *test*", "Rata-rata tiga *seed*. MTA dan *merge rate*: makin kecil makin baik.");
   const row = (label, code) => [label, n(`NAp${code}`), n(`NCiou${code}`), n(`NMta${code}`), n(`NMerge${code}`)];
   d.table(s, ["Model", "AP", "C-IoU", "MTA (°)", "*Merge rate* (%)"], [
     row("B3: segmentasi biner", "Bthree"),
     row("B3m: B3 + regularisasi (eksploratif)", "Bthreem"),
+    row("B3+θ: B3 beku + cabang θ (eksploratif)", "Bthreeh"),
     row("B4: tiga kelas + *watershed*", "Bfour"),
     row("B5: B4 + regularisasi", "Bfive"),
     row("FULL-P0: + *head* θ", "Full"),
@@ -345,17 +365,17 @@ function writeScript(target, slides) {
     `Yang kedua, sebuah detektor kecil, YOLOv8n-OBB, yang juga dilatih dari *mask*, dipakai untuk memberi titik benih bagi tiap rumah. Hasilnya *merge rate* turun ${n("NSeedFullMergeAbs")} poin di FULL-P0 dan ${n("NSeedBinaryMergeAbs")} poin di B3m, dengan AP yang setara. Ada harganya: rumah yang terpecah bertambah ${n("NSeedFullSplitAbs")} dan ${n("NSeedBinarySplitAbs")} poin.`,
     "Jadi gambaran besarnya: jalur biner paling akurat dan paling rapi, jalur tiga kelas paling baik memisahkan rumah berdempetan, dan benih dari detektor membantu keduanya.");
 
-  s = d.slide("Eksploratif: *head* θ di jalur biner tidak membantu", `B3m → B3θ di ${n("NTilesDense")} *tile* padat; aturannya dibekukan sebelum training.`);
+  s = d.slide("Eksploratif: *head* θ di jalur biner", `Dua cara memasang θ pada B3, dibanding B3m di ${n("NTilesDense")} *tile* padat; aturannya dibekukan sebelum *training*.`);
   d.cards(s, [
-    { head: "Pemanduan θ tetap membantu", body: `B3θ′ → B3θ: PoLiS ${n("NBinThetaGuidePolis")} piksel dan MTA ${n("NBinThetaGuideMta")}°. Di jalur tiga kelas: ${n("NNoneGuidePolis")} piksel dan ${n("NNoneGuideMta")}°.` },
-    { head: "Pelatihan θ menurunkan mutu *mask*", body: `B3m → B3θ′: AP turun ${n("NBinThetaTrainApAbs")} poin dan PoLiS naik ${n("NBinThetaTrainPolisAbs")} piksel. IoU validasi ${n("NFgIouBthreet")}% lawan ${n("NFgIouBthree")}% pada B3.` },
-    { head: "Total: aturan tidak terpenuhi", body: `PoLiS ${n("NBinThetaTotalPolis")} piksel, MTA ${n("NBinThetaTotalMta")}°, AP ${n("NBinThetaTotalAp")} poin, searah di ketiga *seed*.` },
-  ], { callout: "Hasil negatif: *head* θ tidak memberi perbaikan bersih pada *baseline* terkuat. B3m tetap yang terbaik." });
-  say("Eksploratif: *head* θ di jalur biner tidak membantu",
-    "Karena B3m paling kuat, pertanyaan yang wajar: bagaimana kalau *head* θ dipasang di jalur biner itu? Percobaan ini juga eksploratif, tetapi aturan penilaiannya tetap saya bekukan sebelum *training*.",
-    `Hasilnya negatif, dan penyebabnya bisa dipisahkan menjadi dua. Pemanduan oleh θ sendiri tetap membantu: PoLiS ${n("NBinThetaGuidePolis")} piksel dan MTA ${n("NBinThetaGuideMta")} derajat, hampir sama dengan di jalur tiga kelas.`,
-    `Tetapi melatih *head* θ bersama *mask* menurunkan mutu *mask* itu sendiri. IoU validasi turun dari ${n("NFgIouBthree")}% menjadi ${n("NFgIouBthreet")}%, dan AP turun ${n("NBinThetaTrainApAbs")} poin.`,
-    `Kerugian itu lebih besar dari keuntungannya. Totalnya, dibanding B3m: PoLiS ${n("NBinThetaTotalPolis")} piksel, MTA ${n("NBinThetaTotalMta")} derajat, dan AP ${n("NBinThetaTotalAp")} poin, searah di ketiga *seed*. Jadi aturannya tidak terpenuhi, dan B3m tetap yang terbaik.`);
+    { head: "Dilatih bersama (B3θ): gagal", body: `Mutu *mask* turun: IoU validasi ${n("NFgIouBthreet")}% lawan ${n("NFgIouBthree")}% pada B3. Total: PoLiS ${n("NBinThetaTotalPolis")} piksel, MTA ${n("NBinThetaTotalMta")}°, AP ${n("NBinThetaTotalAp")} poin.` },
+    { head: "Cabang θ di atas B3 beku (B3+θ): berhasil", body: `*Mask* tidak berubah; hanya cabang θ yang dilatih. Total: PoLiS ${n("NFrozThetaTotalPolis")} piksel ${n("NFrozThetaTotalPolisCi")}, MTA ${n("NFrozThetaTotalMta")}° ${n("NFrozThetaTotalMtaCi")}, AP ${n("NFrozThetaTotalAp")} poin.` },
+    { head: "Artinya", body: `Pemanduan θ juga memperbaiki *baseline* terkuat, asalkan *mask* dilindungi. Efeknya kecil, dan di semua *tile* AP turun ${n("NThetaFrozenApAbs")} poin.` },
+  ], { callout: "Aturan beku terpenuhi untuk B3+θ. Keduanya eksploratif, jadi keputusan N1–N3 tidak berubah." });
+  say("Eksploratif: *head* θ di jalur biner",
+    "Karena B3m paling kuat, pertanyaan yang wajar: bagaimana kalau *head* θ dipasang di jalur biner itu? Saya mencoba dua cara. Keduanya eksploratif, tetapi aturan penilaiannya tetap saya bekukan sebelum *training*.",
+    `Cara pertama, B3θ: *head* θ dilatih bersama *mask*. Hasilnya negatif. Pemanduannya sendiri membantu, tetapi melatih θ bersama *mask* menurunkan mutu *mask*: IoU validasi turun dari ${n("NFgIouBthree")}% menjadi ${n("NFgIouBthreet")}%. Totalnya, dibanding B3m, PoLiS ${n("NBinThetaTotalPolis")} piksel, MTA ${n("NBinThetaTotalMta")} derajat, dan AP ${n("NBinThetaTotalAp")} poin: lebih buruk.`,
+    `Dari kegagalan itu muncul cara kedua, B3+θ: jaringan B3 dibekukan, lalu hanya sebuah cabang kecil untuk θ yang dilatih di atasnya. Dengan begitu *mask* tidak berubah sama sekali. Hasilnya positif: dibanding B3m, PoLiS ${n("NFrozThetaTotalPolis")} piksel dan MTA ${n("NFrozThetaTotalMta")} derajat, keduanya dengan selang kepercayaan di bawah nol dan searah di ketiga *seed*. AP berubah ${n("NFrozThetaTotalAp")} poin, masih di dalam batas yang dibekukan.`,
+    `Jadi pemanduan θ juga memperbaiki *baseline* terkuat, asalkan *mask*-nya dilindungi. Tetapi saya tidak ingin melebih-lebihkan: efeknya kecil, dan kalau dihitung di semua *tile*, AP turun ${n("NThetaFrozenApAbs")} poin. Karena ditambahkan setelah hasil utama ada, temuan ini saya laporkan sebagai eksploratif dan tidak mengubah keputusan N1 sampai N3.`);
 
   s = d.slide("Contoh hasil di *tile* asli", "*Ground truth* dan poligon tiap model pada *tile* *test* yang sama.");
   d.mediaStack(s, { image: figure("crowdai_qualitative_id.png"), alt: "Poligon tiap model pada tile test", split: 0.6, items: [
@@ -384,7 +404,7 @@ function writeScript(target, slides) {
   d.numbered(s, [
     { head: "Data bersih kecil", body: `Banding HiSup hanya di ${n("NTilesClean")} *tile*, dan bukan sampel acak.` },
     { head: "WHU satu *seed*", body: "Daftar *tile* uji tidak persis sama dengan Pix2Poly." },
-    { head: "Efek N1 kecil", body: "Di jalur biner, melatih *head* θ malah menurunkan mutu *mask* (satu konfigurasi, eksploratif)." },
+    { head: "Efek N1 kecil", body: "Di jalur biner baru terlihat setelah *mask* dibekukan, dan percobaan itu eksploratif." },
     { head: "Satu detektor", body: "YOLO dilatih sekali dan dipakai untuk ketiga *seed*." },
     { head: "Tanpa lubang", body: "Poligon hanya memuat cincin luar bangunan." },
   ], { labelW: 2.9 });
@@ -392,21 +412,21 @@ function writeScript(target, slides) {
     "Ada lima hal yang membatasi kesimpulan penelitian ini.",
     `Pertama, data bersih untuk banding dengan HiSup hanya ${n("NTilesClean")} *tile*, dan itu bukan sampel acak dari data validasi.`,
     "Kedua, di WHU hanya ada satu *seed*, dan daftar *tile* ujinya tidak persis sama dengan yang dipakai Pix2Poly.",
-    "Ketiga, efek N1 kecil. Di jalur biner, melatih *head* θ malah menurunkan mutu *mask*, walaupun itu baru satu konfigurasi dan sifatnya eksploratif.",
+    "Ketiga, efek N1 kecil. Di jalur biner, perbaikannya baru terlihat setelah *mask* dibekukan, dan percobaan itu sifatnya eksploratif.",
     "Keempat, detektor YOLO hanya dilatih sekali dan dipakai untuk ketiga *seed*, jadi ragamnya antar-*seed* tidak terukur.",
     "Kelima, poligon yang dihasilkan hanya cincin luar bangunan. Bangunan yang punya halaman dalam, atau lubang, tidak terwakili.");
 
   s = d.slide("Kesimpulan", "Empat hal yang bisa dibawa pulang.");
   d.numbered(s, [
     { head: "Poligon rapi bisa dari *mask* saja", body: "Regularisasi geometris bekerja tanpa anotasi poligon." },
-    { head: "*Head* θ membantu sedikit", body: "Konsisten di jalur tiga kelas, makin terasa di *tile* padat; tidak terbawa ke jalur biner." },
+    { head: "*Head* θ membantu sedikit", body: "Konsisten di jalur tiga kelas; di jalur biner hanya bila *mask* dibekukan (eksploratif)." },
     { head: "Prior dan kelas kontak gagal", body: "Dilaporkan sebagai hasil negatif." },
     { head: "*Baseline* sederhana paling kuat", body: "Terlihat karena semua model dinilai dengan protokol yang sama." },
   ], { shape: "square", labelW: 4.7 });
   say("Kesimpulan",
     "Ada empat hal yang bisa dibawa pulang.",
     "Pertama, poligon yang rapi bisa dihasilkan dari *mask* saja. Regularisasi geometris bekerja tanpa anotasi poligon.",
-    "Kedua, *head* orientasi membantu sedikit. Efeknya konsisten di jalur tiga kelas dan makin terasa di *tile* padat, tetapi tidak terbawa ke jalur biner.",
+    "Kedua, *head* orientasi membantu sedikit. Efeknya konsisten di jalur tiga kelas. Di jalur biner, efek itu hanya muncul bila *mask* dibekukan, dan temuan itu masih eksploratif.",
     "Ketiga, prior morfologi dan kelas kontak tidak bekerja seperti yang diharapkan, dan keduanya dilaporkan sebagai hasil negatif.",
     "Keempat, *baseline* yang sederhana ternyata paling kuat. Hal ini baru terlihat karena semua model dinilai dengan protokol yang sama, di data yang bebas kebocoran.",
     "Kalau dirangkum dalam satu kalimat: sumbangan utama proyek ini bukan model yang mengalahkan metode terbaik, melainkan evaluasi yang jujur tentang seberapa jauh pendekatan berbasis *mask* bisa melangkah.");
