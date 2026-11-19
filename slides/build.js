@@ -471,9 +471,9 @@ function writeScript(target, slides) {
 
   s = d.slide("Sebelum dan sesudah regularisasi", "Dua *tile* padat dari data *test*; jaringan yang sama, dengan dan tanpa perapian poligon.");
   d.mediaStack(s, { image: figure("crowdai_before_after_id.png"), alt: "Citra, kontur mentah, poligon dirapikan, ground truth", split: 0.68, items: [
-    { head: "Sebelum (B4)", body: "Kontur langsung dari hasil segmentasi: tepinya bergelombang." },
-    { head: "Sesudah (B5)", body: "Jaringan dan *instance* yang sama, ditambah perapian: sisi lurus dan sudut siku." },
-    { head: "Angka di pojok", body: "Jumlah titik sudut di *tile* itu; yang baik mendekati *ground truth*." },
+    { head: "Sebelum (B4)", body: "Kontur mentah: tepinya bergelombang." },
+    { head: "Sesudah (B5)", body: "Jaringan yang sama + perapian: sisi lurus, sudut siku." },
+    { head: "Angka di pojok", body: "Jumlah titik sudut; yang baik mendekati *ground truth*." },
   ] });
   say("Sebelum dan sesudah regularisasi",
     "Ini gambar sebelum dan sesudahnya, pada dua *tile* padat dari data *test*. Dari kiri: citra aslinya, kontur sebelum dirapikan, poligon sesudah dirapikan, dan *ground truth*.",
