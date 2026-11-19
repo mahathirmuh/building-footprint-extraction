@@ -33,11 +33,11 @@ function n(name) {
 /**
  * A flow diagram in lanes: every lane is a tinted band with its name on the left and its boxes joined by arrows; `links`
  * are the arrows between lanes, {from: [lane, box], to: [lane, box], label}, drawn straight down when the two boxes
- * overlap and as an elbow through the gap otherwise.
+ * overlap and as an elbow through the gap otherwise. o: { bottom, headSize, bodySize } for a diagram above a key message.
  */
-function flowLanes(d, s, lanes, links = []) {
+function flowLanes(d, s, lanes, links = [], o = {}) {
   const P = d.pres.ShapeType;
-  const top = 2.24, bottom = 6.62, gapY = 0.33, labelW = 1.72, arrowW = 0.3, pad = 0.12;
+  const top = 2.24, bottom = o.bottom || 6.62, gapY = 0.33, labelW = 1.72, arrowW = 0.3, pad = 0.12;
   const laneH = (bottom - top - gapY * (lanes.length - 1)) / lanes.length;
   const boxes = lanes.map((lane, i) => {
     const y = top + i * (laneH + gapY), color = ACCENTS[i % ACCENTS.length];
@@ -46,7 +46,8 @@ function flowLanes(d, s, lanes, links = []) {
     const x0 = X0 + labelW, n = lane.steps.length, w = (X1 - pad - x0 - arrowW * (n - 1)) / n;
     return lane.steps.map((step, k) => {
       const x = x0 + k * (w + arrowW);
-      d.card(s, x, y + pad, w, laneH - 2 * pad, color, step.head, step.body, { headSize: 12.5, bodySize: 10.5, padX: 0.15, padY: 0.1, gap: 3 });
+      d.card(s, x, y + pad, w, laneH - 2 * pad, color, step.head, step.body,
+        { headSize: o.headSize || 12.5, bodySize: o.bodySize || 10.5, padX: 0.15, padY: 0.1, gap: 3 });
       if (k < n - 1) s.addShape(P.rightArrow, { x: x + w + 0.045, y: y + laneH / 2 - 0.11, w: arrowW - 0.09, h: 0.22, fill: { color }, line: { color, width: 0 } });
       return { x, w, top: y + pad, bottom: y + laneH - pad };
     });
@@ -175,6 +176,28 @@ function writeScript(target, slides) {
     "N3 adalah kebaruan di sisi *preprocessing*: dua peta dari morfologi klasik, yaitu MBI dan peta celah, ditambahkan sebagai kanal input, dengan harapan celah antar-rumah lebih mudah terlihat oleh jaringan. Hasil ujinya: tidak didukung, dan saya laporkan sebagai hasil negatif.",
     "Supaya jelas batasnya, ada komponen yang saya adopsi dari penelitian lain dan tidak saya klaim sebagai kebaruan: kelas kontak dengan *watershed*, bobot tepi pada *loss*, arsitektur U-Net++, indeks MBI itu sendiri, dan deduplikasi dengan *perceptual hash*.",
     "Satu hal lagi yang ingin saya tekankan: kriteria berhasil atau gagal untuk tiap gagasan saya tulis dan saya bekukan sebelum ada model yang dilatih. Setiap perbandingan memakai tiga *seed* dan selang kepercayaan *bootstrap*. Karena itulah hasil negatif pun tetap dilaporkan.");
+
+  s = d.slide("Metode yang diusulkan", "U-Net++ dengan *head* orientasi berbasis *mask* dan regularisasi poligon terpandu θ.");
+  flowLanes(d, s, [
+    { name: "Jaringan", steps: [
+      { head: "Input", body: "Citra RGB. Dua kanal prior morfologi (N3) diuji sebagai tambahan, tetapi tidak dipakai di model akhir." },
+      { head: "U-Net++ EfficientNet-B4", body: "Satu jaringan segmentasi dengan satu *head* konvolusi berisi lima kanal keluaran." },
+      { head: "Tiga kelas + *head* θ (N1)", body: "Latar, bangunan, kontak, dan orientasi (sin 4θ, cos 4θ). Label θ dari *minAreaRect* tiap bangunan di *mask*." },
+    ] },
+    { name: "Poligon", steps: [
+      { head: "Marker + *watershed*", body: "Marker dari selisih peluang bangunan dan kontak; satu *instance* per rumah." },
+      { head: "Kontur per rumah", body: "Batas tiap *instance* diambil dengan *marching squares*." },
+      { head: "Regularisasi terpandu θ", body: "Bangunan hampir persegi menjadi kotak searah θ; lainnya disederhanakan lalu sisinya diluruskan ke θ." },
+      { head: "Keluaran", body: "Satu poligon per rumah, COCO JSON dan GeoJSON." },
+    ] },
+  ], [{ from: [0, 2], to: [1, 0], label: "peta kelas dan θ" }], { bottom: 5.95, headSize: 13.5, bodySize: 11.5 });
+  d.callout(s, "*Loss*: CE berbobot tepi + Dice + λ × *loss* θ. Semua label dari *mask*: tanpa anotasi poligon saat *training*.");
+  say("Metode yang diusulkan",
+    "Inilah metode yang saya usulkan, dalam dua baris: jaringannya di atas, pembentukan poligonnya di bawah.",
+    "Jaringannya U-Net++ dengan *encoder* EfficientNet-B4. Inputnya citra RGB. Dalam rancangan awal ada dua kanal tambahan berisi prior morfologi, yaitu gagasan N3; itu diuji, tetapi karena tidak membantu, model akhirnya hanya memakai RGB.",
+    "Yang membedakan jaringan ini adalah keluarannya. Selain tiga kelas, yaitu latar, bangunan, dan kontak, ada *head* orientasi yang memprediksi sudut bangunan θ dalam bentuk sinus dan kosinus 4θ. Inilah gagasan N1. Label θ tidak dianotasi manusia: ia dihitung dari kotak terkecil tiap bangunan di *mask*.",
+    "Di baris bawah, peta kelas dipakai membuat *marker*, lalu *watershed* memisahkan rumah. Kontur tiap rumah diambil, lalu dirapikan dengan panduan θ dari jaringan: bangunan yang hampir persegi diganti kotak searah θ, dan bangunan lain disederhanakan lalu sisi-sisinya diluruskan ke arah θ. Hasilnya satu poligon per rumah.",
+    "Jaringan dilatih dengan satu *loss* gabungan: *cross-entropy* berbobot tepi, Dice, dan *loss* orientasi. Semua labelnya diturunkan dari *mask*, jadi tidak ada anotasi poligon saat *training*.");
 
   s = d.slide("Dataset: apa dan dari mana", "Dua dataset publik; keduanya diunduh dari halaman resminya.");
   d.table(s, ["", "CrowdAI Mapping Challenge", "WHU Building (aerial)"], [

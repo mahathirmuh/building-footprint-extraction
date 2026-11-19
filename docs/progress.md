@@ -2478,4 +2478,7 @@ dan 23 diperiksa di PDF.
 **Dua perubahan deck lagi (19 Nov 2026, permintaan pemilik proyek).** Slide 5 menjadi "Kebaruan penelitian: tiga gagasan yang
 diuji" (tabel N1–N3: apa yang baru dan hasil ujinya; komponen yang diadopsi disebut terpisah). Slide baru "Ringkasan hasil"
 sebelum "Keterbatasan" (delapan baris: aspek, hasil, angka kunci). Deck 25 slide.
-
+Menyusul di hari yang sama: slide "Protokol uji yang adil" (setelan yang sama untuk semua model, diperiksa dari `config.yaml` 23 run
+CrowdAI: 20 run identik, B3+θ hanya berbeda di `select_metric`; tiga hal yang berbeda di panel kanan) dan slide "Metode yang
+diusulkan" (diagram dua baris: jaringan dan pembentukan poligon). Deck 27 slide. Atas permintaan pemilik proyek, konversi PDF tidak
+ditunggu untuk dua slide ini, jadi tata letaknya belum diperiksa di PDF saat ditulis.
