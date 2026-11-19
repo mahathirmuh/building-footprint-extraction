@@ -2375,3 +2375,25 @@ Tidak ada yang berjalan sejak 18 Nov 2026 00.49 WIB.
 lalu evaluasi `test` untuk ketiga seed dan tabel `n1_frozen` dengan aturan beku §11. Antrean `phase12.sh` dijalankan lagi
 dengan penanda `logs/phase12_go`; langkah tahap 1 dilewati lewat penandanya.
 
+**Gangguan GPU dan batas pemakaian (19 Nov 2026).** Seed 1 selesai 10.03 WIB (`fg_iou` 0,896567 di semua 60 epoch; B3
+seed 1 beku 0,896569). Training seed 2 terputus 10.22 WIB di epoch 14: log kernel mencatat `Xid 79, GPU has fallen off the
+bus`, dan proses berhenti dengan `CUDA error: unspecified launch failure`. Saat itu hanya run ini yang memakai GPU
+(±2,6 GB, utilisasi ±93%). Antrean menunggu GPU sampai server di-reboot pukul 12.42 WIB. Tidak ada data yang hilang:
+`last.pt` seed 2 (10.21 WIB) utuh dan run dilanjutkan dari situ.
+
+Pemilik proyek meminta pemakaian GPU **paling banyak 65%** ("usahakan 65% dari gpu", "jngn lebih dari itu"). Yang dibuat:
+
+- `src/densepoly/utils/throttle.py`: variabel lingkungan `DENSEPOLY_GPU_DUTY` (pecahan 0–1). Setelah tiap langkah
+  optimizer, tiap batch validasi, dan tiap batch prediksi, proses tidur cukup lama sehingga GPU bekerja paling banyak
+  sebesar pecahan itu dari waktu berjalan. Ini setelan operasi (seperti path), bukan kunci config: tidak ada hasil yang
+  berubah. Kolom `seconds` di log training ikut memuat waktu tidur.
+- Benchmark kecepatan (`scripts/benchmark.py`, `train.py --benchmark`) menolak berjalan di GPU yang dibatasi, karena
+  kecepatan di antara jeda tidur bukan kecepatan model, dan tanpa jeda benchmark memakai GPU penuh.
+- `phase12.sh` memakai `DENSEPOLY_GPU_DUTY=0.5` dan mencatat GPU tiap 5 detik ke `logs/phase12_gpu.csv`. Terukur pada
+  training seed 2 (120 sampel, 60 detik): utilisasi rata-rata 45,7%, tertinggi 60%, daya rata-rata 181 W, suhu
+  tertinggi 54 °C. Harganya waktu: ±12 it/s (tanpa batas 19,5 it/s), jadi satu seed ±2,4 jam.
+- **Benchmark kecepatan B3+θ tidak dijalankan** (butuh GPU penuh), jadi FPS B3+θ tidak diukur. Jumlah parameternya
+  sudah diketahui (20.845.691).
+
+Tes: 779 lolos.
+

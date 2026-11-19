@@ -178,6 +178,8 @@ Path data selalu dari variabel lingkungan `DENSEPOLY_DATA` (default `./data`), o
   `docs/COLAB.md` tetap berlaku bila kembali ke Colab). Pekerjaan CPU berat (hash ±0,6 jam-inti, prior ±14 jam-inti,
   evaluasi val penuh, tuning post-processing) juga di server itu. Selalu ukur dulu di sampel kecil dan minta konfirmasi.
   GPU dan CPU server dipakai bersama proyek lain: cek `nvidia-smi` sebelum benchmark.
+  **Batas GPU 65%** (pemilik proyek, 19 Nov 2026, setelah GPU lepas dari bus saat training): semua pekerjaan GPU
+  dijalankan dengan `DENSEPOLY_GPU_DUTY=0.5` (utilisasi terukur ≤ 60%); benchmark kecepatan tidak dijalankan.
 - Bobot pretrained smp diunduh dari Hugging Face Hub (`smp-hub/efficientnet-b4.imagenet`). Tes selalu memakai
   `encoder_weights=None`.
 
